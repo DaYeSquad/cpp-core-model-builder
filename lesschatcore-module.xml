@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+
+<!-- Rules:
+1. group name should be "user_group".
+2. class name should be "UserGroup".
+3. variable name should be all lower cases with underscore. There are some attributes you must set in variable:
+  - name
+  - type : can be 'string', 'bool', 'int' or 'enum', if you specify the type is enum, you shuold add "enum" attribute to declare the enum class.
+  - json_path (eg: 'data/uid'), if the attribute does not have json mapping, you should set an empty string rather than leaving blank (eg: '').
+  - [maybe] enum : only affects when type='enum'
+  - [maybe] sql_flag can be 'primary_key'
+4. enum name should be 'Role' (the first letter is upper case), alias should be ALL_UPPER_CASE.
+5. manager name should be 'UserManager' (CRUD)
+  - <save/> supports "singular"(SaveObjectToCache) and "plural"(SaveObjectsToCache)
+  - <delete/> supports "singular"(DeleteObjectFromCache) and "plural"(DeleteObjectsFromCache) and "by" (DeleteObjectFromCacheById)
+-->
+
+<module>
+  <group name='user'>
+    <class name='User'>
+      <manager name='UserManager'>
+        <save singular='true'/>
+        <save plural='true'/>
+        <fetch singular='true' by='uid'/>
+        <fetch plural='true'/>
+        <delete singular='true'/>
+        <delete plural='true'/>
+        <delete singular='true' by='uid'/>
+        <delete singular='true' by='uid,username'/>
+      </manager>
+      <enum name='Role'>
+        <value int_value='1' alias='MEMBER'/>
+        <value int_value='2' alias='ADMIN'/>
+        <value int_value='3' alias='GUEST'/>
+        <value int_value='4' alias='OWNER'/>
+        <value int_value='5' alias='ROBOT'/>
+      </enum>
+      <enum name='Status'>
+        <value int_value='0' alias='OFFLINE'/>
+        <value int_value='1' alias='ONLINE'/>
+        <value int_value='2' alias='BUSY'/>
+        <value int_value='3' alias='AWAY'/>
+      </enum>
+      <enum name='State'>
+        <value int_value='0' alias='ALL'/>
+        <value int_value='1' alias='NORMAL'/>
+        <value int_value='2' alias='DISABLED'/>
+        <value int_value='3' alias='INVITED'/>
+        <value int_value='4' alias='PENDING'/>
+      </enum>
+      <variable name='uid' type='string' json_path='uid' sql_flag='primary_key'/>
+      <variable name='username' type='string' json_path='name'/>
+      <variable name='display_name' type='string' json_path='display_name'/>
+      <variable name='pinyin' type='string' json_path='display_name_pinyin'/>
+      <variable name='header_uri' type='string' json_path='avatar'/>
+      <variable name='deleted' type='bool' json_path='is_deleted'/>
+      <variable name='role' type='enum' enum='User.Role' json_path='role'/>
+      <variable name='state' type='enum' enum='User.State' json_path='status'/>
+      <variable name='status' type='enum' enum='User.Status' json_path='state'/>
+      <variable name='phone_number' type='string' json_path='mobile'/>
+      <variable name='job_title' type='string' json_path='title'/>
+      <variable name='department' type='string' json_path='department'/>
+      <variable name='email' type='string' json_path='email'/>
+    </class>
+ </group>
+</module>
