@@ -2,6 +2,7 @@ from enum import Enum
 from copy import copy
 import string
 import re
+from skr_logger import skr_log_warning
 
 
 class VarType(Enum):
@@ -9,6 +10,7 @@ class VarType(Enum):
     cpp_int = 2
     cpp_string = 3
     cpp_enum = 4
+    cpp_string_array = 5
 
     def __init__(self, value):
         self.enum_class_name = ''
@@ -18,8 +20,10 @@ class VarType(Enum):
             enum_class_name = ''
 
         self.enum_class_name = enum_class_name
+
+        # check input
         if self.value == 4 and enum_class_name == '':
-            print 'Enum value should declare its enum class name via "enum"'
+            skr_log_warning('Enum value should declare its enum class name via "enum"')
 
     def to_getter_string(self):
         if self.value == 1:
@@ -30,6 +34,8 @@ class VarType(Enum):
             return 'std::string'
         elif self.value == 4:
             return self.cpp_enum_type_string()
+        elif self.value == 5:
+            return 'std::vector<std::string>'
 
     def to_setter_string(self):
         if self.value == 1:
@@ -40,6 +46,8 @@ class VarType(Enum):
             return 'const std::string&'
         elif self.value == 4:
             return self.cpp_enum_type_string()
+        elif self.value == 5:
+            return 'const std::vector<std::string>&'
 
     @classmethod
     def type_from_string(cls, var_type_string):
@@ -51,6 +59,8 @@ class VarType(Enum):
             return 3
         elif var_type_string == 'enum':
             return 4
+        elif var_type_string == 'string_array':
+            return 5
 
     def cpp_enum_type_string(self):
         if self.value != 4 and self.enum_class_name is None or self.enum_class_name == '':
@@ -73,6 +83,8 @@ class VarType(Enum):
             return 'string_value()'
         elif self.value == 4:
             return 'int_value()'
+        elif self.value == 5:
+            return ''
 
     def to_sqlite_value_type(self):
         if self.value == 1:
@@ -83,6 +95,8 @@ class VarType(Enum):
             return 'sql::type_text'
         elif self.value == 4:
             return 'sql::type_int'
+        elif self.value == 5:
+            return 'sql::type_text'
 
     def to_set_sqlite_value_string(self):
         if self.value == 1:
@@ -93,6 +107,8 @@ class VarType(Enum):
             return 'setString'
         elif self.value == 4:
             return 'setInteger'
+        elif self.value == 5:
+            return 'setString'
 
     def to_get_sqlite_value_string(self):
         if self.value == 1:
@@ -103,6 +119,8 @@ class VarType(Enum):
             return 'asString'
         elif self.value == 4:
             return 'asInteger'
+        elif self.value == 5:
+            return 'asString'
 
 
 class CppVariable:
@@ -178,6 +196,13 @@ class CppVariable:
                                                                       cpp_json_paths,
                                                                       self.var_type.to_json_value_type(),
                                                                       self.var_type.cpp_enum_type_string())
+        elif self.var_type == VarType.cpp_string_array:  # array_items use another parse style
+            parse = '{0}_.clear();\n'.format(self.name)
+            parse += '  vector<json11::Json> {0}_json = json_obj[{1}].array_items();\n'.format(self.name, cpp_json_paths)
+            parse += '  for (auto it = {0}_json.begin(); it != {0}_json.end(); ++it) {{\n'.format(self.name)
+            parse += '    {0}_.push_back((*it).string_value());\n'.format(self.name)
+            parse += '  }\n'
+            return parse
         else:
             return '{0}_ = json_obj{1}.{2};'.format(self.name, cpp_json_paths, self.var_type.to_json_value_type())
 
@@ -185,6 +210,10 @@ class CppVariable:
     def to_set_sql_string(self, object_name):
         if self.var_type == VarType.cpp_enum:
             set_sql_str = 'record.{0}({1}, static_cast<int>({2}.{3}()));\n'\
+                .format(self.var_type.to_set_sqlite_value_string(), self.to_sql_key(), object_name, self.name)
+            return set_sql_str
+        elif self.var_type == VarType.cpp_string_array:
+            set_sql_str = 'record.{0}({1}, sakura::string_vector_join({2}.{3}(), ","));\n'\
                 .format(self.var_type.to_set_sqlite_value_string(), self.to_sql_key(), object_name, self.name)
             return set_sql_str
         else:
@@ -198,6 +227,10 @@ class CppVariable:
             get_sql_str = '{0} {1} = record->getValue({2})->{3}();\n'\
                 .format(self.var_type.to_getter_string(), self.name, self.to_sql_key(), self.var_type.to_get_sqlite_value_string())
             return get_sql_str
+        if self.var_type == VarType.cpp_string_array:
+            get_sql_str = '{0} {1} = sakura::string_split(record->getValue({2})->{3}(), ",");\n'\
+                .format(self.var_type.to_getter_string(), self.name, self.to_sql_key(), self.var_type.to_get_sqlite_value_string())
+            return get_sql_str
         else:
             get_sql_str = '{0} {1} = static_cast<{4}>(record->getValue({2})->{3}());\n'\
                 .format(self.var_type.to_getter_string(), self.name, self.to_sql_key(),
@@ -208,6 +241,9 @@ class CppVariable:
     def to_where_equal_sql(self):
         if self.var_type == VarType.cpp_string:
             return '{0} + "=\'" + {1} + "\'"'.format(self.to_sql_key(), self.name)
+        elif self.var_type == VarType.cpp_string_array:
+            skr_log_warning('SQLite where does not support array as filter')
+            return ''
         else:
             return '{0} + "=" + {1}'.format(self.to_sql_key(), self.name)
 

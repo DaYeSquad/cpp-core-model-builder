@@ -1,21 +1,29 @@
 <?xml version="1.0"?>
+<!-- Version 1.0, C++ code generator of LessChatCore
+  - Designed by Frank Lin © 2015-2016
+ -->
 
 <!-- Rules:
 1. group name should be "user_group".
 2. class name should be "UserGroup".
 3. variable name should be all lower cases with underscore. There are some attributes you must set in variable:
   - name
-  - type : can be 'string', 'bool', 'int' or 'enum', if you specify the type is enum, you shuold add "enum" attribute to declare the enum class.
+  - type : can be 'string', 'bool', 'int', 'string_array',
+           or 'enum', iff you specify the type is enum, you shuold add "enum" attribute to declare the enum class.
   - json_path (eg: 'data/uid'), if the attribute does not have json mapping, you should set an empty string rather than leaving blank (eg: '').
   - [maybe] enum : only affects when type='enum'
   - [maybe] sql_flag can be 'primary_key'
 4. enum name should be 'Role' (the first letter is upper case), alias should be ALL_UPPER_CASE.
 5. manager name should be 'UserManager' (CRUD)
   - <save/> supports "singular"(SaveObjectToCache) and "plural"(SaveObjectsToCache)
+  - <fetch/> supports "singular"(FetchObjectFromCache) and "plural"(FetchObjectsFromCache) and "by" (FetchObjectFromCacheById)
   - <delete/> supports "singular"(DeleteObjectFromCache) and "plural"(DeleteObjectsFromCache) and "by" (DeleteObjectFromCacheById)
+  - <update/> is not supported in version 1.0
+  - WARNING: DO NOT use 'string_array' variable as "by" filter
 -->
 
 <module>
+  <!-- 用户相关 (example) -->
   <group name='user'>
     <class name='User'>
       <manager name='UserManager'>
@@ -63,4 +71,31 @@
       <variable name='email' type='string' json_path='email'/>
     </class>
  </group>
+ <!-- 任务相关 -->
+ <group name='task'>
+    <class name='Task'>
+      <manager name='TaskManager'>
+        <save singular='true'/>
+        <save plural='true'/>
+        <fetch singular='true' by='task_id'/>
+        <fetch plural='true'/>
+        <delete singular='true'/>
+        <delete plural='true'/>
+        <delete singular='true' by='task_id'/>
+        <delete singular='true' by='task_id,project_id'/>
+      </manager>
+      <variable name='task_id' type='string' json_path='task_id' sql_flag='primary_key'/>
+      <variable name='title' type='string' json_path='title'/>
+      <variable name='project_id' type='string' json_path='project/project_id'/>
+      <variable name='archived' type='bool' json_path='is_archived'/>
+      <variable name='completed' type='bool' json_path='is_completed'/>
+      <variable name='deleted' type='bool' json_path='is_deleted'/>
+      <variable name='permission' type='int' json_path='permission'/>
+      <variable name='position' type='int' json_path='position'/>
+      <variable name='created_at' type='int' json_path='created_at'/>
+      <variable name='phone_number' type='string' json_path='mobile'/>
+      <variable name='created_by' type='string' json_path='created_by'/>
+      <variable name='tags' type='string_array' json_path='tags'/>
+    </class>
+  </group>
 </module>
