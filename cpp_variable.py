@@ -11,9 +11,11 @@ class VarType(Enum):
     cpp_string = 3
     cpp_enum = 4
     cpp_string_array = 5
+    cpp_time = 6
 
     def __init__(self, value):
         self.enum_class_name = ''
+        self.json_search_path = ''
 
     def set_enum_class_name(self, enum_class_name):
         if enum_class_name is None:
@@ -24,6 +26,9 @@ class VarType(Enum):
         # check input
         if self.value == 4 and enum_class_name == '':
             skr_log_warning('Enum value should declare its enum class name via "enum"')
+
+    def set_json_search_path_for_string_array(self, search_path):
+        self.json_search_path = search_path
 
     def to_getter_string(self):
         if self.value == 1:
@@ -36,6 +41,8 @@ class VarType(Enum):
             return self.cpp_enum_type_string()
         elif self.value == 5:
             return 'std::vector<std::string>'
+        elif self.value == 6:
+            return 'time_t'
 
     def to_setter_string(self):
         if self.value == 1:
@@ -48,6 +55,8 @@ class VarType(Enum):
             return self.cpp_enum_type_string()
         elif self.value == 5:
             return 'const std::vector<std::string>&'
+        elif self.value == 6:
+            return 'time_t'
 
     @classmethod
     def type_from_string(cls, var_type_string):
@@ -61,6 +70,8 @@ class VarType(Enum):
             return 4
         elif var_type_string == 'string_array':
             return 5
+        elif var_type_string == 'time':
+            return 6
 
     def cpp_enum_type_string(self):
         if self.value != 4 and self.enum_class_name is None or self.enum_class_name == '':
@@ -74,6 +85,13 @@ class VarType(Enum):
         cpp_enum = cpp_enum[:-2]  # remove last 2 chars
         return cpp_enum
 
+    def cpp_json11_array_it_search_string(self):
+        paths = re.split('\.', self.json_search_path)
+        cpp_str = ''
+        for path in paths:
+            cpp_str += '["{0}"]'.format(path)
+        return cpp_str
+
     def to_json_value_type(self):
         if self.value == 1:
             return 'bool_value()'
@@ -84,7 +102,9 @@ class VarType(Enum):
         elif self.value == 4:
             return 'int_value()'
         elif self.value == 5:
-            return ''
+            return 'array_items()'
+        elif self.value == 6:
+            return 'int_value()'
 
     def to_sqlite_value_type(self):
         if self.value == 1:
@@ -97,6 +117,8 @@ class VarType(Enum):
             return 'sql::type_int'
         elif self.value == 5:
             return 'sql::type_text'
+        elif self.value == 6:
+            return 'sql::type_int'
 
     def to_set_sqlite_value_string(self):
         if self.value == 1:
@@ -109,6 +131,8 @@ class VarType(Enum):
             return 'setInteger'
         elif self.value == 5:
             return 'setString'
+        elif self.value == 6:
+            return 'setInteger'
 
     def to_get_sqlite_value_string(self):
         if self.value == 1:
@@ -121,6 +145,8 @@ class VarType(Enum):
             return 'asInteger'
         elif self.value == 5:
             return 'asString'
+        elif self.value == 6:
+            return 'asInteger'
 
 
 class CppVariable:
@@ -135,6 +161,11 @@ class CppVariable:
 
     def set_enum_class_name(self, enum_class_name):
         self.var_type.set_enum_class_name(enum_class_name)
+
+    def set_json_search_path(self, json_search_path):
+        if json_search_path is None:
+            json_search_path = ''
+        self.var_type.set_json_search_path_for_string_array(json_search_path)
 
     def getter(self):
         if self.var_type == VarType.cpp_bool:
@@ -198,9 +229,9 @@ class CppVariable:
                                                                       self.var_type.cpp_enum_type_string())
         elif self.var_type == VarType.cpp_string_array:  # array_items use another parse style
             parse = '{0}_.clear();\n'.format(self.name)
-            parse += '  vector<json11::Json> {0}_json = json_obj[{1}].array_items();\n'.format(self.name, cpp_json_paths)
+            parse += '  vector<json11::Json> {0}_json = json_obj{1}.array_items();\n'.format(self.name, cpp_json_paths)
             parse += '  for (auto it = {0}_json.begin(); it != {0}_json.end(); ++it) {{\n'.format(self.name)
-            parse += '    {0}_.push_back((*it).string_value());\n'.format(self.name)
+            parse += '    {0}_.push_back((*it){1}.string_value());\n'.format(self.name, self.var_type.cpp_json11_array_it_search_string())
             parse += '  }\n'
             return parse
         else:

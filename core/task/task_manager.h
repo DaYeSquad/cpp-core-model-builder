@@ -39,13 +39,9 @@ public:
 
   std::vector<std::unique_ptr<Task>> FetchTasksFromCache() const;
 
-  void DeleteTaskFromCache() const;
+  void DeleteTasksFromCacheByTaskId(const std::string& task_id) const;
 
-  void DeleteTasksFromCache() const;
-
-  void DeleteTaskFromCacheByTaskId(const std::string& task_id) const;
-
-  void DeleteTaskFromCache(const std::string& task_id, const std::string& project_id) const;
+  void DeleteTasksFromCacheByProjectId(const std::string& project_id) const;
 
 private:
   std::unique_ptr<sql::Table> tasks_tb_;

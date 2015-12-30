@@ -64,9 +64,11 @@ class CppModelXmlParser:
                     variable_json_path = variable.get('json_path')
                     variable_enum_or_none = variable.get('enum')
                     variable_sql_flag = variable.get('sql_flag')
+                    variable_json_search_path = variable.get('json_search_path')
 
                     cpp_var = CppVariable(variable_name, variable_type, variable_json_path, variable_sql_flag)
                     cpp_var.set_enum_class_name(variable_enum_or_none)
+                    cpp_var.set_json_search_path(variable_json_search_path)
                     cpp_var_list.append(cpp_var)
 
                 # parse <manager/>
