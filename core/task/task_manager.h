@@ -1,5 +1,5 @@
-#ifndef LESSCHATCORE_CORE_CORE/TASK_TASK_MANAGER_H_
-#define LESSCHATCORE_CORE_CORE/TASK_TASK_MANAGER_H_
+#ifndef LESSCHATCORE_CORE_TASK_TASK_MANAGER_H_
+#define LESSCHATCORE_CORE_TASK_TASK_MANAGER_H_
 
 #include <string>
 #include <memory>
@@ -12,7 +12,7 @@
 #include "director/object_manager.h"
 #include "api/web_api.h"
 
-#include "core/task/task.h"
+#include "task/task.h"
 
 NS_LCC_BEGIN
 
@@ -37,7 +37,9 @@ public:
 
   std::unique_ptr<Task> FetchTaskFromCacheByTaskId(const std::string& task_id) const;
 
-  std::vector<std::unique_ptr<Task>> FetchTasksFromCache() const;
+  std::vector<std::unique_ptr<Task>> FetchTasksFromCacheByProjectId(const std::string& project_id) const;
+
+  std::vector<std::unique_ptr<Task>> FetchTasksFromCacheByAssignedTo(const std::string& assigned_to) const;
 
   void DeleteTasksFromCacheByTaskId(const std::string& task_id) const;
 
@@ -60,5 +62,5 @@ private:
 
 NS_LCC_END
 
-#endif /* defined(LESSCHATCORE_CORE_CORE/TASK_TASK_MANAGER_H_) */
+#endif /* defined(LESSCHATCORE_CORE_TASK_TASK_MANAGER_H_) */
 

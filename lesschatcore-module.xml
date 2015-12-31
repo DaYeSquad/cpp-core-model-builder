@@ -71,18 +71,34 @@
       <variable name='department' type='string' json_path='department'/>
       <variable name='email' type='string' json_path='email'/>
     </class>
- </group>
+  </group>
  <!-- 任务相关 -->
  <group name='task'>
+    <!-- 任务 -->
     <class name='Task'>
       <manager name='TaskManager'>
         <save singular='true'/>
         <save plural='true'/>
         <fetch singular='true' by='task_id'/>
-        <fetch plural='true'/>
+        <fetch plural='true' by='project_id'/>
+        <fetch plural='true' by='assigned_to'/>
         <delete plural='true' by='task_id'/>
         <delete plural='true' by='project_id'/>
       </manager>
+      <enum name='Type'>
+        <value int_value='0' alias='NORMAL'/>
+        <value int_value='1' alias='TEMPLATE'/>
+      </enum>
+      <enum name='Priority'>
+        <value int_value='1' alias='LOW'/>
+        <value int_value='2' alias='NORMAL'/>
+        <value int_value='3' alias='HIGH'/>
+      </enum>
+      <enum name='Visibility'>
+        <value int_value='0' alias='PUBLIC'/>
+        <value int_value='1' alias='PRIVATE'/>
+        <value int_value='2' alias='PERSONAL'/>
+      </enum>
       <variable name='task_id' type='string' json_path='_id' sql_flag='primary_key'/>
       <variable name='title' type='string' json_path='title'/>
       <variable name='list_id' type='string' json_path='entry'/>
@@ -109,12 +125,47 @@
       <variable name='assigned_to' type='string' json_path='asignee/uid'/>
       <variable name='assigned_by' type='string' json_path='assigner/uid'/>
 
-      <variable name='due' type='string' json_path='due_date/date'/>
+      <variable name='due' type='time' json_path='due_date/date'/>
 
       <variable name='tags' type='string_array' json_path='tags' json_search_path='_id'/>
       <variable name='watchers' type='string_array' json_path='watchers' json_search_path='uid'/>
       <variable name='comments' type='string_array' json_path='comments' json_search_path='_id'/>
       <variable name='likes' type='string_array' json_path='likes' json_search_path='uid'/>
     </class>
-  </group>
+    <!-- 标签 -->
+    <class name='Tag'>
+      <manager name='TagManager'>
+        <save singular='true'/>
+        <save plural='true'/>
+        <fetch plural='true' by='type'/>
+      </manager>
+      <enum name='Type'>
+        <value int_value='1' alias='DRIVE'/>
+        <value int_value='2' alias='TASK'/>
+        <value int_value='3' alias='EVENT'/>
+        <value int_value='4' alias='REPORT'/>
+      </enum>
+      <variable name='tag_id' type='string' json_path='_id' sql_flag='primary_key'/>
+      <variable name='type' type='enum' enum='Tag.Type' json_path='type'/>
+      <variable name='color' type='string' json_path='color'/>
+      <variable name='name' type='string' json_path='name'/>
+    </class>
+    <!-- 项目 -->
+    <class name='Project'>
+      <manager name='ProjectManager'>
+        <save singular='true'/>
+        <save plural='true'/>
+        <fetch plural='true'/>
+      </manager>
+      <enum name='Visibility'>
+        <value int_value='0' alias='PUBLIC'/>
+        <value int_value='1' alias='PRIVATE'/>
+        <value int_value='2' alias='PERSONAL'/>
+      </enum>
+      <variable name='project_id' type='string' json_path='_id' sql_flag='primary_key'/>
+      <variable name='visibility' type='enum' enum='Project.Visibility' json_path='visibility'/>
+      <variable name='color' type='string' json_path='color'/>
+      <variable name='name' type='string' json_path='name'/>
+    </class>
+ </group>
 </module>

@@ -37,17 +37,17 @@ class CppClass:
         file_path = self.group_name + '/' + file_name
         output_header = open(file_path, 'w')
 
-        def_guard = '#ifndef LESSCHATCORE_CORE_{0}_{1}_H_\n#define LESSCHATCORE_CORE_{0}_{1}_H_'.format(
-                self.group_name.upper(), CppClass.__convert_class_name_to_file_name(self.class_name).upper())
-        end_def_guard = '#endif /* defined(LESSCHATCORE_CORE_{0}_{1}_H_) */'.format(
-                self.group_name.upper(), CppClass.__convert_class_name_to_file_name(self.class_name).upper())
+        def_guard = '#ifndef LESSCHATCORE_{0}_{1}_H_\n#define LESSCHATCORE_{0}_{1}_H_'.format(
+                self.group_name.upper().replace('/', '_'), CppClass.__convert_class_name_to_file_name(self.class_name).upper())
+        end_def_guard = '#endif /* defined(LESSCHATCORE_{0}_{1}_H_) */'.format(
+                self.group_name.upper().replace('/', '_'), CppClass.__convert_class_name_to_file_name(self.class_name).upper())
         cpp_include = '#include <string>\n#include <memory>\n#include <vector>\n\n#include "base/base.h"'
         cpp_class_begin = 'class LCC_DLL {0} : public CodingInterface {{'.format(self.class_name)
         cpp_class_end = '};'
         cpp_constructor = '{0}();'.format(self.class_name)
         cpp_deconstructor = 'virtual ~{0}();'.format(self.class_name)
         cpp_init_method = self.generate_init_method_declarasion()
-        cpp_clone = 'std::unqiue_ptr<{0}> Clone() const;'.format(self.class_name)
+        cpp_clone = 'std::unique_ptr<{0}> Clone() const;'.format(self.class_name)
         cpp_getter_setter_split = '// Getter/Setter --------------------------------------------------------'
         cpp_variable_split = '// Variable --------------------------------------------------------'
         cpp_disallow_copy_and_assign = 'DISALLOW_COPY_AND_ASSIGN({0});'.format(self.class_name)
@@ -95,7 +95,7 @@ class CppClass:
         output_cc = open(file_path, 'w')
 
         cpp_include = '#include "{0}.h"\n\n#include "json11/json11.hpp"'.format(self.__header_file_name())
-        cpp_using = 'using std::string;\nusing std::unique_ptr;'
+        cpp_using = 'using std::string;\nusing std::unique_ptr;\nusing std::vector;'
         cpp_public_mark = '////////////////////////////////////////////////////////////////////////////////\n// {0}, public:'.format(self.class_name)
 
         output_cc.write(cpp_include + _CPP_BR)
@@ -151,7 +151,7 @@ class CppClass:
         impl += '{0}string error;\n'.format(_CPP_SPACE)
         impl += '{0}json11::Json json_obj = json11::Json::parse(json, error);\n\n'.format(_CPP_SPACE)
         impl += '{0}if (!error.empty()) {{\n'.format(_CPP_SPACE)
-        impl += '{0}{0}log_error("{1} InitWithJson died");\n'.format(_CPP_SPACE, self.class_name)
+        impl += '{0}{0}sakura::log_error("{1} InitWithJson died");\n'.format(_CPP_SPACE, self.class_name)
         impl += '{0}{0}return false;\n'.format(_CPP_SPACE)
         impl += '{0}}}\n\n'.format(_CPP_SPACE)
 
@@ -189,17 +189,17 @@ class CppClass:
         file_path = self.group_name + '/' + file_name
         output_header = open(file_path, 'w')
 
-        def_guard = '#ifndef LESSCHATCORE_CORE_{0}_{1}_H_\n#define LESSCHATCORE_CORE_{0}_{1}_H_'.format(
-                self.group_name.upper(), CppClass.__convert_class_name_to_file_name(cpp_manager.class_name()).upper())
-        end_def_guard = '#endif /* defined(LESSCHATCORE_CORE_{0}_{1}_H_) */'.format(
-                self.group_name.upper(), CppClass.__convert_class_name_to_file_name(cpp_manager.class_name()).upper())
+        def_guard = '#ifndef LESSCHATCORE_{0}_{1}_H_\n#define LESSCHATCORE_{0}_{1}_H_'.format(
+                self.group_name.upper().replace('/', '_'), CppClass.__convert_class_name_to_file_name(cpp_manager.class_name()).upper())
+        end_def_guard = '#endif /* defined(LESSCHATCORE_{0}_{1}_H_) */'.format(
+                self.group_name.upper().replace('/', '_'), CppClass.__convert_class_name_to_file_name(cpp_manager.class_name()).upper())
         cpp_include = '#include <string>\n' \
                       '#include <memory>\n' \
                       '#include <vector>\n' \
                       '#include <functional>\n\n' \
                       '#include "easySQLite/easySQLite.h"\n\n' \
                       '#include "base/base.h"\n#include "director/object_manager.h"\n#include "api/web_api.h"\n\n'
-        cpp_include += '#include "{0}/{1}.h"'.format(self.group_name, CppClass.__convert_class_name_to_file_name(self.class_name))
+        cpp_include += '#include "{0}/{1}.h"'.format(self.group_name.replace('core/', ''), CppClass.__convert_class_name_to_file_name(self.class_name))
         cpp_class_begin = 'class LCC_DLL {0} : public ObjectManager {{'.format(cpp_manager.class_name())
         cpp_class_end = '};'
         cpp_constructor = 'explicit {0}(Director* director);'.format(cpp_manager.class_name())
@@ -252,7 +252,8 @@ class CppClass:
         file_path = self.group_name + '/' + file_name
         output_cc = open(file_path, 'w')
 
-        cpp_include = '#include "{0}"'.format(header_file_name)
+        cpp_include = '#include "{0}"\n'.format(header_file_name)
+        cpp_include += '#include "director/director.h"'
         cpp_using = 'using std::string;\nusing std::unique_ptr;\nusing std::vector;\n\nusing sakura::FileUtils;\n'
         cpp_public_mark = '////////////////////////////////////////////////////////////////////////////////\n// {0}, public:'\
             .format(cpp_manager.class_name())

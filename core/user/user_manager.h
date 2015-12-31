@@ -1,5 +1,5 @@
-#ifndef LESSCHATCORE_CORE_CORE/USER_USER_MANAGER_H_
-#define LESSCHATCORE_CORE_CORE/USER_USER_MANAGER_H_
+#ifndef LESSCHATCORE_CORE_USER_USER_MANAGER_H_
+#define LESSCHATCORE_CORE_USER_USER_MANAGER_H_
 
 #include <string>
 #include <memory>
@@ -12,7 +12,7 @@
 #include "director/object_manager.h"
 #include "api/web_api.h"
 
-#include "core/user/user.h"
+#include "user/user.h"
 
 NS_LCC_BEGIN
 
@@ -64,5 +64,5 @@ private:
 
 NS_LCC_END
 
-#endif /* defined(LESSCHATCORE_CORE_CORE/USER_USER_MANAGER_H_) */
+#endif /* defined(LESSCHATCORE_CORE_USER_USER_MANAGER_H_) */
 

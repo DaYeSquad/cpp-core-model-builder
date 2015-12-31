@@ -1,4 +1,5 @@
 #include "task_manager.h"
+#include "director/director.h"
 
 using std::string;
 using std::unique_ptr;
@@ -60,7 +61,7 @@ static sql::Field definition_tasks[] = {
   sql::Field(kNumLike, sql::type_int, sql::flag_not_null),
   sql::Field(kAssignedTo, sql::type_text, sql::flag_not_null),
   sql::Field(kAssignedBy, sql::type_text, sql::flag_not_null),
-  sql::Field(kDue, sql::type_text, sql::flag_not_null),
+  sql::Field(kDue, sql::type_int, sql::flag_not_null),
   sql::Field(kTags, sql::type_text, sql::flag_not_null),
   sql::Field(kWatchers, sql::type_text, sql::flag_not_null),
   sql::Field(kComments, sql::type_text, sql::flag_not_null),
@@ -114,13 +115,13 @@ void TaskManager::SaveTasksToCache(const std::vector<std::unique_ptr<Task>>& tas
   LockMainDatabase();
 
   for (auto it = tasks.begin(); it != tasks.end(); ++it) {
-    UnsafeSaveTaskToCache(task);
+    UnsafeSaveTaskToCache(**it);
   }
 
   UnlockMainDatabase();
 }
 
-std::unique_ptr<Task> FetchTaskFromCacheByTaskId(const std::string& task_id) const {
+std::unique_ptr<Task> TaskManager::FetchTaskFromCacheByTaskId(const std::string& task_id) const {
   string where_condition = kTaskId + "='" + task_id + "'";
 
   LockMainDatabase();
@@ -139,11 +140,31 @@ std::unique_ptr<Task> FetchTaskFromCacheByTaskId(const std::string& task_id) con
   return nullptr;
 }
 
-std::vector<std::unique_ptr<Task>> FetchTasksFromCache() const;
+std::vector<std::unique_ptr<Task>> TaskManager::FetchTasksFromCacheByProjectId(const std::string& project_id) const {
 
   vector<unique_ptr<Task>> tasks;
 
-  string where_condition = "";
+  string where_condition = kProjectId + "='" + project_id + "'";
+
+  LockMainDatabase();
+
+  tasks_tb_->open(where_condition);
+
+  for (int i = 0; i < tasks_tb_->recordCount(); ++i) {
+    sql::Record* record = tasks_tb_->getRecord(i);
+    tasks.push_back(TaskFromRecord(record));
+  }
+
+  UnlockMainDatabase();
+
+  return tasks;
+}
+
+std::vector<std::unique_ptr<Task>> TaskManager::FetchTasksFromCacheByAssignedTo(const std::string& assigned_to) const {
+
+  vector<unique_ptr<Task>> tasks;
+
+  string where_condition = kAssignedTo + "='" + assigned_to + "'";
 
   LockMainDatabase();
 
@@ -186,7 +207,7 @@ void TaskManager::DeleteTasksFromCacheByProjectId(const std::string& project_id)
 
 void TaskManager::UnsafeSaveTaskToCache(const Task& task) const {
   sql::Record record = RecordByTask(task);
-  return tasks_tb_->addOrReplaceRecord(&record);
+  tasks_tb_->addOrReplaceRecord(&record);
 }
 
 sql::Record TaskManager::RecordByTask(const Task& task) const {
@@ -201,9 +222,9 @@ sql::Record TaskManager::RecordByTask(const Task& task) const {
   record.setInteger(kLastUpdatedAt, task.last_updated_at());
   record.setInteger(kPosition, task.position());
   record.setString(kTaskNumber, task.task_number());
-  record.setBool(kArchived, task.archived());
-  record.setBool(kCompleted, task.completed());
-  record.setBool(kDeleted, task.deleted());
+  record.setBool(kArchived, task.is_archived());
+  record.setBool(kCompleted, task.is_completed());
+  record.setBool(kDeleted, task.is_deleted());
   record.setInteger(kPermission, task.permission());
   record.setInteger(kNumComments, task.num_comments());
   record.setInteger(kNumAttachments, task.num_attachments());
@@ -212,7 +233,7 @@ sql::Record TaskManager::RecordByTask(const Task& task) const {
   record.setInteger(kNumLike, task.num_like());
   record.setString(kAssignedTo, task.assigned_to());
   record.setString(kAssignedBy, task.assigned_by());
-  record.setString(kDue, task.due());
+  record.setInteger(kDue, task.due());
   record.setString(kTags, sakura::string_vector_join(task.tags(), ","));
   record.setString(kWatchers, sakura::string_vector_join(task.watchers(), ","));
   record.setString(kComments, sakura::string_vector_join(task.comments(), ","));
@@ -221,27 +242,27 @@ sql::Record TaskManager::RecordByTask(const Task& task) const {
   return record;}
 
 std::unique_ptr<Task> TaskManager::TaskFromRecord(sql::Record* record) const {
-  std::string task_id = static_cast<const std::string&>(record->getValue(kTaskId)->asString());
-  std::string title = static_cast<const std::string&>(record->getValue(kTitle)->asString());
-  std::string list_id = static_cast<const std::string&>(record->getValue(kListId)->asString());
-  std::string project_id = static_cast<const std::string&>(record->getValue(kProjectId)->asString());
+  std::string task_id = record->getValue(kTaskId)->asString();
+  std::string title = record->getValue(kTitle)->asString();
+  std::string list_id = record->getValue(kListId)->asString();
+  std::string project_id = record->getValue(kProjectId)->asString();
   time_t created_at = static_cast<time_t>(record->getValue(kCreatedAt)->asInteger());
-  std::string created_by = static_cast<const std::string&>(record->getValue(kCreatedBy)->asString());
+  std::string created_by = record->getValue(kCreatedBy)->asString();
   time_t last_updated_at = static_cast<time_t>(record->getValue(kLastUpdatedAt)->asInteger());
   int position = static_cast<int>(record->getValue(kPosition)->asInteger());
-  std::string task_number = static_cast<const std::string&>(record->getValue(kTaskNumber)->asString());
-  bool archived = static_cast<bool>(record->getValue(kArchived)->asBool());
-  bool completed = static_cast<bool>(record->getValue(kCompleted)->asBool());
-  bool deleted = static_cast<bool>(record->getValue(kDeleted)->asBool());
+  std::string task_number = record->getValue(kTaskNumber)->asString();
+  bool archived = record->getValue(kArchived)->asBool();
+  bool completed = record->getValue(kCompleted)->asBool();
+  bool deleted = record->getValue(kDeleted)->asBool();
   int permission = static_cast<int>(record->getValue(kPermission)->asInteger());
   int num_comments = static_cast<int>(record->getValue(kNumComments)->asInteger());
   int num_attachments = static_cast<int>(record->getValue(kNumAttachments)->asInteger());
   int num_child_tasks = static_cast<int>(record->getValue(kNumChildTasks)->asInteger());
   int num_completed_child_tasks = static_cast<int>(record->getValue(kNumCompletedChildTasks)->asInteger());
   int num_like = static_cast<int>(record->getValue(kNumLike)->asInteger());
-  std::string assigned_to = static_cast<const std::string&>(record->getValue(kAssignedTo)->asString());
-  std::string assigned_by = static_cast<const std::string&>(record->getValue(kAssignedBy)->asString());
-  std::string due = static_cast<const std::string&>(record->getValue(kDue)->asString());
+  std::string assigned_to = record->getValue(kAssignedTo)->asString();
+  std::string assigned_by = record->getValue(kAssignedBy)->asString();
+  time_t due = static_cast<time_t>(record->getValue(kDue)->asInteger());
   std::vector<std::string> tags = sakura::string_split(record->getValue(kTags)->asString(), ",");
   std::vector<std::string> watchers = sakura::string_split(record->getValue(kWatchers)->asString(), ",");
   std::vector<std::string> comments = sakura::string_split(record->getValue(kComments)->asString(), ",");

@@ -1,5 +1,5 @@
-#ifndef LESSCHATCORE_CORE_CORE/TASK_TASK_H_
-#define LESSCHATCORE_CORE_CORE/TASK_TASK_H_
+#ifndef LESSCHATCORE_CORE_TASK_TASK_H_
+#define LESSCHATCORE_CORE_TASK_TASK_H_
 
 #include <string>
 #include <memory>
@@ -12,15 +12,32 @@ NS_LCC_BEGIN
 class LCC_DLL Task : public CodingInterface {
 public:
 
+  enum class Type {
+    NORMAL = 0,
+    TEMPLATE = 1,
+  };
+
+  enum class Priority {
+    LOW = 1,
+    NORMAL = 2,
+    HIGH = 3,
+  };
+
+  enum class Visibility {
+    PUBLIC = 0,
+    PRIVATE = 1,
+    PERSONAL = 2,
+  };
+
   // Creation and lifetime --------------------------------------------------------
 
   Task();
 
   virtual ~Task();
 
-  void Init(const std::string& task_id, const std::string& title, const std::string& list_id, const std::string& project_id, time_t created_at, const std::string& created_by, time_t last_updated_at, int position, const std::string& task_number, bool archived, bool completed, bool deleted, int permission, int num_comments, int num_attachments, int num_child_tasks, int num_completed_child_tasks, int num_like, const std::string& assigned_to, const std::string& assigned_by, const std::string& due, const std::vector<std::string>& tags, const std::vector<std::string>& watchers, const std::vector<std::string>& comments, const std::vector<std::string>& likes);
+  void Init(const std::string& task_id, const std::string& title, const std::string& list_id, const std::string& project_id, time_t created_at, const std::string& created_by, time_t last_updated_at, int position, const std::string& task_number, bool archived, bool completed, bool deleted, int permission, int num_comments, int num_attachments, int num_child_tasks, int num_completed_child_tasks, int num_like, const std::string& assigned_to, const std::string& assigned_by, time_t due, const std::vector<std::string>& tags, const std::vector<std::string>& watchers, const std::vector<std::string>& comments, const std::vector<std::string>& likes);
 
-  std::unqiue_ptr<Task> Clone() const;
+  std::unique_ptr<Task> Clone() const;
 
   // Coding interface --------------------------------------------------------
 
@@ -88,8 +105,8 @@ public:
   std::string assigned_by() const { return assigned_by_; }
   void set_assigned_by(const std::string& assigned_by) { assigned_by_ = assigned_by; }
 
-  std::string due() const { return due_; }
-  void set_due(const std::string& due) { due_ = due; }
+  time_t due() const { return due_; }
+  void set_due(time_t due) { due_ = due; }
 
   std::vector<std::string> tags() const { return tags_; }
   void set_tags(const std::vector<std::string>& tags) { tags_ = tags; }
@@ -127,7 +144,7 @@ private:
   int num_like_;
   std::string assigned_to_;
   std::string assigned_by_;
-  std::string due_;
+  time_t due_;
   std::vector<std::string> tags_;
   std::vector<std::string> watchers_;
   std::vector<std::string> comments_;
@@ -139,5 +156,5 @@ private:
 
 NS_LCC_END
 
-#endif /* defined(LESSCHATCORE_CORE_CORE/TASK_TASK_H_) */
+#endif /* defined(LESSCHATCORE_CORE_TASK_TASK_H_) */
 

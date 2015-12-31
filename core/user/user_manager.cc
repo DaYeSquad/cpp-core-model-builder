@@ -1,4 +1,5 @@
 #include "user_manager.h"
+#include "director/director.h"
 
 using std::string;
 using std::unique_ptr;
@@ -90,13 +91,13 @@ void UserManager::SaveUsersToCache(const std::vector<std::unique_ptr<User>>& use
   LockMainDatabase();
 
   for (auto it = users.begin(); it != users.end(); ++it) {
-    UnsafeSaveUserToCache(user);
+    UnsafeSaveUserToCache(**it);
   }
 
   UnlockMainDatabase();
 }
 
-std::unique_ptr<User> FetchUserFromCacheByUid(const std::string& uid) const {
+std::unique_ptr<User> UserManager::FetchUserFromCacheByUid(const std::string& uid) const {
   string where_condition = kUid + "='" + uid + "'";
 
   LockMainDatabase();
@@ -115,7 +116,7 @@ std::unique_ptr<User> FetchUserFromCacheByUid(const std::string& uid) const {
   return nullptr;
 }
 
-std::vector<std::unique_ptr<User>> FetchUsersFromCache() const;
+std::vector<std::unique_ptr<User>> UserManager::FetchUsersFromCache() const {
 
   vector<unique_ptr<User>> users;
 
@@ -182,7 +183,7 @@ void UserManager::DeleteUserFromCache(const std::string& uid, const std::string&
 
 void UserManager::UnsafeSaveUserToCache(const User& user) const {
   sql::Record record = RecordByUser(user);
-  return users_tb_->addOrReplaceRecord(&record);
+  users_tb_->addOrReplaceRecord(&record);
 }
 
 sql::Record UserManager::RecordByUser(const User& user) const {
@@ -193,7 +194,7 @@ sql::Record UserManager::RecordByUser(const User& user) const {
   record.setString(kDisplayName, user.display_name());
   record.setString(kPinyin, user.pinyin());
   record.setString(kHeaderUri, user.header_uri());
-  record.setBool(kDeleted, user.deleted());
+  record.setBool(kDeleted, user.is_deleted());
   record.setInteger(kRole, static_cast<int>(user.role()));
   record.setInteger(kState, static_cast<int>(user.state()));
   record.setInteger(kStatus, static_cast<int>(user.status()));
@@ -205,19 +206,19 @@ sql::Record UserManager::RecordByUser(const User& user) const {
   return record;}
 
 std::unique_ptr<User> UserManager::UserFromRecord(sql::Record* record) const {
-  std::string uid = static_cast<const std::string&>(record->getValue(kUid)->asString());
-  std::string username = static_cast<const std::string&>(record->getValue(kUsername)->asString());
-  std::string display_name = static_cast<const std::string&>(record->getValue(kDisplayName)->asString());
-  std::string pinyin = static_cast<const std::string&>(record->getValue(kPinyin)->asString());
-  std::string header_uri = static_cast<const std::string&>(record->getValue(kHeaderUri)->asString());
-  bool deleted = static_cast<bool>(record->getValue(kDeleted)->asBool());
-  User::Status role = record->getValue(kRole)->asInteger();
-  User::Status state = record->getValue(kState)->asInteger();
-  User::Status status = record->getValue(kStatus)->asInteger();
-  std::string phone_number = static_cast<const std::string&>(record->getValue(kPhoneNumber)->asString());
-  std::string job_title = static_cast<const std::string&>(record->getValue(kJobTitle)->asString());
-  std::string department = static_cast<const std::string&>(record->getValue(kDepartment)->asString());
-  std::string email = static_cast<const std::string&>(record->getValue(kEmail)->asString());
+  std::string uid = record->getValue(kUid)->asString();
+  std::string username = record->getValue(kUsername)->asString();
+  std::string display_name = record->getValue(kDisplayName)->asString();
+  std::string pinyin = record->getValue(kPinyin)->asString();
+  std::string header_uri = record->getValue(kHeaderUri)->asString();
+  bool deleted = record->getValue(kDeleted)->asBool();
+  User::Status role = static_cast<User::Status>(record->getValue(kRole)->asInteger());
+  User::Status state = static_cast<User::Status>(record->getValue(kState)->asInteger());
+  User::Status status = static_cast<User::Status>(record->getValue(kStatus)->asInteger());
+  std::string phone_number = record->getValue(kPhoneNumber)->asString();
+  std::string job_title = record->getValue(kJobTitle)->asString();
+  std::string department = record->getValue(kDepartment)->asString();
+  std::string email = record->getValue(kEmail)->asString();
 
   unique_ptr<User> user(new User());
   user->Init(uid, username, display_name, pinyin, header_uri, deleted, role, state, status, phone_number, job_title, department, email);

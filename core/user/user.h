@@ -1,5 +1,5 @@
-#ifndef LESSCHATCORE_CORE_CORE/USER_USER_H_
-#define LESSCHATCORE_CORE_CORE/USER_USER_H_
+#ifndef LESSCHATCORE_CORE_USER_USER_H_
+#define LESSCHATCORE_CORE_USER_USER_H_
 
 #include <string>
 #include <memory>
@@ -43,7 +43,7 @@ public:
 
   void Init(const std::string& uid, const std::string& username, const std::string& display_name, const std::string& pinyin, const std::string& header_uri, bool deleted, User::Status role, User::Status state, User::Status status, const std::string& phone_number, const std::string& job_title, const std::string& department, const std::string& email);
 
-  std::unqiue_ptr<User> Clone() const;
+  std::unique_ptr<User> Clone() const;
 
   // Coding interface --------------------------------------------------------
 
@@ -114,5 +114,5 @@ private:
 
 NS_LCC_END
 
-#endif /* defined(LESSCHATCORE_CORE_CORE/USER_USER_H_) */
+#endif /* defined(LESSCHATCORE_CORE_USER_USER_H_) */
 

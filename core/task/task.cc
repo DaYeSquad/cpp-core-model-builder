@@ -4,6 +4,7 @@
 
 using std::string;
 using std::unique_ptr;
+using std::vector;
 
 NS_LCC_BEGIN
 
@@ -16,7 +17,7 @@ Task::Task() {}
 
 Task::~Task() {}
 
-void Task::Init(const std::string& task_id, const std::string& title, const std::string& list_id, const std::string& project_id, time_t created_at, const std::string& created_by, time_t last_updated_at, int position, const std::string& task_number, bool archived, bool completed, bool deleted, int permission, int num_comments, int num_attachments, int num_child_tasks, int num_completed_child_tasks, int num_like, const std::string& assigned_to, const std::string& assigned_by, const std::string& due, const std::vector<std::string>& tags, const std::vector<std::string>& watchers, const std::vector<std::string>& comments, const std::vector<std::string>& likes) {
+void Task::Init(const std::string& task_id, const std::string& title, const std::string& list_id, const std::string& project_id, time_t created_at, const std::string& created_by, time_t last_updated_at, int position, const std::string& task_number, bool archived, bool completed, bool deleted, int permission, int num_comments, int num_attachments, int num_child_tasks, int num_completed_child_tasks, int num_like, const std::string& assigned_to, const std::string& assigned_by, time_t due, const std::vector<std::string>& tags, const std::vector<std::string>& watchers, const std::vector<std::string>& comments, const std::vector<std::string>& likes) {
   task_id_ = task_id;
   title_ = title;
   list_id_ = list_id;
@@ -57,7 +58,7 @@ bool Task::InitWithJsonOrDie(const std::string& json) {
   json11::Json json_obj = json11::Json::parse(json, error);
 
   if (!error.empty()) {
-    log_error("Task InitWithJson died");
+    sakura::log_error("Task InitWithJson died");
     return false;
   }
 
@@ -81,7 +82,7 @@ bool Task::InitWithJsonOrDie(const std::string& json) {
   num_like_ = json_obj["like_count"].int_value();
   assigned_to_ = json_obj["asignee"]["uid"].string_value();
   assigned_by_ = json_obj["assigner"]["uid"].string_value();
-  due_ = json_obj["due_date"]["date"].string_value();
+  due_ = json_obj["due_date"]["date"].int_value();
   tags_.clear();
   vector<json11::Json> tags_json = json_obj["tags"].array_items();
   for (auto it = tags_json.begin(); it != tags_json.end(); ++it) {

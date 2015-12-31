@@ -234,7 +234,7 @@ class CppManager:
         impl += _CPP_SPACE
         impl += 'sql::Record record = RecordBy{0}({1});\n'.format(self.object_name, self.object_name.lower())
         impl += _CPP_SPACE
-        impl += 'return {0}->addOrReplaceRecord(&record);\n'.format(self.__sqlite_tb_name())
+        impl += '{0}->addOrReplaceRecord(&record);\n'.format(self.__sqlite_tb_name())
         impl += '}'
         return impl
 
@@ -307,7 +307,7 @@ class CppManager:
             impl += _CPP_SPACE
             impl += 'for (auto it = {0}.begin(); it != {0}.end(); ++it) {{\n'.format(self.plural_object_name.lower())
             impl += _CPP_SPACE + _CPP_SPACE
-            impl += 'UnsafeSave{0}ToCache({1});\n'.format(self.object_name, self.object_name.lower())
+            impl += 'UnsafeSave{0}ToCache(**it);\n'.format(self.object_name)
             impl += _CPP_SPACE
             impl += '}\n\n'
             impl += _CPP_SPACE
@@ -371,8 +371,8 @@ class CppManager:
             where_sql = self.__convert_bys_to_sql_where(by_list)
 
         if not fetch_command.is_plural:
-            impl = 'std::unique_ptr<{0}> Fetch{0}FromCache{1} const {{\n'\
-                    .format(self.object_name, self.__convert_bys_to_string(by_list))
+            impl = 'std::unique_ptr<{0}> {2}::Fetch{0}FromCache{1} const {{\n'\
+                    .format(self.object_name, self.__convert_bys_to_string(by_list), self.manager_name)
             impl += _CPP_SPACE
             impl += where_sql + _CPP_BR
             impl += _CPP_SPACE
@@ -398,8 +398,8 @@ class CppManager:
             impl += '}'
             return impl
         else:
-            impl = 'std::vector<std::unique_ptr<{0}>> Fetch{1}FromCache{2} const;\n\n'\
-                    .format(self.object_name, self.plural_object_name, self.__convert_bys_to_string(by_list))
+            impl = 'std::vector<std::unique_ptr<{0}>> {3}::Fetch{1}FromCache{2} const {{\n\n'\
+                    .format(self.object_name, self.plural_object_name, self.__convert_bys_to_string(by_list), self.manager_name)
             impl += _CPP_SPACE
             impl += 'vector<unique_ptr<{0}>> {1};\n\n'.format(self.object_name, self.plural_object_name.lower())
             impl += _CPP_SPACE

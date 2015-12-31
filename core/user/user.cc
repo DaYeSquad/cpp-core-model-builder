@@ -4,6 +4,7 @@
 
 using std::string;
 using std::unique_ptr;
+using std::vector;
 
 NS_LCC_BEGIN
 
@@ -45,7 +46,7 @@ bool User::InitWithJsonOrDie(const std::string& json) {
   json11::Json json_obj = json11::Json::parse(json, error);
 
   if (!error.empty()) {
-    log_error("User InitWithJson died");
+    sakura::log_error("User InitWithJson died");
     return false;
   }
 

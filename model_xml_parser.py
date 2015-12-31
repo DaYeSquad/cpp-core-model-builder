@@ -32,7 +32,7 @@ class CppModelXmlParser:
         # search directories
         for folder_node in root.findall('group'):
             group_name = folder_node.get('name')
-            group_name = '{0}/{1}'.format(core_dir_path, group_name)
+            group_name = 'core/' + group_name
             if os.path.exists(group_name):
                 shutil.rmtree(group_name)
                 os.makedirs(group_name)

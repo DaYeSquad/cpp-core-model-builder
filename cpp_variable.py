@@ -247,6 +247,10 @@ class CppVariable:
             set_sql_str = 'record.{0}({1}, sakura::string_vector_join({2}.{3}(), ","));\n'\
                 .format(self.var_type.to_set_sqlite_value_string(), self.to_sql_key(), object_name, self.name)
             return set_sql_str
+        elif self.var_type == VarType.cpp_bool:
+            set_sql_str = 'record.{0}({1}, {2}.is_{3}());\n'\
+                .format(self.var_type.to_set_sqlite_value_string(), self.to_sql_key(), object_name, self.name)
+            return set_sql_str
         else:
             set_sql_str = 'record.{0}({1}, {2}.{3}());\n'\
                 .format(self.var_type.to_set_sqlite_value_string(), self.to_sql_key(), object_name, self.name)
@@ -255,17 +259,21 @@ class CppVariable:
     # returns 'string uid = record->getValue(kUid)->asString();'
     def to_get_sql_value_string(self):
         if self.var_type == VarType.cpp_enum:
-            get_sql_str = '{0} {1} = record->getValue({2})->{3}();\n'\
-                .format(self.var_type.to_getter_string(), self.name, self.to_sql_key(), self.var_type.to_get_sqlite_value_string())
-            return get_sql_str
-        if self.var_type == VarType.cpp_string_array:
-            get_sql_str = '{0} {1} = sakura::string_split(record->getValue({2})->{3}(), ",");\n'\
-                .format(self.var_type.to_getter_string(), self.name, self.to_sql_key(), self.var_type.to_get_sqlite_value_string())
-            return get_sql_str
-        else:
             get_sql_str = '{0} {1} = static_cast<{4}>(record->getValue({2})->{3}());\n'\
                 .format(self.var_type.to_getter_string(), self.name, self.to_sql_key(),
                         self.var_type.to_get_sqlite_value_string(), self.var_type.to_setter_string())
+            return get_sql_str
+        elif self.var_type == VarType.cpp_string_array:
+            get_sql_str = '{0} {1} = sakura::string_split(record->getValue({2})->{3}(), ",");\n'\
+                .format(self.var_type.to_getter_string(), self.name, self.to_sql_key(), self.var_type.to_get_sqlite_value_string())
+            return get_sql_str
+        elif self.var_type == VarType.cpp_int or self.var_type == VarType.cpp_time:
+            get_sql_str = '{0} {1} = static_cast<{0}>(record->getValue({2})->{3}());\n'\
+                .format(self.var_type.to_getter_string(), self.name, self.to_sql_key(), self.var_type.to_get_sqlite_value_string())
+            return get_sql_str
+        else:
+            get_sql_str = '{0} {1} = record->getValue({2})->{3}();\n'\
+                .format(self.var_type.to_getter_string(), self.name, self.to_sql_key(), self.var_type.to_get_sqlite_value_string())
             return get_sql_str
 
     # returns 'uid = uid'
@@ -275,6 +283,8 @@ class CppVariable:
         elif self.var_type == VarType.cpp_string_array:
             skr_log_warning('SQLite where does not support array as filter')
             return ''
+        elif self.var_type == VarType.cpp_enum:
+            return '{0} + "=" + std::to_string(static_cast<int>({1}));'.format(self.to_sql_key(), self.name)
         else:
-            return '{0} + "=" + {1}'.format(self.to_sql_key(), self.name)
+            return '{0} + "=" + std::to_string({1})'.format(self.to_sql_key(), self.name)
 
