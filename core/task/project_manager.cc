@@ -16,14 +16,16 @@ static std::string const kProjectId = "project_id";
 static std::string const kVisibility = "visibility";
 static std::string const kColor = "color";
 static std::string const kName = "name";
+static std::string const kGroupId = "group_id";
 
-static std::string const kSqlAnd = "AND";
+static std::string const kSqlAnd = " AND ";
 
 static sql::Field definition_projects[] = {
   sql::Field(kProjectId, sql::type_text, sql::flag_primary_key),
   sql::Field(kVisibility, sql::type_int, sql::flag_not_null),
   sql::Field(kColor, sql::type_text, sql::flag_not_null),
   sql::Field(kName, sql::type_text, sql::flag_not_null),
+  sql::Field(kGroupId, sql::type_text, sql::flag_not_null),
   sql::Field(sql::DEFINITION_END),
 };
 
@@ -116,17 +118,20 @@ sql::Record ProjectManager::RecordByProject(const Project& project) const {
   record.setInteger(kVisibility, static_cast<int>(project.visibility()));
   record.setString(kColor, project.color());
   record.setString(kName, project.name());
+  record.setString(kGroupId, project.group_id());
 
-  return record;}
+  return record;
+}
 
 std::unique_ptr<Project> ProjectManager::ProjectFromRecord(sql::Record* record) const {
   std::string project_id = record->getValue(kProjectId)->asString();
   Project::Visibility visibility = static_cast<Project::Visibility>(record->getValue(kVisibility)->asInteger());
   std::string color = record->getValue(kColor)->asString();
   std::string name = record->getValue(kName)->asString();
+  std::string group_id = record->getValue(kGroupId)->asString();
 
   unique_ptr<Project> project(new Project());
-  project->Init(project_id, visibility, color, name);
+  project->Init(project_id, visibility, color, name, group_id);
   return project;
 }
 

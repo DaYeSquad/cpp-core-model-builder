@@ -38,7 +38,7 @@ static std::string const kWatchers = "watchers";
 static std::string const kComments = "comments";
 static std::string const kLikes = "likes";
 
-static std::string const kSqlAnd = "AND";
+static std::string const kSqlAnd = " AND ";
 
 static sql::Field definition_tasks[] = {
   sql::Field(kTaskId, sql::type_text, sql::flag_primary_key),
@@ -239,7 +239,8 @@ sql::Record TaskManager::RecordByTask(const Task& task) const {
   record.setString(kComments, sakura::string_vector_join(task.comments(), ","));
   record.setString(kLikes, sakura::string_vector_join(task.likes(), ","));
 
-  return record;}
+  return record;
+}
 
 std::unique_ptr<Task> TaskManager::TaskFromRecord(sql::Record* record) const {
   std::string task_id = record->getValue(kTaskId)->asString();

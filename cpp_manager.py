@@ -81,7 +81,7 @@ class CppManager:
 
         impl += '\n'
         impl += _CPP_SPACE
-        impl += 'return record;'
+        impl += 'return record;\n'
         impl += '}'
         return impl
 
@@ -113,7 +113,7 @@ class CppManager:
         for cpp_var in self.cpp_variable_list:
             declarations += 'static std::string const {0} = "{1}";\n'\
                 .format(cpp_var.to_sql_key(), cpp_var.name)
-        declarations += '\nstatic std::string const kSqlAnd = "AND";\n'
+        declarations += '\nstatic std::string const kSqlAnd = " AND ";\n'
         return declarations
 
     def easy_sqlite_field_declaration(self):

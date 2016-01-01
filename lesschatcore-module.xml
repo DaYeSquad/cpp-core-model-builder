@@ -24,8 +24,9 @@
 -->
 
 <module>
-  <!-- 用户相关 (example) -->
+  <!-- 用户相关 -->
   <group name='user'>
+    <!-- 用户-->
     <class name='User'>
       <manager name='UserManager'>
         <save singular='true'/>
@@ -70,6 +71,26 @@
       <variable name='job_title' type='string' json_path='title'/>
       <variable name='department' type='string' json_path='department'/>
       <variable name='email' type='string' json_path='email'/>
+    </class>
+    <!-- 用户关系 (用户与其它对象的关系)-->
+    <class name='Membership'>
+      <manager name='MembershipManager'>
+        <save singular='true'/>
+        <save plural='true'/>
+        <fetch plural='true' by='identifier,type'/>
+        <fetch singular='true' by='uid,identifier,type'/>
+        <delete singular='true' by='uid,identifier,type'/>
+        <delete plural='true'/>
+        <delete plural='true' by='identifier,type'/>
+      </manager>
+      <enum name='Type'>
+        <value int_value='0' alias='USER_GROUP'/>
+        <value int_value='1' alias='PROJECT'/>
+      </enum>
+      <variable name='membership_id' type='string' json_path='' sql_flag='primary_key'/>
+      <variable name='uid' type='string' json_path='uid'/>
+      <variable name='identifier' type='string' json_path=''/>
+      <variable name='type' type='enum' enum='Membership.Type' json_path=''/>
     </class>
   </group>
  <!-- 任务相关 -->
@@ -150,6 +171,21 @@
       <variable name='color' type='string' json_path='color'/>
       <variable name='name' type='string' json_path='name'/>
     </class>
+    <!-- 项目分组 -->
+    <class name='ProjectGroup'>
+      <manager name='ProjectGroupManager'>
+        <save singular='true'/>
+        <save plural='true'/>
+        <fetch plural='true'/>
+        <fetch singular='true' by='group_id'/>
+        <delete plural='true'/>
+      </manager>
+      <variable name='group_id' type='string' json_path='_id' sql_flag='primary_key'/>
+      <variable name='team_id' type='string' json_path='team'/>
+      <variable name='owner' type='string' json_path='owner'/>
+      <variable name='name' type='string' json_path='name'/>
+      <variable name='position' type='int' json_path='position'/>
+    </class>
     <!-- 项目 -->
     <class name='Project'>
       <manager name='ProjectManager'>
@@ -166,6 +202,26 @@
       <variable name='visibility' type='enum' enum='Project.Visibility' json_path='visibility'/>
       <variable name='color' type='string' json_path='color'/>
       <variable name='name' type='string' json_path='name'/>
+      <variable name='group_id' type='string' json_path='group'/>
+    </class>
+ </group>
+ <!-- 与使用者相关 -->
+ <group name='director'>
+    <class name='Permission'>
+      <manager name='PermissionManager'>
+        <save singular='true'/>
+        <save plural='true'/>
+        <fetch plural='true' by='identifier,type'/>
+        <delete plural='true'/>
+        <delete plural='true' by='identifier,type'/>
+      </manager>
+      <enum name='Type'>
+        <value int_value='0' alias='UNKNOWN'/>
+        <value int_value='1' alias='PROJECT'/>
+      </enum>
+      <variable name='type' type='enum' enum='Permission.Type' json_path=''/>
+      <variable name='identifier' type='string' json_path='' sql_flag='primary_key'/>
+      <variable name='value' type='int' json_path='permission'/>
     </class>
  </group>
 </module>

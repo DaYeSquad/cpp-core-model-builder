@@ -26,7 +26,7 @@ static std::string const kJobTitle = "job_title";
 static std::string const kDepartment = "department";
 static std::string const kEmail = "email";
 
-static std::string const kSqlAnd = "AND";
+static std::string const kSqlAnd = " AND ";
 
 static sql::Field definition_users[] = {
   sql::Field(kUid, sql::type_text, sql::flag_primary_key),
@@ -203,7 +203,8 @@ sql::Record UserManager::RecordByUser(const User& user) const {
   record.setString(kDepartment, user.department());
   record.setString(kEmail, user.email());
 
-  return record;}
+  return record;
+}
 
 std::unique_ptr<User> UserManager::UserFromRecord(sql::Record* record) const {
   std::string uid = record->getValue(kUid)->asString();

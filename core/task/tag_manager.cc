@@ -17,7 +17,7 @@ static std::string const kType = "type";
 static std::string const kColor = "color";
 static std::string const kName = "name";
 
-static std::string const kSqlAnd = "AND";
+static std::string const kSqlAnd = " AND ";
 
 static sql::Field definition_tags[] = {
   sql::Field(kTagId, sql::type_text, sql::flag_primary_key),
@@ -117,7 +117,8 @@ sql::Record TagManager::RecordByTag(const Tag& tag) const {
   record.setString(kColor, tag.color());
   record.setString(kName, tag.name());
 
-  return record;}
+  return record;
+}
 
 std::unique_ptr<Tag> TagManager::TagFromRecord(sql::Record* record) const {
   std::string tag_id = record->getValue(kTagId)->asString();

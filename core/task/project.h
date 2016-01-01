@@ -24,7 +24,7 @@ public:
 
   virtual ~Project();
 
-  void Init(const std::string& project_id, Project::Visibility visibility, const std::string& color, const std::string& name);
+  void Init(const std::string& project_id, Project::Visibility visibility, const std::string& color, const std::string& name, const std::string& group_id);
 
   std::unique_ptr<Project> Clone() const;
 
@@ -46,6 +46,9 @@ public:
   std::string name() const { return name_; }
   void set_name(const std::string& name) { name_ = name; }
 
+  std::string group_id() const { return group_id_; }
+  void set_group_id(const std::string& group_id) { group_id_ = group_id; }
+
 private:
 
   // Variable --------------------------------------------------------
@@ -54,6 +57,7 @@ private:
   Project::Visibility visibility_;
   std::string color_;
   std::string name_;
+  std::string group_id_;
 
 
   DISALLOW_COPY_AND_ASSIGN(Project);
