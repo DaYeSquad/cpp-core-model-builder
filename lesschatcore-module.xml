@@ -77,6 +77,7 @@
       <manager name='MembershipManager'>
         <save singular='true'/>
         <save plural='true'/>
+        <fetch plural='true' by='uid,type'/>
         <fetch plural='true' by='identifier,type'/>
         <fetch singular='true' by='uid,identifier,type'/>
         <delete singular='true' by='uid,identifier,type'/>
@@ -93,6 +94,45 @@
       <variable name='type' type='enum' enum='Membership.Type' json_path=''/>
     </class>
   </group>
+ <!-- App 级别相关 -->
+ <group name='application'>
+  <!-- 标签 -->
+  <class name='Tag'>
+    <manager name='TagManager'>
+      <save singular='true'/>
+      <save plural='true'/>
+      <fetch plural='true' by='type'/>
+      <fetch singular='true' by='tag_id'/>
+      <delete plural='true' by='type'/>
+      <delete plural='true'/>
+      <delete singular='true' by='tag_id'/>
+    </manager>
+    <variable name='tag_id' type='string' json_path='_id' sql_flag='primary_key'/>
+    <variable name='type' type='enum' enum='ApplicationType' json_path='type'/>
+    <variable name='color' type='string' json_path='color'/>
+    <variable name='name' type='string' json_path='name'/>
+  </class>
+  <!-- 赞 -->
+  <class name='Like'>
+    <manager name='LikeManager'>
+      <save singular='true'/>
+      <save plural='true'/>
+      <fetch plural='true' by='type'/>
+      <fetch singular='true' by='like_id'/>
+      <fetch plural='true' by='type,application_id'/>
+      <delete plural='true' by='type'/>
+      <delete plural='true'/>
+      <delete singular='true' by='like_id'/>
+      <delete plural='true' by='type,application_id'/>
+      <delete singular='true' by='type,application_id,created_by'/>
+    </manager>
+    <variable name='like_id' type='string' json_path='_id' sql_flag='primary_key'/>
+    <variable name='type' type='enum' enum='ApplicationType' json_path='type'/>
+    <variable name='application_id' type='string' json_path=''/>
+    <variable name='created_by' type='string' json_path='created_by'/>
+    <variable name='created_at' type='time' json_path='created_at'/>
+  </class>
+ </group>
  <!-- 任务相关 -->
  <group name='task'>
     <!-- 任务 -->
@@ -105,6 +145,7 @@
         <fetch plural='true' by='assigned_to'/>
         <delete plural='true' by='task_id'/>
         <delete plural='true' by='project_id'/>
+        <delete plural='true' by='assigned_to'/>
       </manager>
       <enum name='Type'>
         <value int_value='0' alias='NORMAL'/>
@@ -143,33 +184,16 @@
       <variable name='num_completed_child_tasks' type='int' json_path='completed_children_count'/>
       <variable name='num_like' type='int' json_path='like_count'/>
 
-      <variable name='assigned_to' type='string' json_path='asignee/uid'/>
-      <variable name='assigned_by' type='string' json_path='assigner/uid'/>
+      <variable name='assigned_to' type='string' json_path='assignment/asignee/uid'/>
+      <variable name='assigned_by' type='string' json_path='assignment/assigner/uid'/>
 
       <variable name='due' type='time' json_path='due_date/date'/>
+      <variable name='with_time' type='bool' json_path='due_date/with_time'/>
 
       <variable name='tags' type='string_array' json_path='tags' json_search_path='_id'/>
       <variable name='watchers' type='string_array' json_path='watchers' json_search_path='uid'/>
       <variable name='comments' type='string_array' json_path='comments' json_search_path='_id'/>
       <variable name='likes' type='string_array' json_path='likes' json_search_path='uid'/>
-    </class>
-    <!-- 标签 -->
-    <class name='Tag'>
-      <manager name='TagManager'>
-        <save singular='true'/>
-        <save plural='true'/>
-        <fetch plural='true' by='type'/>
-      </manager>
-      <enum name='Type'>
-        <value int_value='1' alias='DRIVE'/>
-        <value int_value='2' alias='TASK'/>
-        <value int_value='3' alias='EVENT'/>
-        <value int_value='4' alias='REPORT'/>
-      </enum>
-      <variable name='tag_id' type='string' json_path='_id' sql_flag='primary_key'/>
-      <variable name='type' type='enum' enum='Tag.Type' json_path='type'/>
-      <variable name='color' type='string' json_path='color'/>
-      <variable name='name' type='string' json_path='name'/>
     </class>
     <!-- 项目分组 -->
     <class name='ProjectGroup'>
@@ -179,12 +203,28 @@
         <fetch plural='true'/>
         <fetch singular='true' by='group_id'/>
         <delete plural='true'/>
+        <delete singular='true' by='group_id'/>
       </manager>
       <variable name='group_id' type='string' json_path='_id' sql_flag='primary_key'/>
       <variable name='team_id' type='string' json_path='team'/>
       <variable name='owner' type='string' json_path='owner'/>
       <variable name='name' type='string' json_path='name'/>
       <variable name='position' type='int' json_path='position'/>
+    </class>
+    <!-- 项目列表 -->
+    <class name='List'>
+      <manager name='ListManager'>
+        <save singular='true'/>
+        <save plural='true'/>
+        <fetch plural='true'/>
+        <fetch plural='true' by='project_id'/>
+        <delete plural='true'/>
+        <delete plural='true' by='project_id'/>
+      </manager>
+      <variable name='list_id' type='string' json_path='_id' sql_flag='primary_key'/>
+      <variable name='name' type='string' json_path='name'/>
+      <variable name='position' type='int' json_path='position'/>
+      <variable name='project_id' type='string' json_path=''/>
     </class>
     <!-- 项目 -->
     <class name='Project'>

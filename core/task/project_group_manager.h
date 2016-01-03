@@ -41,6 +41,8 @@ public:
 
   void DeleteProjectGroupsFromCache() const;
 
+  void DeleteProjectGroupFromCacheByGroupId(const std::string& group_id) const;
+
 private:
   std::unique_ptr<sql::Table> projectgroups_tb_;
 

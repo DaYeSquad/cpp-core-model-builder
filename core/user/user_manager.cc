@@ -77,8 +77,7 @@ const UserManager* UserManager::DefaultManager() {
   return Director::DefaultDirector()->user_manager();
 }
 
-// SQLite schema --------------------------------------------------------
-
+// Persisent store --------------------------------------------------------
 void UserManager::SaveUserToCache(const User& user) const {
   LockMainDatabase();
 

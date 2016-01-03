@@ -35,7 +35,7 @@ public:
 
   virtual ~Task();
 
-  void Init(const std::string& task_id, const std::string& title, const std::string& list_id, const std::string& project_id, time_t created_at, const std::string& created_by, time_t last_updated_at, int position, const std::string& task_number, bool archived, bool completed, bool deleted, int permission, int num_comments, int num_attachments, int num_child_tasks, int num_completed_child_tasks, int num_like, const std::string& assigned_to, const std::string& assigned_by, time_t due, const std::vector<std::string>& tags, const std::vector<std::string>& watchers, const std::vector<std::string>& comments, const std::vector<std::string>& likes);
+  void Init(const std::string& task_id, const std::string& title, const std::string& list_id, const std::string& project_id, time_t created_at, const std::string& created_by, time_t last_updated_at, int position, const std::string& task_number, bool archived, bool completed, bool deleted, int permission, int num_comments, int num_attachments, int num_child_tasks, int num_completed_child_tasks, int num_like, const std::string& assigned_to, const std::string& assigned_by, time_t due, bool with_time, const std::vector<std::string>& tags, const std::vector<std::string>& watchers, const std::vector<std::string>& comments, const std::vector<std::string>& likes);
 
   std::unique_ptr<Task> Clone() const;
 
@@ -108,6 +108,9 @@ public:
   time_t due() const { return due_; }
   void set_due(time_t due) { due_ = due; }
 
+  bool is_with_time() const { return with_time_; }
+  void set_with_time(bool with_time) { with_time_ = with_time; }
+
   std::vector<std::string> tags() const { return tags_; }
   void set_tags(const std::vector<std::string>& tags) { tags_ = tags; }
 
@@ -145,6 +148,7 @@ private:
   std::string assigned_to_;
   std::string assigned_by_;
   time_t due_;
+  bool with_time_;
   std::vector<std::string> tags_;
   std::vector<std::string> watchers_;
   std::vector<std::string> comments_;

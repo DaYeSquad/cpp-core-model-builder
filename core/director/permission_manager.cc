@@ -57,8 +57,7 @@ const PermissionManager* PermissionManager::DefaultManager() {
   return Director::DefaultDirector()->permission_manager();
 }
 
-// SQLite schema --------------------------------------------------------
-
+// Persisent store --------------------------------------------------------
 void PermissionManager::SavePermissionToCache(const Permission& permission) const {
   LockMainDatabase();
 

@@ -277,7 +277,7 @@ class CppClass:
         output_cc.write(cpp_manager.generate_init_or_die_implementation() + _CPP_BR)
         output_cc.write(cpp_manager.generate_default_manager_implementation() + _CPP_BR)
 
-        output_cc.write(cpp_sqlite_schema_split + '\n')
+        output_cc.write(_CPP_PERSISTENT_STORE_SPLIT + _CPP_BR)
         output_cc.write(cpp_manager.generate_save_implementations())
         output_cc.write(cpp_manager.generate_fetch_implementations())
         output_cc.write(cpp_manager.generate_delete_implementations())

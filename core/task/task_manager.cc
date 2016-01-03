@@ -33,6 +33,7 @@ static std::string const kNumLike = "num_like";
 static std::string const kAssignedTo = "assigned_to";
 static std::string const kAssignedBy = "assigned_by";
 static std::string const kDue = "due";
+static std::string const kWithTime = "with_time";
 static std::string const kTags = "tags";
 static std::string const kWatchers = "watchers";
 static std::string const kComments = "comments";
@@ -62,6 +63,7 @@ static sql::Field definition_tasks[] = {
   sql::Field(kAssignedTo, sql::type_text, sql::flag_not_null),
   sql::Field(kAssignedBy, sql::type_text, sql::flag_not_null),
   sql::Field(kDue, sql::type_int, sql::flag_not_null),
+  sql::Field(kWithTime, sql::type_bool, sql::flag_not_null),
   sql::Field(kTags, sql::type_text, sql::flag_not_null),
   sql::Field(kWatchers, sql::type_text, sql::flag_not_null),
   sql::Field(kComments, sql::type_text, sql::flag_not_null),
@@ -101,8 +103,7 @@ const TaskManager* TaskManager::DefaultManager() {
   return Director::DefaultDirector()->task_manager();
 }
 
-// SQLite schema --------------------------------------------------------
-
+// Persisent store --------------------------------------------------------
 void TaskManager::SaveTaskToCache(const Task& task) const {
   LockMainDatabase();
 
@@ -200,6 +201,16 @@ void TaskManager::DeleteTasksFromCacheByProjectId(const std::string& project_id)
   UnlockMainDatabase();
 }
 
+void TaskManager::DeleteTasksFromCacheByAssignedTo(const std::string& assigned_to) const {
+  string where_condition = kAssignedTo + "='" + assigned_to + "'";
+
+  LockMainDatabase();
+
+  tasks_tb_->deleteRecords(where_condition);
+
+  UnlockMainDatabase();
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // TaskManager, private:
 
@@ -234,6 +245,7 @@ sql::Record TaskManager::RecordByTask(const Task& task) const {
   record.setString(kAssignedTo, task.assigned_to());
   record.setString(kAssignedBy, task.assigned_by());
   record.setInteger(kDue, task.due());
+  record.setBool(kWithTime, task.is_with_time());
   record.setString(kTags, sakura::string_vector_join(task.tags(), ","));
   record.setString(kWatchers, sakura::string_vector_join(task.watchers(), ","));
   record.setString(kComments, sakura::string_vector_join(task.comments(), ","));
@@ -264,13 +276,14 @@ std::unique_ptr<Task> TaskManager::TaskFromRecord(sql::Record* record) const {
   std::string assigned_to = record->getValue(kAssignedTo)->asString();
   std::string assigned_by = record->getValue(kAssignedBy)->asString();
   time_t due = static_cast<time_t>(record->getValue(kDue)->asInteger());
+  bool with_time = record->getValue(kWithTime)->asBool();
   std::vector<std::string> tags = sakura::string_split(record->getValue(kTags)->asString(), ",");
   std::vector<std::string> watchers = sakura::string_split(record->getValue(kWatchers)->asString(), ",");
   std::vector<std::string> comments = sakura::string_split(record->getValue(kComments)->asString(), ",");
   std::vector<std::string> likes = sakura::string_split(record->getValue(kLikes)->asString(), ",");
 
   unique_ptr<Task> task(new Task());
-  task->Init(task_id, title, list_id, project_id, created_at, created_by, last_updated_at, position, task_number, archived, completed, deleted, permission, num_comments, num_attachments, num_child_tasks, num_completed_child_tasks, num_like, assigned_to, assigned_by, due, tags, watchers, comments, likes);
+  task->Init(task_id, title, list_id, project_id, created_at, created_by, last_updated_at, position, task_number, archived, completed, deleted, permission, num_comments, num_attachments, num_child_tasks, num_completed_child_tasks, num_like, assigned_to, assigned_by, due, with_time, tags, watchers, comments, likes);
   return task;
 }
 

@@ -35,6 +35,8 @@ public:
 
   void SaveMembershipsToCache(const std::vector<std::unique_ptr<Membership>>& memberships) const;
 
+  std::vector<std::unique_ptr<Membership>> FetchMembershipsFromCache(const std::string& uid, Membership::Type type) const;
+
   std::vector<std::unique_ptr<Membership>> FetchMembershipsFromCache(const std::string& identifier, Membership::Type type) const;
 
   std::unique_ptr<Membership> FetchMembershipFromCache(const std::string& uid, const std::string& identifier, Membership::Type type) const;

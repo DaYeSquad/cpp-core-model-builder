@@ -1,5 +1,5 @@
-#ifndef LESSCHATCORE_CORE_TASK_TAG_MANAGER_H_
-#define LESSCHATCORE_CORE_TASK_TAG_MANAGER_H_
+#ifndef LESSCHATCORE_CORE_APPLICATION_TAG_MANAGER_H_
+#define LESSCHATCORE_CORE_APPLICATION_TAG_MANAGER_H_
 
 #include <string>
 #include <memory>
@@ -12,7 +12,7 @@
 #include "director/object_manager.h"
 #include "api/web_api.h"
 
-#include "task/tag.h"
+#include "application/tag.h"
 
 NS_LCC_BEGIN
 
@@ -35,11 +35,11 @@ public:
 
   void SaveTagsToCache(const std::vector<std::unique_ptr<Tag>>& tags) const;
 
-  std::vector<std::unique_ptr<Tag>> FetchTagsFromCacheByType(Tag::Type type) const;
+  std::vector<std::unique_ptr<Tag>> FetchTagsFromCacheByType(ApplicationType type) const;
 
   std::unique_ptr<Tag> FetchTagFromCacheByTagId(const std::string& tag_id) const;
 
-  void DeleteTagsFromCacheByType(Tag::Type type) const;
+  void DeleteTagsFromCacheByType(ApplicationType type) const;
 
   void DeleteTagsFromCache() const;
 
@@ -62,5 +62,5 @@ private:
 
 NS_LCC_END
 
-#endif /* defined(LESSCHATCORE_CORE_TASK_TAG_MANAGER_H_) */
+#endif /* defined(LESSCHATCORE_CORE_APPLICATION_TAG_MANAGER_H_) */
 

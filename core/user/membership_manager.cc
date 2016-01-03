@@ -59,8 +59,7 @@ const MembershipManager* MembershipManager::DefaultManager() {
   return Director::DefaultDirector()->membership_manager();
 }
 
-// SQLite schema --------------------------------------------------------
-
+// Persisent store --------------------------------------------------------
 void MembershipManager::SaveMembershipToCache(const Membership& membership) const {
   LockMainDatabase();
 
@@ -77,6 +76,26 @@ void MembershipManager::SaveMembershipsToCache(const std::vector<std::unique_ptr
   }
 
   UnlockMainDatabase();
+}
+
+std::vector<std::unique_ptr<Membership>> MembershipManager::FetchMembershipsFromCache(const std::string& uid, Membership::Type type) const {
+
+  vector<unique_ptr<Membership>> memberships;
+
+  string where_condition = kUid + "='" + uid + "'" + kSqlAnd + kType + "=" + std::to_string(static_cast<int>(type));;
+
+  LockMainDatabase();
+
+  memberships_tb_->open(where_condition);
+
+  for (int i = 0; i < memberships_tb_->recordCount(); ++i) {
+    sql::Record* record = memberships_tb_->getRecord(i);
+    memberships.push_back(MembershipFromRecord(record));
+  }
+
+  UnlockMainDatabase();
+
+  return memberships;
 }
 
 std::vector<std::unique_ptr<Membership>> MembershipManager::FetchMembershipsFromCache(const std::string& identifier, Membership::Type type) const {

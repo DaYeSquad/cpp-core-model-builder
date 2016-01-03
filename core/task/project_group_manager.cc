@@ -61,8 +61,7 @@ const ProjectGroupManager* ProjectGroupManager::DefaultManager() {
   return Director::DefaultDirector()->project_group_manager();
 }
 
-// SQLite schema --------------------------------------------------------
-
+// Persisent store --------------------------------------------------------
 void ProjectGroupManager::SaveProjectGroupToCache(const ProjectGroup& projectgroup) const {
   LockMainDatabase();
 
@@ -122,6 +121,16 @@ std::unique_ptr<ProjectGroup> ProjectGroupManager::FetchProjectGroupFromCacheByG
 
 void ProjectGroupManager::DeleteProjectGroupsFromCache() const {
   string where_condition = "";
+
+  LockMainDatabase();
+
+  projectgroups_tb_->deleteRecords(where_condition);
+
+  UnlockMainDatabase();
+}
+
+void ProjectGroupManager::DeleteProjectGroupFromCacheByGroupId(const std::string& group_id) const {
+  string where_condition = kGroupId + "='" + group_id + "'";
 
   LockMainDatabase();
 

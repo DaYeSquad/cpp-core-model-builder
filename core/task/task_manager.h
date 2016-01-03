@@ -45,6 +45,8 @@ public:
 
   void DeleteTasksFromCacheByProjectId(const std::string& project_id) const;
 
+  void DeleteTasksFromCacheByAssignedTo(const std::string& assigned_to) const;
+
 private:
   std::unique_ptr<sql::Table> tasks_tb_;
 

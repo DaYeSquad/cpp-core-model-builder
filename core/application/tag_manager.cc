@@ -78,7 +78,7 @@ void TagManager::SaveTagsToCache(const std::vector<std::unique_ptr<Tag>>& tags) 
   UnlockMainDatabase();
 }
 
-std::vector<std::unique_ptr<Tag>> TagManager::FetchTagsFromCacheByType(Tag::Type type) const {
+std::vector<std::unique_ptr<Tag>> TagManager::FetchTagsFromCacheByType(ApplicationType type) const {
 
   vector<unique_ptr<Tag>> tags;
 
@@ -117,7 +117,7 @@ std::unique_ptr<Tag> TagManager::FetchTagFromCacheByTagId(const std::string& tag
   return nullptr;
 }
 
-void TagManager::DeleteTagsFromCacheByType(Tag::Type type) const {
+void TagManager::DeleteTagsFromCacheByType(ApplicationType type) const {
   string where_condition = kType + "=" + std::to_string(static_cast<int>(type));;
 
   LockMainDatabase();
@@ -170,7 +170,7 @@ sql::Record TagManager::RecordByTag(const Tag& tag) const {
 
 std::unique_ptr<Tag> TagManager::TagFromRecord(sql::Record* record) const {
   std::string tag_id = record->getValue(kTagId)->asString();
-  Tag::Type type = static_cast<Tag::Type>(record->getValue(kType)->asInteger());
+  ApplicationType type = static_cast<ApplicationType>(record->getValue(kType)->asInteger());
   std::string color = record->getValue(kColor)->asString();
   std::string name = record->getValue(kName)->asString();
 

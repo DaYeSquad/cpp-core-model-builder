@@ -17,7 +17,7 @@ Task::Task() {}
 
 Task::~Task() {}
 
-void Task::Init(const std::string& task_id, const std::string& title, const std::string& list_id, const std::string& project_id, time_t created_at, const std::string& created_by, time_t last_updated_at, int position, const std::string& task_number, bool archived, bool completed, bool deleted, int permission, int num_comments, int num_attachments, int num_child_tasks, int num_completed_child_tasks, int num_like, const std::string& assigned_to, const std::string& assigned_by, time_t due, const std::vector<std::string>& tags, const std::vector<std::string>& watchers, const std::vector<std::string>& comments, const std::vector<std::string>& likes) {
+void Task::Init(const std::string& task_id, const std::string& title, const std::string& list_id, const std::string& project_id, time_t created_at, const std::string& created_by, time_t last_updated_at, int position, const std::string& task_number, bool archived, bool completed, bool deleted, int permission, int num_comments, int num_attachments, int num_child_tasks, int num_completed_child_tasks, int num_like, const std::string& assigned_to, const std::string& assigned_by, time_t due, bool with_time, const std::vector<std::string>& tags, const std::vector<std::string>& watchers, const std::vector<std::string>& comments, const std::vector<std::string>& likes) {
   task_id_ = task_id;
   title_ = title;
   list_id_ = list_id;
@@ -39,6 +39,7 @@ void Task::Init(const std::string& task_id, const std::string& title, const std:
   assigned_to_ = assigned_to;
   assigned_by_ = assigned_by;
   due_ = due;
+  with_time_ = with_time;
   tags_ = tags;
   watchers_ = watchers;
   comments_ = comments;
@@ -47,7 +48,7 @@ void Task::Init(const std::string& task_id, const std::string& title, const std:
 
 std::unique_ptr<Task> Task::Clone() const {
   std::unique_ptr<Task> task(new Task());
-  task->Init(task_id_, title_, list_id_, project_id_, created_at_, created_by_, last_updated_at_, position_, task_number_, archived_, completed_, deleted_, permission_, num_comments_, num_attachments_, num_child_tasks_, num_completed_child_tasks_, num_like_, assigned_to_, assigned_by_, due_, tags_, watchers_, comments_, likes_);
+  task->Init(task_id_, title_, list_id_, project_id_, created_at_, created_by_, last_updated_at_, position_, task_number_, archived_, completed_, deleted_, permission_, num_comments_, num_attachments_, num_child_tasks_, num_completed_child_tasks_, num_like_, assigned_to_, assigned_by_, due_, with_time_, tags_, watchers_, comments_, likes_);
   return task;
 }
 
@@ -80,9 +81,10 @@ bool Task::InitWithJsonOrDie(const std::string& json) {
   num_child_tasks_ = json_obj["children_count"].int_value();
   num_completed_child_tasks_ = json_obj["completed_children_count"].int_value();
   num_like_ = json_obj["like_count"].int_value();
-  assigned_to_ = json_obj["asignee"]["uid"].string_value();
-  assigned_by_ = json_obj["assigner"]["uid"].string_value();
+  assigned_to_ = json_obj["assignment"]["asignee"]["uid"].string_value();
+  assigned_by_ = json_obj["assignment"]["assigner"]["uid"].string_value();
   due_ = json_obj["due_date"]["date"].int_value();
+  with_time_ = json_obj["due_date"]["with_time"].bool_value();
   tags_.clear();
   vector<json11::Json> tags_json = json_obj["tags"].array_items();
   for (auto it = tags_json.begin(); it != tags_json.end(); ++it) {

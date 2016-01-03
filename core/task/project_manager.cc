@@ -61,8 +61,7 @@ const ProjectManager* ProjectManager::DefaultManager() {
   return Director::DefaultDirector()->project_manager();
 }
 
-// SQLite schema --------------------------------------------------------
-
+// Persisent store --------------------------------------------------------
 void ProjectManager::SaveProjectToCache(const Project& project) const {
   LockMainDatabase();
 

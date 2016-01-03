@@ -284,7 +284,7 @@ class CppVariable:
             skr_log_warning('SQLite where does not support array as filter')
             return ''
         elif self.var_type == VarType.cpp_enum:
-            return '{0} + "=" + std::to_string(static_cast<int>({1}));'.format(self.to_sql_key(), self.name)
+            return '{0} + "=" + std::to_string(static_cast<int>({1}))'.format(self.to_sql_key(), self.name)
         else:
             return '{0} + "=" + std::to_string({1})'.format(self.to_sql_key(), self.name)
 
