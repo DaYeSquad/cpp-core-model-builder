@@ -61,41 +61,6 @@ const LikeManager* LikeManager::DefaultManager() {
   return Director::DefaultDirector()->like_manager();
 }
 
-// HTTP --------------------------------------------------------
-
-void LikeManager::LikeApplication(ApplicationType type,
-                                  const std::string& application_id,
-                                  std::function<void(bool success,
-                                                     const std::string& error,
-                                                     std::unique_ptr<Like> like)> callback) const
-{
-  WebApi::Api()
-  ->PostLikeAtApplication(type,
-                          application_id,
-                          [this, callback](bool success, const std::string &error, std::unique_ptr<Like> like) {
-                            if (success) {
-                              this->SaveLikeToCache(*like);
-                            }
-                            callback(success, error, std::move(like));
-  });
-}
-
-void LikeManager::RemoveLikeFromApplication(ApplicationType type,
-                                            const std::string& application_id,
-                                            std::function<void(bool success,
-                                                               const std::string& error)> callback) const
-{
-  WebApi::Api()
-  ->DeleteLikeFromApplication(type,
-                              application_id,
-                              [this, callback](bool success, const std::string &error) {
-    if (success) {
-      this->deletelike
-    }
-    callback(success, error);
-  });
-}
-
 // Persisent store --------------------------------------------------------
 
 void LikeManager::SaveLikeToCache(const Like& like) const {
@@ -120,7 +85,7 @@ std::vector<std::unique_ptr<Like>> LikeManager::FetchLikesFromCacheByType(Applic
 
   vector<unique_ptr<Like>> likes;
 
-  string where_condition = kType + "=" + std::to_string(static_cast<int>(type));;
+  string where_condition = kType + "=" + std::to_string(static_cast<int>(type));
 
   LockMainDatabase();
 
@@ -159,7 +124,7 @@ std::vector<std::unique_ptr<Like>> LikeManager::FetchLikesFromCache(ApplicationT
 
   vector<unique_ptr<Like>> likes;
 
-  string where_condition = kType + "=" + std::to_string(static_cast<int>(type)); + kSqlAnd + kApplicationId + "='" + application_id + "'";
+  string where_condition = kType + "=" + std::to_string(static_cast<int>(type)) + kSqlAnd + kApplicationId + "='" + application_id + "'";
 
   LockMainDatabase();
 
@@ -176,7 +141,7 @@ std::vector<std::unique_ptr<Like>> LikeManager::FetchLikesFromCache(ApplicationT
 }
 
 void LikeManager::DeleteLikesFromCacheByType(ApplicationType type) const {
-  string where_condition = kType + "=" + std::to_string(static_cast<int>(type));;
+  string where_condition = kType + "=" + std::to_string(static_cast<int>(type));
 
   LockMainDatabase();
 
@@ -206,7 +171,7 @@ void LikeManager::DeleteLikeFromCacheByLikeId(const std::string& like_id) const 
 }
 
 void LikeManager::DeleteLikesFromCache(ApplicationType type, const std::string& application_id) const {
-  string where_condition = kType + "=" + std::to_string(static_cast<int>(type)); + kSqlAnd + kApplicationId + "='" + application_id + "'";
+  string where_condition = kType + "=" + std::to_string(static_cast<int>(type)) + kSqlAnd + kApplicationId + "='" + application_id + "'";
 
   LockMainDatabase();
 
@@ -216,7 +181,7 @@ void LikeManager::DeleteLikesFromCache(ApplicationType type, const std::string& 
 }
 
 void LikeManager::DeleteLikeFromCache(ApplicationType type, const std::string& application_id, const std::string& created_by) const {
-  string where_condition = kType + "=" + std::to_string(static_cast<int>(type)); + kSqlAnd + kApplicationId + "='" + application_id + "'" + kSqlAnd + kCreatedBy + "='" + created_by + "'";
+  string where_condition = kType + "=" + std::to_string(static_cast<int>(type)) + kSqlAnd + kApplicationId + "='" + application_id + "'" + kSqlAnd + kCreatedBy + "='" + created_by + "'";
 
   LockMainDatabase();
 

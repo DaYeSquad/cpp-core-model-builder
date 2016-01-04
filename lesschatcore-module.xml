@@ -232,6 +232,8 @@
         <save singular='true'/>
         <save plural='true'/>
         <fetch plural='true'/>
+        <fetch singular='true' by='project_id'/>
+        <delete plural='true'/>
       </manager>
       <enum name='Visibility'>
         <value int_value='0' alias='PUBLIC'/>

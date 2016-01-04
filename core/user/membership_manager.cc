@@ -60,6 +60,7 @@ const MembershipManager* MembershipManager::DefaultManager() {
 }
 
 // Persisent store --------------------------------------------------------
+
 void MembershipManager::SaveMembershipToCache(const Membership& membership) const {
   LockMainDatabase();
 
@@ -82,7 +83,7 @@ std::vector<std::unique_ptr<Membership>> MembershipManager::FetchMembershipsFrom
 
   vector<unique_ptr<Membership>> memberships;
 
-  string where_condition = kUid + "='" + uid + "'" + kSqlAnd + kType + "=" + std::to_string(static_cast<int>(type));;
+  string where_condition = kUid + "='" + uid + "'" + kSqlAnd + kType + "=" + std::to_string(static_cast<int>(type));
 
   LockMainDatabase();
 
@@ -102,7 +103,7 @@ std::vector<std::unique_ptr<Membership>> MembershipManager::FetchMembershipsFrom
 
   vector<unique_ptr<Membership>> memberships;
 
-  string where_condition = kIdentifier + "='" + identifier + "'" + kSqlAnd + kType + "=" + std::to_string(static_cast<int>(type));;
+  string where_condition = kIdentifier + "='" + identifier + "'" + kSqlAnd + kType + "=" + std::to_string(static_cast<int>(type));
 
   LockMainDatabase();
 
@@ -119,7 +120,7 @@ std::vector<std::unique_ptr<Membership>> MembershipManager::FetchMembershipsFrom
 }
 
 std::unique_ptr<Membership> MembershipManager::FetchMembershipFromCache(const std::string& uid, const std::string& identifier, Membership::Type type) const {
-  string where_condition = kUid + "='" + uid + "'" + kSqlAnd + kIdentifier + "='" + identifier + "'" + kSqlAnd + kType + "=" + std::to_string(static_cast<int>(type));;
+  string where_condition = kUid + "='" + uid + "'" + kSqlAnd + kIdentifier + "='" + identifier + "'" + kSqlAnd + kType + "=" + std::to_string(static_cast<int>(type));
 
   LockMainDatabase();
 
@@ -138,7 +139,7 @@ std::unique_ptr<Membership> MembershipManager::FetchMembershipFromCache(const st
 }
 
 void MembershipManager::DeleteMembershipFromCache(const std::string& uid, const std::string& identifier, Membership::Type type) const {
-  string where_condition = kUid + "='" + uid + "'" + kSqlAnd + kIdentifier + "='" + identifier + "'" + kSqlAnd + kType + "=" + std::to_string(static_cast<int>(type));;
+  string where_condition = kUid + "='" + uid + "'" + kSqlAnd + kIdentifier + "='" + identifier + "'" + kSqlAnd + kType + "=" + std::to_string(static_cast<int>(type));
 
   LockMainDatabase();
 
@@ -158,7 +159,7 @@ void MembershipManager::DeleteMembershipsFromCache() const {
 }
 
 void MembershipManager::DeleteMembershipsFromCache(const std::string& identifier, Membership::Type type) const {
-  string where_condition = kIdentifier + "='" + identifier + "'" + kSqlAnd + kType + "=" + std::to_string(static_cast<int>(type));;
+  string where_condition = kIdentifier + "='" + identifier + "'" + kSqlAnd + kType + "=" + std::to_string(static_cast<int>(type));
 
   LockMainDatabase();
 

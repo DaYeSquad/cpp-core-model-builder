@@ -62,6 +62,7 @@ const ProjectManager* ProjectManager::DefaultManager() {
 }
 
 // Persisent store --------------------------------------------------------
+
 void ProjectManager::SaveProjectToCache(const Project& project) const {
   LockMainDatabase();
 
@@ -98,6 +99,35 @@ std::vector<std::unique_ptr<Project>> ProjectManager::FetchProjectsFromCache() c
   UnlockMainDatabase();
 
   return projects;
+}
+
+std::unique_ptr<Project> ProjectManager::FetchProjectFromCacheByProjectId(const std::string& project_id) const {
+  string where_condition = kProjectId + "='" + project_id + "'";
+
+  LockMainDatabase();
+
+  projects_tb_->open(where_condition);
+
+  if (projects_tb_->recordCount() != 0) {
+    sql::Record* record = projects_tb_->getRecord(0);
+    unique_ptr<Project> rtn(ProjectFromRecord(record));
+    UnlockMainDatabase();
+    return rtn;
+  }
+
+  UnlockMainDatabase();
+
+  return nullptr;
+}
+
+void ProjectManager::DeleteProjectsFromCache() const {
+  string where_condition = "";
+
+  LockMainDatabase();
+
+  projects_tb_->deleteRecords(where_condition);
+
+  UnlockMainDatabase();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

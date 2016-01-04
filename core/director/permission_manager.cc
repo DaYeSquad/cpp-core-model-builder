@@ -58,6 +58,7 @@ const PermissionManager* PermissionManager::DefaultManager() {
 }
 
 // Persisent store --------------------------------------------------------
+
 void PermissionManager::SavePermissionToCache(const Permission& permission) const {
   LockMainDatabase();
 
@@ -80,7 +81,7 @@ std::vector<std::unique_ptr<Permission>> PermissionManager::FetchPermissionsFrom
 
   vector<unique_ptr<Permission>> permissions;
 
-  string where_condition = kIdentifier + "='" + identifier + "'" + kSqlAnd + kType + "=" + std::to_string(static_cast<int>(type));;
+  string where_condition = kIdentifier + "='" + identifier + "'" + kSqlAnd + kType + "=" + std::to_string(static_cast<int>(type));
 
   LockMainDatabase();
 
@@ -107,7 +108,7 @@ void PermissionManager::DeletePermissionsFromCache() const {
 }
 
 void PermissionManager::DeletePermissionsFromCache(const std::string& identifier, Permission::Type type) const {
-  string where_condition = kIdentifier + "='" + identifier + "'" + kSqlAnd + kType + "=" + std::to_string(static_cast<int>(type));;
+  string where_condition = kIdentifier + "='" + identifier + "'" + kSqlAnd + kType + "=" + std::to_string(static_cast<int>(type));
 
   LockMainDatabase();
 

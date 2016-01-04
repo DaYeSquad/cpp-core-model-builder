@@ -60,6 +60,7 @@ const TagManager* TagManager::DefaultManager() {
 }
 
 // Persisent store --------------------------------------------------------
+
 void TagManager::SaveTagToCache(const Tag& tag) const {
   LockMainDatabase();
 
@@ -82,7 +83,7 @@ std::vector<std::unique_ptr<Tag>> TagManager::FetchTagsFromCacheByType(Applicati
 
   vector<unique_ptr<Tag>> tags;
 
-  string where_condition = kType + "=" + std::to_string(static_cast<int>(type));;
+  string where_condition = kType + "=" + std::to_string(static_cast<int>(type));
 
   LockMainDatabase();
 
@@ -118,7 +119,7 @@ std::unique_ptr<Tag> TagManager::FetchTagFromCacheByTagId(const std::string& tag
 }
 
 void TagManager::DeleteTagsFromCacheByType(ApplicationType type) const {
-  string where_condition = kType + "=" + std::to_string(static_cast<int>(type));;
+  string where_condition = kType + "=" + std::to_string(static_cast<int>(type));
 
   LockMainDatabase();
 

@@ -9,10 +9,6 @@
 
 NS_LCC_BEGIN
 
-/// Decribes like in Worktile Pro applications.
-///
-/// @since 2.1
-/// @author Frank Lin
 class LCC_DLL Like : public CodingInterface {
 public:
 

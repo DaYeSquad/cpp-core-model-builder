@@ -62,6 +62,7 @@ const ProjectGroupManager* ProjectGroupManager::DefaultManager() {
 }
 
 // Persisent store --------------------------------------------------------
+
 void ProjectGroupManager::SaveProjectGroupToCache(const ProjectGroup& projectgroup) const {
   LockMainDatabase();
 

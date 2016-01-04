@@ -78,6 +78,7 @@ const UserManager* UserManager::DefaultManager() {
 }
 
 // Persisent store --------------------------------------------------------
+
 void UserManager::SaveUserToCache(const User& user) const {
   LockMainDatabase();
 

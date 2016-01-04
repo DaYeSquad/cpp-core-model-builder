@@ -37,6 +37,10 @@ public:
 
   std::vector<std::unique_ptr<Project>> FetchProjectsFromCache() const;
 
+  std::unique_ptr<Project> FetchProjectFromCacheByProjectId(const std::string& project_id) const;
+
+  void DeleteProjectsFromCache() const;
+
 private:
   std::unique_ptr<sql::Table> projects_tb_;
 

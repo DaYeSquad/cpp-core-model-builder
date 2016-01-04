@@ -60,6 +60,7 @@ const ListManager* ListManager::DefaultManager() {
 }
 
 // Persisent store --------------------------------------------------------
+
 void ListManager::SaveListToCache(const List& list) const {
   LockMainDatabase();
 

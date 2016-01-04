@@ -104,6 +104,7 @@ const TaskManager* TaskManager::DefaultManager() {
 }
 
 // Persisent store --------------------------------------------------------
+
 void TaskManager::SaveTaskToCache(const Task& task) const {
   LockMainDatabase();
 

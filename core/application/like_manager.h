@@ -16,10 +16,6 @@
 
 NS_LCC_BEGIN
 
-/// Like object manager.
-///
-/// @since 2.1
-/// @author Frank Lin
 class LCC_DLL LikeManager : public ObjectManager {
 public:
 
@@ -32,19 +28,6 @@ public:
   bool InitOrDie();
 
   static const LikeManager* DefaultManager();
-
-  // HTTP --------------------------------------------------------
-
-  void LikeApplication(ApplicationType type,
-                       const std::string& application_id,
-                       std::function<void(bool success,
-                                          const std::string& error,
-                                          std::unique_ptr<Like> like)> callback) const;
-
-  void RemoveLikeFromApplication(ApplicationType type,
-                                 const std::string& application_id,
-                                 std::function<void(bool success,
-                                                    const std::string& error)> callback) const;
 
   // Persisent store --------------------------------------------------------
 
