@@ -64,7 +64,7 @@ class ObjcVariable:
         elif self.var_type == VarType.cpp_string_array:
             impl = '-(void)set{0}:(NSArray<NSString *> *){1} {{\n'.format(string_utils.first_char_to_upper(self.__objc_name()), self.__objc_name())
             impl += _OBJC_SPACE
-            impl += '_coreHandle->set_{0}([LCCObjcAdapter stringVectorsFromArrayOfNSString:{1}];);\n'.format(self.name, self.__objc_name())
+            impl += '_coreHandle->set_{0}([LCCObjcAdapter stringVectorsFromArrayOfNSString:{1}]);\n'.format(self.name, self.__objc_name())
             impl += '}'
             return impl
         else:
@@ -76,3 +76,19 @@ class ObjcVariable:
             impl += '_coreHandle->set_{0}(({1}){0});\n'.format(self.name, self.var_type.to_objc_getter_string())
             impl += '}'
             return impl
+
+    def parameter(self):
+        return '{0}:({1}){0}'.format(self.__objc_name(), self.var_type.to_objc_getter_string())
+
+    # [id UTF8String] or (int)aFloat
+    def cast_to_cpp_parameter(self):
+        if self.var_type == VarType.cpp_string:
+            return '[{0} UTF8String]'.format(self.__objc_name())
+        elif self.var_type == VarType.cpp_string_array:
+            return '[LCCObjcAdapter stringVectorsFromArrayOfNSString:{0}]'.format(self.__objc_name())
+        else:
+            return '({0}){1}'.format(self.var_type.to_objc_getter_string(), self.name)
+
+    # from 'display_name' to 'DisplayName'
+    def to_title_style_name(self):
+        return string_utils.to_title_style_name(self.name)

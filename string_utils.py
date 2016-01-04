@@ -49,3 +49,12 @@ def to_objc_property_name(name):
 def cpp_enum_class_name_to_objc_enum_class_name(name):
     return '{0}'.format(to_title_style_name(name.lower()))
 
+
+# returns spaces
+def indent(num_spaces):
+    num = num_spaces
+    spaces = ''
+    while num > 0:
+        spaces += ' '
+        num -= 1
+    return spaces

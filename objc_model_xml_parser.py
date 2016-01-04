@@ -4,7 +4,7 @@ import string_utils
 
 from objc_variable import ObjcVariable
 from objc_enum import ObjcEnum
-from cpp_manager import CppManager
+from objc_manager import ObjcManager
 from cpp_manager import CppManagerSaveCommand
 from cpp_manager import CppManagerFetchCommand
 from cpp_manager import CppManagerDeleteCommand
@@ -61,11 +61,11 @@ class ObjcModelXmlParser:
                     objc_var_list.append(objc_var)
 
                 # parse <manager/>
-                cpp_manager = None
+                objc_manager = None
                 manager_or_none = class_node.find('manager')
                 if manager_or_none is not None:
                     manager_name = manager_or_none.get('name')
-                    cpp_manager = CppManager(manager_name)
+                    objc_manager = ObjcManager(manager_name)
 
                     # parse all <save/>
                     for save_node in manager_or_none.findall('save'):
@@ -74,7 +74,7 @@ class ObjcModelXmlParser:
                         if plural_node is not None:
                             is_plural = True
                         save_command = CppManagerSaveCommand(is_plural)
-                        cpp_manager.add_save_command(save_command)
+                        objc_manager.add_save_command(save_command)
 
                     # parse all <delete/>
                     for delete_node in manager_or_none.findall('delete'):
@@ -85,7 +85,7 @@ class ObjcModelXmlParser:
 
                         by = delete_node.get('by')
                         delete_command = CppManagerDeleteCommand(is_plural, by)
-                        cpp_manager.add_delete_command(delete_command)
+                        objc_manager.add_delete_command(delete_command)
 
                     # parse all <fetch/>
                     for fetch_node in manager_or_none.findall('fetch'):
@@ -96,10 +96,10 @@ class ObjcModelXmlParser:
 
                         by = fetch_node.get('by')
                         fetch_command = CppManagerFetchCommand(is_plural, by)
-                        cpp_manager.add_fetch_command(fetch_command)
+                        objc_manager.add_fetch_command(fetch_command)
 
                 # write objective-c++ wrapper core addition header
-                objc_wrapper = ObjcClass(group_name, class_name, objc_var_list, objc_enum_list, cpp_manager)
+                objc_wrapper = ObjcClass(group_name, class_name, objc_var_list, objc_enum_list, objc_manager)
                 objc_wrapper.generate_core_addition_header()
 
                 # write objective-c++ wrapper header
@@ -107,3 +107,12 @@ class ObjcModelXmlParser:
 
                 # write objective-c++ wrapper implementation
                 objc_wrapper.generate_implementation()
+
+                # write objective-c++ wrapper manager category header
+                objc_wrapper.generate_manager_core_addition_header()
+
+                # write objective-c++ wrapper manager header
+                objc_wrapper.generate_manager_header()
+
+                # write objective-c++ wrapper manager implementation
+                objc_wrapper.generate_manager_implementation()
