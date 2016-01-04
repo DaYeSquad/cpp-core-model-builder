@@ -42,7 +42,7 @@ class ObjcVariable:
             impl += '}'
             return impl
         elif self.var_type == VarType.cpp_string_array:
-            impl = '-(NSString<NSString *> *){0} {{\n'.format(self.__objc_name())
+            impl = '-(NSArray<NSString *> *){0} {{\n'.format(self.__objc_name())
             impl += _OBJC_SPACE
             impl += 'return [LCCObjcAdapter objcArrayOfNSStringFromStringVector:_coreHandle->{0}()];\n'.format(self.name)
             impl += '}'
@@ -73,7 +73,7 @@ class ObjcVariable:
                         string_utils.first_char_to_upper(self.__objc_name()),
                         self.__objc_name())
             impl += _OBJC_SPACE
-            impl += '_coreHandle->set_{0}(({1}){0});\n'.format(self.name, self.var_type.to_objc_getter_string())
+            impl += '_coreHandle->set_{0}(({1}){2});\n'.format(self.name, self.var_type.to_objc_getter_string(), self.__objc_name())
             impl += '}'
             return impl
 

@@ -68,7 +68,7 @@ class ObjcManager:
         impl += string_utils.indent(2)
         impl += 'if (self = [super init]) {\n'
         impl += string_utils.indent(4)
-        impl += '_coreManagerHandle = lesschat::{0}Manager::DefaultManager();\n'.format(self.object_name)
+        impl += '_coreManagerHandler = lesschat::{0}Manager::DefaultManager();\n'.format(self.object_name)
         impl += string_utils.indent(2)
         impl += '}\n'
         impl += string_utils.indent(2)
@@ -120,7 +120,7 @@ class ObjcManager:
             impl = '- (nullable LCC{0} *)fetch{0}FromCache{1} {{\n'\
                     .format(self.object_name, self.__convert_bys_to_string(by_list))
             impl += string_utils.indent(2)
-            impl += 'std::unique_ptr<lesschat::{0}> core{0} = _coreManagerHandle->{1};\n'.format(self.object_name, self.__cpp_fetch_method_name(fetch_command))
+            impl += 'std::unique_ptr<lesschat::{0}> core{0} = _coreManagerHandler->{1};\n'.format(self.object_name, self.__cpp_fetch_method_name(fetch_command))
             impl += string_utils.indent(2)
             impl += 'if (core{0}) {{\n'.format(self.object_name)
             impl += string_utils.indent(4)
@@ -137,11 +137,11 @@ class ObjcManager:
             impl += string_utils.indent(2)
             impl += 'NSMutableArray *{0} = [NSMutableArray array];\n'.format(string_utils.first_char_to_lower(self.plural_object_name))
             impl += string_utils.indent(2)
-            impl += 'std::vector<lesschat::{0}> core{1} = _callManagerHandler->{2};\n'.format(self.object_name, self.plural_object_name, self.__cpp_fetch_method_name(fetch_command))
+            impl += 'std::vector<std::unique_ptr<lesschat::{0}>> core{1} = _coreManagerHandler->{2};\n'.format(self.object_name, self.plural_object_name, self.__cpp_fetch_method_name(fetch_command))
             impl += string_utils.indent(2)
             impl += 'for (auto it = core{0}.begin(); it != core{0}.end(); ++it) {{\n'.format(self.plural_object_name)
             impl += string_utils.indent(4)
-            impl += '[{0} addObject:[LCC{1} {2}WithCore{1}:(*it)]];\n'.format(string_utils.first_char_to_lower(self.plural_object_name), self.object_name, string_utils.first_char_to_lower(self.object_name))
+            impl += '[{0} addObject:[LCC{1} {2}WithCore{1}:(**it)]];\n'.format(string_utils.first_char_to_lower(self.plural_object_name), self.object_name, string_utils.first_char_to_lower(self.object_name))
             impl += string_utils.indent(2)
             impl += '}\n'
             impl += string_utils.indent(2)
