@@ -1,11 +1,10 @@
-from enum import Enum
 from copy import copy
 import string
 import re
 from skr_logger import skr_log_warning
 
 
-class VarType(Enum):
+class VarType:
     cpp_bool = 1
     cpp_int = 2
     cpp_string = 3
@@ -14,8 +13,12 @@ class VarType(Enum):
     cpp_time = 6
 
     def __init__(self, value):
+        self.value = value
         self.enum_class_name = ''
         self.json_search_path = ''
+
+    def __eq__(self, other):
+        return self.value == other
 
     def set_enum_class_name(self, enum_class_name):
         if enum_class_name is None:
@@ -43,6 +46,20 @@ class VarType(Enum):
             return 'std::vector<std::string>'
         elif self.value == 6:
             return 'time_t'
+
+    def to_objc_getter_string(self):
+        if self.value == 1:
+            return 'BOOL'
+        elif self.value == 2:
+            return 'NSInteger'
+        elif self.value == 3:
+            return 'NSString *'
+        elif self.value == 4:
+            return self.objc_enum_type_string()
+        elif self.value == 5:
+            return 'NSArray<NSString *> *'
+        elif self.value == 6:
+            return 'NSTimeInterval'
 
     def to_setter_string(self):
         if self.value == 1:
@@ -84,6 +101,16 @@ class VarType(Enum):
             cpp_enum += '::'
         cpp_enum = cpp_enum[:-2]  # remove last 2 chars
         return cpp_enum
+
+    def objc_enum_type_string(self):
+        if self.value != 4 and self.enum_class_name is None or self.enum_class_name == '':
+            return ''
+
+        enum_paths = re.split('\.', self.enum_class_name)
+        objc_enum = 'LCC'
+        for enum_path in enum_paths:
+            objc_enum += enum_path
+        return objc_enum
 
     def cpp_json11_array_it_search_string(self):
         paths = re.split('\.', self.json_search_path)
@@ -232,6 +259,14 @@ class CppVariable:
             parse += '  vector<json11::Json> {0}_json = json_obj{1}.array_items();\n'.format(self.name, cpp_json_paths)
             parse += '  for (auto it = {0}_json.begin(); it != {0}_json.end(); ++it) {{\n'.format(self.name)
             parse += '    {0}_.push_back((*it){1}.string_value());\n'.format(self.name, self.var_type.cpp_json11_array_it_search_string())
+            parse += '  }\n'
+            return parse
+        elif self.var_type == VarType.cpp_bool:  # bool value should compact with int_value == 1
+            parse = 'json11::Json {0}_json = json_obj{1};\n'.format(self.name, cpp_json_paths)
+            parse += '  if ({0}_json.type() == json11::Json::Type::BOOL) {{\n'.format(self.name)
+            parse += '    {0}_ = {0}_json.bool_value();\n'.format(self.name)
+            parse += '  } else {\n'
+            parse += '    {0}_ = ({0}_json.int_value() == 1);\n'.format(self.name)
             parse += '  }\n'
             return parse
         else:

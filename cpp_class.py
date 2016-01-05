@@ -26,6 +26,10 @@ class CppClass:
             self.cpp_manager_or_none.set_object_name(class_name, class_name + 's')
             self.cpp_manager_or_none.set_cpp_variable_list(cpp_variable_list)
 
+    @staticmethod
+    def convert_class_name_to_file_name(name):
+        return CppClass.__convert_class_name_to_file_name(name)
+
     # convert 'UserGroup' to 'user_group', only works if first letter is upper case.
     @staticmethod
     def __convert_class_name_to_file_name(name):
