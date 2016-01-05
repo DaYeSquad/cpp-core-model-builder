@@ -248,7 +248,7 @@ class CppManager:
             if cpp_var is not None:
                 return 'By{0}({1})'.format(cpp_var.to_title_style_name(), cpp_var.initializer())
             else:
-                print 'Unknown "{0}" in "by"'.format(by_string)
+                print('Unknown "{0}" in "by"'.format(by_string))
                 return ''
         else:  # "(const std::string& id, const std::string& username)"
             bys_string = '('
@@ -257,7 +257,7 @@ class CppManager:
                 if cpp_var is not None:
                     bys_string += cpp_var.initializer() + ', '
                 else:
-                    print 'Unknown "{0}" in "by"'.format(by_string)
+                    print('Unknown "{0}" in "by"'.format(by_string))
                     return ''
             bys_string = bys_string[:-2]  # remove last 2 chars
             bys_string += ')'

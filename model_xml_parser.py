@@ -43,7 +43,7 @@ class CppModelXmlParser:
             for class_node in folder_node.findall('class'):
                 class_name = class_node.get('name')
 
-                print 'Find class {0} under "{1}" group'.format(class_name, group_name)
+                print('Find class {0} under "{1}" group'.format(class_name, group_name))
 
                 # parse all <enum/>
                 cpp_enum_list = []
