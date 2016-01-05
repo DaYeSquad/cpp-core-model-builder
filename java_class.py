@@ -159,7 +159,7 @@ class JavaClass:
         java_class_start = 'public class ' + manager_name + ' extends CoreObject {' + _JAVA_BR
         java_class_end = '}'
 
-        java_manager_constructor = 'public public static {0} getInstance() {{ return Director.getInstance().get{0}();}}'
+        java_manager_constructor = 'public static {0} getInstance() {{ return Director.getInstance().get{0}();}}'
         java_override = '@Override\n'
         java_manager_dispose = 'public void dispose() { }' + _JAVA_BR
 
