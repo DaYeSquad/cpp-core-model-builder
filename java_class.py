@@ -35,9 +35,13 @@ class JavaClass:
         output_java = open(file_path, 'w')
 
         java_package = 'package com.lesschat.core.' + self.class_name.lower() + ';'
-        java_import = 'import com.lesschat.core.jni.CoreObject;'
+        java_import = 'import android.os.Parcel;\n'
+        java_import += 'import android.os.Parcelable;' + _JAVA_BR
+        java_import += 'import com.lesschat.core.jni.CoreObject;' + _JAVA_BR
+        java_import += 'import java.util.ArrayList;\n'
+        java_import += 'import java.util.List;'
 
-        java_class_start = 'public class ' + self.class_name + ' extends CoreObject {'
+        java_class_start = 'public class ' + self.class_name + ' extends CoreObject implements Parcelable {'
         java_class_end = '}'
 
         output_java.write(java_package + _JAVA_BR)
@@ -64,6 +68,8 @@ class JavaClass:
         for java_var in self.java_var_list:
             output_java.write(java_var.native_getter() + _JAVA_BR)
             output_java.write(java_var.native_setter() + _JAVA_BR)
+
+        output_java.write(self.__parcelable())
 
         output_java.write(java_class_end)
 
@@ -141,6 +147,24 @@ class JavaClass:
         native_initwith = function_space(1) + 'private native boolean nativeInitWithJson(long handler, String json);'
         native_initwith += _JAVA_BR
         return native_initwith
+
+    def __parcelable(self):
+        parcelable = function_space(1) + 'public {0}(Parcel in) {{\n'.format(self.class_name)
+        parcelable += function_space(2) + 'mNativeHandler = in.readLong();\n'
+        parcelable += function_space(1) + '}' + _JAVA_BR
+        parcelable += function_space(1) + 'public static final Parcelable.Creator<{0}> CREATOR = new Parcelable.Creator<{0}>() {{\n\n'\
+            .format(self.class_name)
+        parcelable += function_space(2) + 'public {0} createFromParcel(Parcel in) {{ return new {0}(in); }}\n\n'\
+            .format(self.class_name)
+        parcelable += function_space(2) + 'public {0}[] newArray(int size) {{ return new {0}[size]; }}\n'\
+            .format(self.class_name)
+        parcelable += function_space(1) + '};' + _JAVA_BR
+        parcelable += function_space(1) + '@Override\n'
+        parcelable += function_space(1) + 'public int describeContents() { return 0; }' + _JAVA_BR
+        parcelable += function_space(1) + '@Override\n'
+        parcelable += function_space(1) + 'public void writeToParcel(Parcel parcel, int i) { parcel.writeLong(mNativeHandler); }\n'
+        parcelable += '\n'
+        return parcelable
 
     def generate_manager(self):
         manager_name = self.java_manager_or_none.manager_name
