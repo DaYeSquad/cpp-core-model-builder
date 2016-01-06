@@ -289,6 +289,14 @@ class CppVariable:
             parse += '    {0}_.push_back((*it){1}.string_value());\n'.format(self.name, self.var_type.cpp_json11_array_it_search_string())
             parse += '  }\n'
             return parse
+        elif self.var_type == VarType.cpp_bool:  # bool value should compact with int_value == 1
+            parse = 'json11::Json {0}_json = json_obj{1};\n'.format(self.name, cpp_json_paths)
+            parse += '  if ({0}_json.type() == json11::Json::Type::BOOL) {{\n'.format(self.name)
+            parse += '    {0}_ = {0}_json.bool_value();\n'.format(self.name)
+            parse += '  } else {\n'
+            parse += '    {0}_ = ({0}_json.int_value() == 1);\n'.format(self.name)
+            parse += '  }\n'
+            return parse
         else:
             return '{0}_ = json_obj{1}.{2};'.format(self.name, cpp_json_paths, self.var_type.to_json_value_type())
 
