@@ -56,7 +56,7 @@ class JniClass:
         file_path = 'jni/' + file_name
         output_header = open(file_path, 'w')
 
-        style_class_name = string_utils.first_char_to_lower(self.class_name)
+        style_class_name = string_utils.cpp_class_name_to_cpp_file_name(self.class_name)
         header_name = 'com_lesschat_core_{0}_{1}.h'.format(self.group_name, self.class_name)
         cpp_name = '{0}/{1}.h'.format(self.group_name, style_class_name)
         output_header.write('#include "{0}"'.format(header_name) + '\n')
