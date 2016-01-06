@@ -63,3 +63,4 @@ target/
 lesschatcore-module.xml
 core/
 ObjectiveCppWrapper/
+jni/
