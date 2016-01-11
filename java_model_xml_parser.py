@@ -33,12 +33,12 @@ class JavaModelXmlParser:
         # search directories
         for folder_node in root.findall('group'):
             group_name = folder_node.get('name')
-            group_name = 'com/lesschat/core/' + group_name
-            if os.path.exists(group_name):
-                shutil.rmtree(group_name)
-                os.makedirs(group_name)
+            group_path = 'com/lesschat/core/' + group_name
+            if os.path.exists(group_path):
+                shutil.rmtree(group_path)
+                os.makedirs(group_path)
             else:
-                os.makedirs(group_name)
+                os.makedirs(group_path)
 
             # search classes
             for class_node in folder_node.findall('class'):

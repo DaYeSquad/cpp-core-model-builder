@@ -31,20 +31,20 @@ class JavaClass:
 
     def generate_java(self):
         file_name = self.class_name + '.java'
-        file_path = self.group_name + '/' + file_name
+        file_path = 'com/lesschat/core/' + self.group_name + '/' + file_name
         output_java = open(file_path, 'w')
 
-        java_package = 'package com.lesschat.core.' + self.class_name.lower() + ';'
         java_import = 'import android.os.Parcel;\n'
         java_import += 'import android.os.Parcelable;' + _JAVA_BR
         java_import += 'import com.lesschat.core.jni.CoreObject;' + _JAVA_BR
         java_import += 'import java.util.ArrayList;\n'
-        java_import += 'import java.util.List;'
+        java_import += 'import java.util.Arrays;\n'
+        if self.class_name != 'List':
+            java_import += 'import java.util.List;'
 
         java_class_start = 'public class ' + self.class_name + ' extends CoreObject implements Parcelable {'
         java_class_end = '}'
 
-        output_java.write(java_package + _JAVA_BR)
         output_java.write(java_import + _JAVA_BR)
         output_java.write(java_class_start + _JAVA_BR)
 
@@ -58,7 +58,7 @@ class JavaClass:
 
         for java_var in self.java_var_list:
             output_java.write(java_var.getter() + _JAVA_BR)
-            output_java.write(java_var.setter() + _JAVA_BR)
+            # output_java.write(java_var.setter() + _JAVA_BR)
 
         output_java.write(_JAVA_BR)
         output_java.write(self.__native_constructor())
@@ -67,7 +67,7 @@ class JavaClass:
 
         for java_var in self.java_var_list:
             output_java.write(java_var.native_getter() + _JAVA_BR)
-            output_java.write(java_var.native_setter() + _JAVA_BR)
+            # output_java.write(java_var.native_setter() + _JAVA_BR)
 
         output_java.write(self.__parcelable())
 
@@ -81,7 +81,7 @@ class JavaClass:
         space_str = ''
         for space_index in range(0, space):
             space_str += ' '
-        for index in range(0, len(self.java_var_list) - 1):
+        for index in range(0, len(self.java_var_list)):
             java_var = self.java_var_list[index]
             java_var_type = java_var.var_type
             if index == 0:
@@ -117,7 +117,7 @@ class JavaClass:
         space_str = ''
         for space_index in range(0, len(function_space(1) + 'private native long nativeCreate{0}('.format(self.class_name))):
             space_str += ' '
-        for index in range(0, len(self.java_var_list) - 1):
+        for index in range(0, len(self.java_var_list)):
             java_var = self.java_var_list[index]
             java_var_type = java_var.var_type
             if index == 0:
@@ -169,12 +169,12 @@ class JavaClass:
     def generate_manager(self):
         manager_name = self.java_manager_or_none.manager_name
         file_name = self.java_manager_or_none.manager_name + '.java'
-        file_path = self.group_name + '/' + file_name
+        file_path = 'com/lesschat/core/' + self.group_name + '/' + file_name
         output_java = open(file_path, 'w')
 
-        java_package = 'package com.lesschat.core.' + self.class_name.lower() + ';' + _JAVA_BR
-        java_import = 'import com.lesschat.core.jni.CoreObject;\n'
-        java_import += 'import com.lesschat.core.api.WebApiResponsen;\n'
+        java_import = 'import com.lesschat.core.api.WebApiResponse;\n'
+        java_import += 'import com.lesschat.core.{0}.{1}.*;\n'.format(self.group_name, self.class_name)
+        java_import += 'import com.lesschat.core.jni.CoreObject;\n'
         java_import += 'import com.lesschat.core.director.Director;\n'
         java_import += 'import com.lesschat.core.jni.JniHelper;\n\n'
         java_import += 'import java.util.ArrayList;\n'
@@ -187,7 +187,6 @@ class JavaClass:
         java_override = '@Override\n'
         java_manager_dispose = 'public void dispose() { }' + _JAVA_BR
 
-        output_java.write(java_package)
         output_java.write(java_import)
         output_java.write(java_class_start)
 

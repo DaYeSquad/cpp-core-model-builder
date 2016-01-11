@@ -81,13 +81,14 @@ class JavaVariable:
         var_name_str = ''
         get_set_name = ''
         name_splits = re.split('_', name)
-        for index in (1, len(name_splits)):
-            if index == 1:
-                var_name_str = name_splits[index - 1]
-            else:
-                var_name_str += name_splits[index - 1].capitalize()
+        index = 1
         for name_split in name_splits:
+            if index == 1:
+                var_name_str += name_split
+            else:
+                var_name_str += name_split.capitalize()
             get_set_name += name_split.capitalize()
+            index += 1
 
         self.name_str = var_name_str
         self.get_set_name_str = get_set_name
@@ -100,20 +101,20 @@ class JavaVariable:
 
     def getter(self):
         if self.var_type == VarType.java_bool:
-            return function_space(1) + 'public {0} is{1} {{ return nativeIs{1}(mNativeHandler); }}'.format(self.var_type.to_getter_setter_string(), self.get_set_name_str)
+            return function_space(1) + 'public {0} is{1}() {{ return nativeIs{1}(mNativeHandler); }}'.format(self.var_type.to_getter_setter_string(), self.get_set_name_str)
         elif self.var_type == VarType.java_string_array:
             return self.to_get_string_array_string()
         elif self.var_type == VarType.java_enum:
-            return function_space(1) + 'public {0} get{1} {{ return {0}.get{0}ByValue(nativeGet{1}(mNativeHandler))'.format(self.java_enum,
+            return function_space(1) + 'public {0} get{1}() {{ return {0}.get{0}ByValue(nativeGet{1}(mNativeHandler)); }}'.format(self.java_enum,
                                                                                                                             self.get_set_name_str)
         else:
-            return function_space(1) + 'public {0} get{1} {{ return nativeGet{1}(mNativeHandler); }}'.format(self.var_type.to_getter_setter_string(), self.get_set_name_str)
+            return function_space(1) + 'public {0} get{1}() {{ return nativeGet{1}(mNativeHandler); }}'.format(self.var_type.to_getter_setter_string(), self.get_set_name_str)
 
     def setter(self):
         if self.var_type == VarType.java_string_array:
             return self.to_set_string_array_string()
         elif self.var_type == VarType.java_enum:
-            return function_space(1) + 'public void set{0}({2} {1}) {{ nativeSet{0}(mNativeHandler, {1}.getValue(); }}'.format(self.get_set_name_str,
+            return function_space(1) + 'public void set{0}({2} {1}) {{ nativeSet{0}(mNativeHandler, {1}.getValue()); }}'.format(self.get_set_name_str,
                                                                                                                                self.name_str,
                                                                                                                                self.java_enum)
         else:
@@ -123,9 +124,11 @@ class JavaVariable:
 
     def native_getter(self):
         if self.var_type == VarType.java_bool:
-            return function_space(1) + 'private native {0} nativeIs{1}();'.format(self.var_type.to_getter_setter_string(), self.get_set_name_str)
+            return function_space(1) + 'private native {0} nativeIs{1}(long handler);'.format(self.var_type.to_getter_setter_string(), self.get_set_name_str)
         elif self.var_type == VarType.java_string_array:
             return function_space(1) + 'private native String[] nativeGet{0}(long handler);'.format(self.get_set_name_str)
+        elif self.var_type == VarType.java_enum:
+            return function_space(1) + 'private native int nativeGet{0}(long handler);'.format(self.get_set_name_str)
         else:
             return function_space(1) + 'private native {0} nativeGet{1}(long handler);'.format(self.var_type.to_getter_setter_string(),
                                                                                                self.get_set_name_str)
@@ -134,13 +137,17 @@ class JavaVariable:
         if self.var_type == VarType.java_string_array:
             return function_space(1) + 'private native void nativeSet{0}(long handler, String[] {1});'.format(self.get_set_name_str,
                                                                                                              self.name_str)
+        elif self.var_type == VarType.java_enum:
+            return function_space(1) + 'private native void nativeSet{0}(long handler, {1} {2});'.format(self.get_set_name_str,
+                                                                                                        'int',
+                                                                                                        self.name_str)
         else:
             return function_space(1) + 'private native void nativeSet{0}(long handler, {1} {2});'.format(self.get_set_name_str,
                                                                                                         self.var_type.to_getter_setter_string(),
                                                                                                         self.name_str)
 
     def to_get_string_array_string(self):
-        function = function_space(1) + 'public List<String> get{0} {{\n'.format(self.get_set_name_str)
+        function = function_space(1) + 'public List<String> get{0}() {{\n'.format(self.get_set_name_str)
         function += function_space(2) + 'String[] strs = nativeGet{0}(mNativeHandler);\n'.format(self.get_set_name_str)
         function += function_space(2) + 'if (strs == null) {\n'
         function += function_space(3) + 'return new ArrayList<String>();\n'

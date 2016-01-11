@@ -51,28 +51,28 @@ class JavaManager:
                 if len(by_list) == 0:
                     skr_log_warning('Singular often comes with at least one by parameter')
                 fetch_function += function_space(1) + 'public {0} fetch{0}FromCache{1} {{\n' \
-                    .format(self.object_name, self.__convert_bys_to_string(by_list, False, False))
+                    .format(self.__rename_object_name_if_list(), self.__convert_bys_to_string(by_list, False, False))
                 fetch_function += function_space(2) + 'long handler = nativeFetch{0}FromCache{1};\n\n' \
                     .format(self.object_name, self.__convert_bys_to_string(by_list, False, True))
                 fetch_function += function_space(2) + 'if (handler == JniHelper.sNullPointer) {\n'
                 fetch_function += function_space(3) + 'return null;\n'
                 fetch_function += function_space(2) + '}\n\n'
-                fetch_function += function_space(2) + 'return new {0}(handler);\n'.format(self.object_name)
+                fetch_function += function_space(2) + 'return new {0}(handler);\n'.format(self.__rename_object_name_if_list())
                 fetch_function += function_space(1) + '}' + _JAVA_BR
             else:
                 fetch_function += function_space(1) + 'public List<{0}> fetch{1}FromCache{2} {{\n' \
-                    .format(self.object_name, self.plural_object_name,
+                    .format(self.__rename_object_name_if_list(), self.plural_object_name,
                             self.__convert_bys_to_string(by_list, False, False))
                 fetch_function += function_space(2) + 'long[] handlers = nativeFetch{0}FromCache{1};\n\n'\
                     .format(self.plural_object_name, self.__convert_bys_to_string(by_list, False, True))
                 fetch_function += function_space(2) + 'List<{0}> {1} = new ArrayList<>();\n'\
-                    .format(self.object_name, self.object_name.lower() + 's')
+                    .format(self.__rename_object_name_if_list(), self.__to_object_name_java_style() + 's')
                 fetch_function += function_space(2) + 'for (long handler: handlers) {\n'
                 fetch_function += function_space(3) + '{0}.add(new {1}(handler));\n'\
-                    .format(self.object_name.lower() + 's', self.object_name)
+                    .format(self.__to_object_name_java_style() + 's', self.__rename_object_name_if_list())
                 fetch_function += function_space(2) + '}\n\n'
                 fetch_function += function_space(2) + 'return {0};\n'\
-                    .format(self.object_name.lower() + 's')
+                    .format(self.__to_object_name_java_style() + 's')
                 fetch_function += function_space(1) + '}' + _JAVA_BR
         return fetch_function
 
@@ -86,8 +86,8 @@ class JavaManager:
             if not fetch_command.is_plural:
                 if len(by_list) == 0:
                     skr_log_warning('Singular often comes with at least one by parameter')
-                fetch_function += function_space(1) + 'private native {0} nativeFetch{0}FromCache{1};'\
-                    .format(self.object_name, self.__convert_bys_to_string(by_list, True, False)) + _JAVA_BR
+                fetch_function += function_space(1) + 'private native {0} nativeFetch{1}FromCache{2};'\
+                    .format('long', self.object_name, self.__convert_bys_to_string(by_list, True, False)) + _JAVA_BR
             else:
                 fetch_function += function_space(1) + 'private native long[] nativeFetch{0}FromCache{1};'\
                     .format(self.plural_object_name, self.__convert_bys_to_string(by_list, True, False)) + _JAVA_BR
@@ -180,3 +180,16 @@ class JavaManager:
             else:
                 var_name_str += name_splits[index - 1].capitalize()
         return var_name_str
+
+    def __rename_object_name_if_list(self):
+        new_object_name = ''
+        if self.object_name == 'List':
+            new_object_name = 'com.lesschat.core.task.List'
+        else:
+            new_object_name = self.object_name
+        return new_object_name
+
+    def __to_object_name_java_style(self):
+        new_object_name = ''
+        new_object_name = self.object_name[0].lower() + self.object_name[1:]
+        return new_object_name

@@ -11,6 +11,7 @@ import os
 
 from model_xml_parser import CppModelXmlParser
 from objc_model_xml_parser import ObjcModelXmlParser
+from java_model_xml_parser import JavaModelXmlParser
 
 
 class bcolors:
@@ -38,5 +39,8 @@ if __name__ == "__main__":
 
     objc_parser = ObjcModelXmlParser(1.0)
     objc_parser.parse(file_name)
+
+    java_parser = JavaModelXmlParser(1.0)
+    java_parser.parse(file_name)
 
     print('写入完成, 请查看 %s 下的 core 文件夹' % (dir_path))
