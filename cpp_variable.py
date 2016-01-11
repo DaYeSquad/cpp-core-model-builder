@@ -61,6 +61,34 @@ class VarType:
         elif self.value == 6:
             return 'NSTimeInterval'
 
+    def to_jni_getter_string(self):
+        if self.value == 1:
+            return 'jboolean'
+        elif self.value == 2:
+            return 'jint'
+        elif self.value == 3:
+            return 'jstring'
+        elif self.value == 4:
+            return 'jint'
+        elif self.value == 5:
+            return 'jobjectArray'
+        elif self.value == 6:
+            return 'jlong'
+
+    def to_jni_sign_getter_string(self):
+        if self.value == 1:
+            return 'Z'
+        elif self.value == 2:
+            return 'I'
+        elif self.value == 3:
+            return 'Ljava/lang/String_2'
+        elif self.value == 4:
+            return 'I'
+        elif self.value == 5:
+            return 'Ljava/lang/String_2_3'
+        elif self.value == 6:
+            return 'J'
+
     def to_setter_string(self):
         if self.value == 1:
             return 'bool'
