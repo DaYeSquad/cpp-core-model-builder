@@ -303,7 +303,7 @@ class CppManager:
             impl = 'void {0}::Save{3}ToCache(const std::vector<std::unique_ptr<{1}>>& {2}) const {{\n'\
                 .format(self.manager_name, self.object_name, self.plural_object_name.lower(), self.plural_object_name)
             impl += _CPP_SPACE
-            impl += 'LockMainDatabase();' + _CPP_BR
+            impl += 'LockMainDatabase();\n\n  BeginTransaction();' + _CPP_BR
             impl += _CPP_SPACE
             impl += 'for (auto it = {0}.begin(); it != {0}.end(); ++it) {{\n'.format(self.plural_object_name.lower())
             impl += _CPP_SPACE + _CPP_SPACE
@@ -311,7 +311,7 @@ class CppManager:
             impl += _CPP_SPACE
             impl += '}\n\n'
             impl += _CPP_SPACE
-            impl += 'UnlockMainDatabase();\n'
+            impl += 'CommitTransaction();\n\n  UnlockMainDatabase();\n'
             impl += '}'
             return impl
         else:
