@@ -167,6 +167,8 @@ class JavaClass:
         return parcelable
 
     def generate_manager(self):
+        if self.java_manager_or_none is None:
+            return
         manager_name = self.java_manager_or_none.manager_name
         file_name = self.java_manager_or_none.manager_name + '.java'
         file_path = 'com/lesschat/core/' + self.group_name + '/' + file_name
