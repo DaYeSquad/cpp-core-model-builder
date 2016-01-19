@@ -1,6 +1,6 @@
 import re
-from skr_logger import skr_log_warning
-import string_utils
+from skrutil.skr_logger import skr_log_warning
+from skrutil import string_utils
 
 
 _OBJC_BR = '\n\n'

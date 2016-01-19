@@ -1,9 +1,10 @@
-from cpp_class import CppClass
-import string_utils
+from skr_cpp_builder.cpp_class import CppClass
+from skrutil import string_utils
 
 
 _OBJC_BR = '\n\n'
 _OBJC_SPACE = '  '
+_OBJC_BUILD_PATH = 'build/ObjectiveCppWrapper/'
 
 
 class ObjcClass:
@@ -20,7 +21,7 @@ class ObjcClass:
 
     def generate_core_addition_header(self):
         file_name = 'LCC{0}_CoreAddition.h'.format(self.class_name)
-        file_path = 'ObjectiveCppWrapper/' + string_utils.cpp_group_name_to_objc_group_name(self.group_name) + '/' + file_name
+        file_path = _OBJC_BUILD_PATH + string_utils.cpp_group_name_to_objc_group_name(self.group_name) + '/' + file_name
         output_header = open(file_path, 'w')
 
         output_header.write('#include "{0}.h"'.format(CppClass.convert_class_name_to_file_name(self.class_name)))
@@ -41,7 +42,7 @@ class ObjcClass:
 
     def generate_header(self):
         file_name = 'LCC{0}.h'.format(self.class_name)
-        file_path = 'ObjectiveCppWrapper/' + string_utils.cpp_group_name_to_objc_group_name(self.group_name) + '/' + file_name
+        file_path = _OBJC_BUILD_PATH + string_utils.cpp_group_name_to_objc_group_name(self.group_name) + '/' + file_name
         output_header = open(file_path, 'w')
 
         output_header.write('#import <Foundation/Foundation.h>')
@@ -63,7 +64,7 @@ class ObjcClass:
 
     def generate_implementation(self):
         file_name = 'LCC{0}.mm'.format(self.class_name)
-        file_path = 'ObjectiveCppWrapper/' + string_utils.cpp_group_name_to_objc_group_name(self.group_name) + '/' + file_name
+        file_path = _OBJC_BUILD_PATH + string_utils.cpp_group_name_to_objc_group_name(self.group_name) + '/' + file_name
         output_impl = open(file_path, 'w')
 
         output_impl.write('#if !defined(__has_feature) || !__has_feature(objc_arc)\n#error "This file requires ARC support."\n#endif')
@@ -96,7 +97,7 @@ class ObjcClass:
 
     def generate_manager_core_addition_header(self):
         file_name = 'LCC{0}Manager_CoreAddition.h'.format(self.class_name)
-        file_path = 'ObjectiveCppWrapper/' + string_utils.cpp_group_name_to_objc_group_name(self.group_name) + '/' + file_name
+        file_path = _OBJC_BUILD_PATH + string_utils.cpp_group_name_to_objc_group_name(self.group_name) + '/' + file_name
         output_header = open(file_path, 'w')
 
         output_header.write('#include "{0}_manager.h"\n#include "director.h"'.format(string_utils.cpp_class_name_to_cpp_file_name(self.class_name)))
@@ -115,7 +116,7 @@ class ObjcClass:
         objc_manager = self.objc_manager_or_none
 
         file_name = 'LCC{0}Manager.h'.format(self.class_name)
-        file_path = 'ObjectiveCppWrapper/' + string_utils.cpp_group_name_to_objc_group_name(self.group_name) + '/' + file_name
+        file_path = _OBJC_BUILD_PATH + string_utils.cpp_group_name_to_objc_group_name(self.group_name) + '/' + file_name
         output_header = open(file_path, 'w')
 
         output_header.write('#import <Foundation/Foundation.h>')
@@ -155,7 +156,7 @@ class ObjcClass:
         objc_manager = self.objc_manager_or_none
 
         file_name = 'LCC{0}Manager.mm'.format(self.class_name)
-        file_path = 'ObjectiveCppWrapper/' + string_utils.cpp_group_name_to_objc_group_name(self.group_name) + '/' + file_name
+        file_path = _OBJC_BUILD_PATH + string_utils.cpp_group_name_to_objc_group_name(self.group_name) + '/' + file_name
         output_impl = open(file_path, 'w')
 
         output_impl.write('#if !defined(__has_feature) || !__has_feature(objc_arc)\n#error "This file requires ARC support."\n#endif')

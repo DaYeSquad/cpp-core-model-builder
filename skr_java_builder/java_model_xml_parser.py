@@ -8,9 +8,7 @@ from java_enum import JavaEnum
 
 
 from java_manager import JavaManager
-# from java_manager import JavaManagerSaveCommand
 from java_manager import JavaManagerFetchCommand
-# from java_manager import JavaManagerDeleteCommand
 
 
 class JavaModelXmlParser:

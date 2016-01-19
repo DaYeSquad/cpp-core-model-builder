@@ -1,5 +1,5 @@
-from cpp_variable import VarType
-import string_utils
+from skr_cpp_builder.cpp_variable import VarType
+from skrutil import string_utils
 
 
 class JniVariable:

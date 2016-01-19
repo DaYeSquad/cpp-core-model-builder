@@ -4,5 +4,8 @@ Model builder written in python for building YCTech C++ Core .h and .cc files.
 
 Since 2.0, builder can build wrapper for Java, JNI and Objective-C++ wrapper.
 
+# Usage:
+python model-builder.py lesschat-model-description.xml
+
 # Licence
 MIT

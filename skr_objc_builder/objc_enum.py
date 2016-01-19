@@ -1,4 +1,4 @@
-import string_utils
+from skrutil import string_utils
 
 
 _CPP_BR = '\n\n'

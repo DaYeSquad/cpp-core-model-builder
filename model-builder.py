@@ -1,18 +1,23 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
-# Copyright (c) 2016 Frank Lin. All rights reserved.
+# model-builder.py
+# simple C++ generator, originally targetted for starting build sakura core.
+#
+# Copyright (c) 2016 - Frank Lin
 
 """
 Used to execute command to parse lesschat core model xml
 """
 
-import sys
 import os
+import sys
 
-from model_xml_parser import CppModelXmlParser
-from objc_model_xml_parser import ObjcModelXmlParser
-from java_model_xml_parser import JavaModelXmlParser
-from jni_model_xml_parser import JniModelXmlParse
+from skrutil import io_utils
+
+from skr_cpp_builder.model_xml_parser import CppModelXmlParser
+from skr_java_builder.java_model_xml_parser import JavaModelXmlParser
+from skr_jni_builder.jni_model_xml_parser import JniModelXmlParse
+from skr_objc_builder.objc_model_xml_parser import ObjcModelXmlParser
 
 
 class bcolors:
@@ -27,6 +32,9 @@ if __name__ == "__main__":
 
     input_file_path = sys.argv[1]
     dir_path, file_name = os.path.split(input_file_path)
+
+    io_utils.make_directory_if_not_exists("build")
+
     if dir_path is None or dir_path == '':
         dir_path = '当前路径'
     print('输入的文件路径为:%s, 文件名为:%s' %
@@ -35,16 +43,16 @@ if __name__ == "__main__":
 
     print('开始解析据...')
 
-    parser = CppModelXmlParser(1.0)
+    parser = CppModelXmlParser(3.0)
     parser.parse(file_name)
 
     objc_parser = ObjcModelXmlParser(1.0)
     objc_parser.parse(file_name)
 
-    java_parser = JavaModelXmlParser(1.0)
-    java_parser.parse(file_name)
+    # java_parser = JavaModelXmlParser(1.0)
+    # java_parser.parse(file_name)
+    #
+    # jni_parse = JniModelXmlParse(1.0)
+    # jni_parse.parse(file_name)
 
-    jni_parse = JniModelXmlParse(1.0)
-    jni_parse.parse(file_name)
-
-    print('写入完成, 请查看 %s 下的 core 文件夹' % (dir_path))
+    print('写入完成, 请查看 %s 下的 build 文件夹' % (dir_path))

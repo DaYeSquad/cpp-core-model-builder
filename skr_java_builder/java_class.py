@@ -1,4 +1,3 @@
-import re
 from java_variable import VarType
 
 _JAVA_BR = '\n\n'

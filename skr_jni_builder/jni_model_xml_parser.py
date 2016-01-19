@@ -1,12 +1,12 @@
 import xml.etree.ElementTree
-import io_utils
-import string_utils
+from skrutil import io_utils
+from skrutil import string_utils
 
 from jni_variable import JniVariable
 from jni_manager import JniManager
-from cpp_manager import CppManagerSaveCommand
-from cpp_manager import CppManagerFetchCommand
-from cpp_manager import CppManagerDeleteCommand
+from skr_cpp_builder.cpp_manager import CppManagerSaveCommand
+from skr_cpp_builder.cpp_manager import CppManagerFetchCommand
+from skr_cpp_builder.cpp_manager import CppManagerDeleteCommand
 
 from jni_class import JniClass
 

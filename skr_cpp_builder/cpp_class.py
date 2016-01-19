@@ -1,4 +1,17 @@
+# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# cpp_class.py
+#
+# Copyright (c) 2016 - Frank Lin
+
+
+"""
+Parse and store C++ class info.
+"""
+
 import re
+
+from skrutil import io_utils
 
 
 _CPP_BR = '\n\n'
@@ -37,8 +50,7 @@ class CppClass:
         return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
     def generate_header(self):
-        file_name = CppClass.__convert_class_name_to_file_name(self.class_name) + '.h'
-        file_path = self.group_name + '/' + file_name
+        file_path = io_utils.cpp_object_header_path(self.group_name, self.class_name)
         output_header = open(file_path, 'w')
 
         def_guard = '#ifndef LESSCHATCORE_{0}_{1}_H_\n#define LESSCHATCORE_{0}_{1}_H_'.format(
@@ -94,8 +106,7 @@ class CppClass:
         output_header.write(end_def_guard + _CPP_BR)
 
     def generate_implementation(self):
-        file_name = CppClass.__convert_class_name_to_file_name(self.class_name) + '.cc'
-        file_path = self.group_name + '/' + file_name
+        file_path = io_utils.cpp_object_implementation_path(self.group_name, self.class_name)
         output_cc = open(file_path, 'w')
 
         cpp_include = '#include "{0}.h"\n\n#include "json11/json11.hpp"'.format(self.__header_file_name())
@@ -189,8 +200,7 @@ class CppClass:
             return
 
         cpp_manager = self.cpp_manager_or_none
-        file_name = CppClass.__convert_class_name_to_file_name(self.class_name) + '_manager.h'
-        file_path = self.group_name + '/' + file_name
+        file_path = io_utils.cpp_object_header_path(self.group_name, cpp_manager.class_name())
         output_header = open(file_path, 'w')
 
         def_guard = '#ifndef LESSCHATCORE_{0}_{1}_H_\n#define LESSCHATCORE_{0}_{1}_H_'.format(
@@ -252,8 +262,7 @@ class CppClass:
         cpp_manager = self.cpp_manager_or_none
 
         header_file_name = CppClass.__convert_class_name_to_file_name(self.class_name) + '_manager.h'
-        file_name = CppClass.__convert_class_name_to_file_name(self.class_name) + '_manager.cc'
-        file_path = self.group_name + '/' + file_name
+        file_path = io_utils.cpp_object_implementation_path(self.group_name, cpp_manager.class_name())
         output_cc = open(file_path, 'w')
 
         cpp_include = '#include "{0}"\n'.format(header_file_name)

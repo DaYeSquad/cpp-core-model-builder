@@ -1,5 +1,15 @@
+# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# cpp_manager.py
+#
+# Copyright (c) 2016 - Frank Lin
+
+"""
+Parse and store lesschat/worktile C++ object manager info.
+"""
+
 import re
-from skr_logger import skr_log_warning
+from skrutil.skr_logger import skr_log_warning
 
 
 _CPP_BR = '\n\n'

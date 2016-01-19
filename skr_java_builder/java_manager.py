@@ -1,6 +1,6 @@
 import re
 from java_variable import VarType
-from skr_logger import skr_log_warning
+from skrutil.skr_logger import skr_log_warning
 
 _JAVA_BR = '\n\n'
 _JAVA_SPACE = '    '

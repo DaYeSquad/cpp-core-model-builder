@@ -1,15 +1,16 @@
 import xml.etree.ElementTree
-import io_utils
-import string_utils
 
+from skrutil import io_utils
+from skrutil import string_utils
+
+from skr_cpp_builder.cpp_manager import CppManagerSaveCommand
+from skr_cpp_builder.cpp_manager import CppManagerFetchCommand
+from skr_cpp_builder.cpp_manager import CppManagerDeleteCommand
+
+from objc_class import ObjcClass
 from objc_variable import ObjcVariable
 from objc_enum import ObjcEnum
 from objc_manager import ObjcManager
-from cpp_manager import CppManagerSaveCommand
-from cpp_manager import CppManagerFetchCommand
-from cpp_manager import CppManagerDeleteCommand
-
-from objc_class import ObjcClass
 
 
 class ObjcModelXmlParser:
@@ -19,7 +20,7 @@ class ObjcModelXmlParser:
 
     def parse(self, directory):
         # create core folder if not exists and remove last build
-        objc_dir_path = 'ObjectiveCppWrapper'
+        objc_dir_path = 'build/ObjectiveCppWrapper'
         io_utils.make_directory_if_not_exists(objc_dir_path)
 
         # start parsing xml
@@ -29,7 +30,7 @@ class ObjcModelXmlParser:
         # search directories
         for folder_node in root.findall('group'):
             group_name = folder_node.get('name')
-            objc_group_name = 'ObjectiveCppWrapper/' + string_utils.cpp_group_name_to_objc_group_name(group_name)
+            objc_group_name = 'build/ObjectiveCppWrapper/' + string_utils.cpp_group_name_to_objc_group_name(group_name)
             io_utils.make_directory_if_not_exists(objc_group_name)
 
             # search classes

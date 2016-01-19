@@ -1,5 +1,5 @@
-from cpp_class import CppClass
-import string_utils
+from skr_cpp_builder.cpp_class import CppClass
+from skrutil import string_utils
 
 _JNI_BR = '\n\n'
 _JNI_SPACE = '  '

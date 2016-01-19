@@ -1,8 +1,6 @@
 from enum import Enum
-from copy import copy
-import string
 import re
-from skr_logger import skr_log_warning
+from skrutil.skr_logger import skr_log_warning
 
 
 _JAVA_BR = '\n\n'

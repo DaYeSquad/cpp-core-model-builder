@@ -1,6 +1,6 @@
 import xml.etree.ElementTree
-import io_utils
-import string_utils
+
+from skrutil import io_utils
 
 from cpp_variable import CppVariable
 from cpp_class import CppClass
@@ -18,7 +18,7 @@ class CppModelXmlParser:
 
     def parse(self, directory):
         # create core folder if not exists and remove last build
-        core_dir_path = 'core'
+        core_dir_path = 'build/core'
         io_utils.make_directory_if_not_exists(core_dir_path)
 
         # start parsing xml
@@ -29,7 +29,7 @@ class CppModelXmlParser:
         for folder_node in root.findall('group'):
             group_name = folder_node.get('name')
             group_name = 'core/' + group_name
-            io_utils.make_directory_if_not_exists(group_name)
+            io_utils.make_directory_if_not_exists('build/{0}'.format(group_name))
 
             # search classes
             for class_node in folder_node.findall('class'):

@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# cpp_enum.py
+#
+# Copyright (c) 2016 - Frank Lin
+
+"""
+Parse and store C++ class info.
+"""
+
 _CPP_BR = '\n\n'
 _CPP_SPACE = '  '
 
