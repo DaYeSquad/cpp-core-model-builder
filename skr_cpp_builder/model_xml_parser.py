@@ -5,10 +5,12 @@ from skrutil import io_utils
 from cpp_variable import CppVariable
 from cpp_class import CppClass
 from cpp_enum import CppEnum
+
 from cpp_manager import CppManager
 from cpp_manager import CppManagerSaveCommand
 from cpp_manager import CppManagerFetchCommand
 from cpp_manager import CppManagerDeleteCommand
+from cpp_manager import CppApiDescription
 
 
 class CppModelXmlParser:
@@ -20,6 +22,10 @@ class CppModelXmlParser:
         # create core folder if not exists and remove last build
         core_dir_path = 'build/core'
         io_utils.make_directory_if_not_exists(core_dir_path)
+
+        # create api folder if not exists and remove last build
+        api_dir_path = 'build/core/api'
+        io_utils.make_directory_if_not_exists(api_dir_path)
 
         # start parsing xml
         e = xml.etree.ElementTree.parse(directory)
@@ -101,6 +107,44 @@ class CppModelXmlParser:
                         fetch_command = CppManagerFetchCommand(is_plural, by)
                         cpp_manager.add_fetch_command(fetch_command)
 
+                    # parse all <api/>
+                    for api_node in manager_or_none.findall('api'):
+                        api_name = api_node.get('name')
+                        api_alias = api_node.get('alias')
+                        api_method = api_node.get('method')
+                        api_uri = api_node.get('uri')
+
+                        input_var_list = []
+                        inputs_node = api_node.find('inputs')
+                        for variable_node in inputs_node.findall('variable'):
+                            var_name = variable_node.get('name')
+                            var_type_string = variable_node.get('type')
+                            var_json_path = variable_node.get('json_path')
+                            var_cache_desc = variable_node.get('cache')
+                            var_enum_or_none = variable_node.get('enum')
+
+                            var = CppVariable(var_name, var_type_string, var_json_path, None, var_cache_desc)
+                            var.set_enum_class_name(var_enum_or_none)
+
+                            input_var_list.append(var)
+
+                        output_var_list = []
+                        outputs_node = api_node.find('outputs')
+                        for variable_node in outputs_node.findall('variable'):
+                            var_name = variable_node.get('name')
+                            var_type_string = variable_node.get('type')
+                            var_json_path = variable_node.get('json_path')
+                            var_cache_desc = variable_node.get('cache')
+                            var_enum_or_none = variable_node.get('enum')
+
+                            var = CppVariable(var_name, var_type_string, var_json_path, None, var_cache_desc)
+                            var.set_enum_class_name(var_enum_or_none)
+
+                            output_var_list.append(var)
+
+                        api = CppApiDescription(api_name, api_alias, api_method, api_uri, input_var_list, output_var_list)
+                        cpp_manager.add_api_description(api)
+
                 # write object header
                 cpp_class = CppClass(group_name, class_name, cpp_var_list, cpp_enum_list, cpp_manager)
                 cpp_class.generate_header()
@@ -113,3 +157,9 @@ class CppModelXmlParser:
 
                 # write manager implementation
                 cpp_class.generate_manager_implementation()
+
+                # write web_api_object.h under "api" folder
+                cpp_class.generate_web_api_header()
+
+                # write web_api_object.cc under "api" folder
+                cpp_class.generate_web_api_implementation()

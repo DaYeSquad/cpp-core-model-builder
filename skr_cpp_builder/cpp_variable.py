@@ -1,7 +1,10 @@
 from copy import copy
 import string
 import re
+
 from skrutil.skr_logger import skr_log_warning
+from skrutil.deprecate_util import deprecated
+from skrutil import string_utils
 
 
 class VarType:
@@ -11,11 +14,14 @@ class VarType:
     cpp_enum = 4
     cpp_string_array = 5
     cpp_time = 6
+    cpp_object_array = 7
+    cpp_object = 8
 
-    def __init__(self, value):
+    def __init__(self, value, object_class_name=''):
         self.value = value
         self.enum_class_name = ''
         self.json_search_path = ''
+        self.object_class_name = object_class_name  # if type is 7 or 8, it means the object in array or itself
 
     def __eq__(self, other):
         return self.value == other
@@ -46,48 +52,12 @@ class VarType:
             return 'std::vector<std::string>'
         elif self.value == 6:
             return 'time_t'
-
-    def to_objc_getter_string(self):
-        if self.value == 1:
-            return 'BOOL'
-        elif self.value == 2:
-            return 'NSInteger'
-        elif self.value == 3:
-            return 'NSString *'
-        elif self.value == 4:
-            return self.objc_enum_type_string()
-        elif self.value == 5:
-            return 'NSArray<NSString *> *'
-        elif self.value == 6:
-            return 'NSTimeInterval'
-
-    def to_jni_getter_string(self):
-        if self.value == 1:
-            return 'jboolean'
-        elif self.value == 2:
-            return 'jint'
-        elif self.value == 3:
-            return 'jstring'
-        elif self.value == 4:
-            return 'jint'
-        elif self.value == 5:
-            return 'jobjectArray'
-        elif self.value == 6:
-            return 'jlong'
-
-    def to_jni_sign_getter_string(self):
-        if self.value == 1:
-            return 'Z'
-        elif self.value == 2:
-            return 'I'
-        elif self.value == 3:
-            return 'Ljava/lang/String_2'
-        elif self.value == 4:
-            return 'I'
-        elif self.value == 5:
-            return 'Ljava/lang/String_2_3'
-        elif self.value == 6:
-            return 'J'
+        elif self.value == 7:
+            return 'std::vector<std::unique_ptr<{0}>>'.format(self.object_class_name)
+        elif self.value == 8:
+            return 'std::unique_ptr<{0}>'.format(self.object_class_name)
+        else:
+            print 'Unsupported value'
 
     def to_setter_string(self):
         if self.value == 1:
@@ -102,8 +72,63 @@ class VarType:
             return 'const std::vector<std::string>&'
         elif self.value == 6:
             return 'time_t'
+        elif self.value == 7:
+            return 'const std::vector<std::unique_ptr<{0}>>&'.format(self.object_class_name)
+        elif self.value == 8:
+            return 'const {0}&'.format(self.object_class_name)
+        else:
+            print 'Unsupported value'
+
+    def to_objc_getter_string(self):
+        if self.value == 1:
+            return 'BOOL'
+        elif self.value == 2:
+            return 'NSInteger'
+        elif self.value == 3:
+            return 'NSString *'
+        elif self.value == 4:
+            return self.objc_enum_type_string()
+        elif self.value == 5:
+            return 'NSArray<NSString *> *'
+        elif self.value == 6:
+            return 'NSTimeInterval'
+        else:
+            print 'Unsupported value'
+
+    def to_jni_getter_string(self):
+        if self.value == 1:
+            return 'jboolean'
+        elif self.value == 2:
+            return 'jint'
+        elif self.value == 3:
+            return 'jstring'
+        elif self.value == 4:
+            return 'jint'
+        elif self.value == 5:
+            return 'jobjectArray'
+        elif self.value == 6:
+            return 'jlong'
+        else:
+            print 'Unsupported value'
+
+    def to_jni_sign_getter_string(self):
+        if self.value == 1:
+            return 'Z'
+        elif self.value == 2:
+            return 'I'
+        elif self.value == 3:
+            return 'Ljava/lang/String_2'
+        elif self.value == 4:
+            return 'I'
+        elif self.value == 5:
+            return 'Ljava/lang/String_2_3'
+        elif self.value == 6:
+            return 'J'
+        else:
+            print 'Unsupported value'
 
     @classmethod
+    @deprecated
     def type_from_string(cls, var_type_string):
         if var_type_string == 'bool':
             return 1
@@ -113,10 +138,41 @@ class VarType:
             return 3
         elif var_type_string == 'enum':
             return 4
-        elif var_type_string == 'string_array':
+        elif var_type_string == '[string]':
             return 5
         elif var_type_string == 'time':
             return 6
+        else:
+            print 'Unsupported value'
+
+    @classmethod
+    def instance_from_string(cls, var_type_string):
+        if var_type_string == 'bool':
+            return VarType(1)
+        elif var_type_string == 'int':
+            return VarType(2)
+        elif var_type_string == 'string':
+            return VarType(3)
+        elif var_type_string == 'enum':
+            return VarType(4)
+        elif var_type_string == '[string]':
+            return VarType(5)
+        elif var_type_string == 'time':
+            return VarType(6)
+        elif var_type_string[0] == '[':
+            if var_type_string[1] == '{':  # object array
+                class_name = var_type_string[2:-2]
+                print 'class name is {0}'.format(class_name)
+                return VarType(7, class_name)
+            else:
+                print 'Unsupported array'
+                assert False
+        elif var_type_string[0] == '{':  # object
+            class_name = var_type_string[1:-1]
+            print 'class name is {0}'.format(class_name)
+            return VarType(8, class_name)
+        else:
+            print 'Unsupported value'
 
     def cpp_enum_type_string(self):
         if self.value != 4 and self.enum_class_name is None or self.enum_class_name == '':
@@ -160,6 +216,8 @@ class VarType:
             return 'array_items()'
         elif self.value == 6:
             return 'int_value()'
+        else:
+            print 'Unsupported value'
 
     def to_sqlite_value_type(self):
         if self.value == 1:
@@ -174,6 +232,8 @@ class VarType:
             return 'sql::type_text'
         elif self.value == 6:
             return 'sql::type_int'
+        else:
+            print 'Unsupported value'
 
     def to_set_sqlite_value_string(self):
         if self.value == 1:
@@ -188,6 +248,8 @@ class VarType:
             return 'setString'
         elif self.value == 6:
             return 'setInteger'
+        else:
+            print 'Unsupported value'
 
     def to_get_sqlite_value_string(self):
         if self.value == 1:
@@ -202,17 +264,38 @@ class VarType:
             return 'asString'
         elif self.value == 6:
             return 'asInteger'
+        else:
+            print 'Unsupported value'
+
+    def to_null_value(self):
+        if self.value == 1:
+            return 'false'
+        elif self.value == 2:
+            return '0'
+        elif self.value == 3:
+            return '""'
+        elif self.value == 4:
+            return '0'
+        elif self.value == 5:
+            return '{}'
+        elif self.value == 6:
+            return '0'
+        elif self.value == 7:
+            return '{}'
+        elif self.value == 8:
+            return 'nullptr'
+        else:
+            print 'Unsupported value'
 
 
 class CppVariable:
 
-    def __init__(self, name, var_type_string, json_path, sql_flag_or_none):
-        var_type = VarType.type_from_string(var_type_string)
-
+    def __init__(self, name, var_type_string, json_path, sql_flag_or_none, cache_desc=''):
         self.name = name
-        self.var_type = VarType(var_type)
+        self.var_type = VarType.instance_from_string(var_type_string)
         self.json_path = json_path
         self.sql_flag_or_none = sql_flag_or_none
+        self.cache_desc = cache_desc
 
     def set_enum_class_name(self, enum_class_name):
         self.var_type.set_enum_class_name(enum_class_name)
@@ -268,7 +351,7 @@ class CppVariable:
         else:
             return ''
 
-    def parse_json(self):
+    def parse_json(self, indent=0):
         if self.json_path == '':
             return ''
 
@@ -296,6 +379,19 @@ class CppVariable:
             parse += '  } else {\n'
             parse += '    {0}_ = ({0}_json.int_value() == 1);\n'.format(self.name)
             parse += '  }\n'
+            return parse
+        elif self.var_type == VarType.cpp_object:  # C++ object
+            parse = string_utils.indent(indent) + 'unique_ptr<{0}> {1}(new {0}());\n'.format(self.var_type.object_class_name, self.name)
+            parse += string_utils.indent(indent) + '{0}->InitWithJsonOrDie(json_obj{1}.dump());\n'.format(self.name, cpp_json_paths)
+            return parse
+        elif self.var_type == VarType.cpp_object_array:  # C++ objects
+            parse = string_utils.indent(indent) + 'vector<unique_ptr<{0}>> {1};\n'.format(self.var_type.object_class_name, self.name)
+            parse += string_utils.indent(indent) + 'vector<json11::Json> {0}_jsons = json_obj{1}.array_items();\n'.format(self.name, cpp_json_paths)
+            parse += string_utils.indent(indent) + 'for (auto json : {0}_jsons) {{\n'.format(self.name)
+            parse += string_utils.indent(indent + 2) + 'unique_ptr<{0}> obj(new {0}());\n'.format(self.var_type.object_class_name)
+            parse += string_utils.indent(indent + 2) + 'obj->InitWithJsonOrDie(json.dump());\n'
+            parse += string_utils.indent(indent + 2) + '{0}.push_back(std::move(obj));\n'.format(self.name)
+            parse += string_utils.indent(indent) + '}\n'
             return parse
         else:
             return '{0}_ = json_obj{1}.{2};'.format(self.name, cpp_json_paths, self.var_type.to_json_value_type())
@@ -350,4 +446,46 @@ class CppVariable:
             return '{0} + "=" + std::to_string(static_cast<int>({1}))'.format(self.to_sql_key(), self.name)
         else:
             return '{0} + "=" + std::to_string({1})'.format(self.to_sql_key(), self.name)
+
+    # returns 'bool success'
+    def to_get_description_string(self):
+        return '{0} {1}'.format(self.var_type.to_setter_string(), self.name)
+
+    # returns 'std::unique_ptr<Tasks> tasks'
+    def to_set_description_string(self):
+        return '{0} {1}'.format(self.var_type.to_getter_string(), self.name)
+
+    # returns 'std::to_string(int_var)' or 'project_id' or 'std::to_string(static_cast<int>(enum))'
+    def to_convert_to_string_description(self):
+        if self.var_type == VarType.cpp_string:
+            return self.name
+        elif self.var_type == VarType.cpp_bool or self.var_type == VarType.cpp_int or self.var_type == VarType.cpp_time:
+            return 'std::to_string({0})'.format(self.name)
+        elif self.var_type == VarType.cpp_enum:
+            return 'std::to_string(static_cast<int>({0}))'.format(self.name)
+        else:
+            print 'Unsupported to_string type'
+            assert False
+
+    # returns original string or 'std::move(tasks)'
+    def to_move_string(self):
+        if self.var_type == VarType.cpp_object or self.var_type == VarType.cpp_object_array:
+            return 'std::move({0})'.format(self.name)
+        else:
+            return self.name
+
+    # returns 'nullptr' or '{}' or '""' or '0' or 'false'
+    def to_null_string(self):
+        return self.var_type.to_null_value()
+
+    # returns 'static_cast<int>(i)'
+    def to_json11_type(self):
+        if self.var_type == VarType.cpp_bool or self.var_type == VarType.cpp_int or self.var_type == VarType.cpp_string \
+                or self.var_type == VarType.cpp_time:
+            return self.name
+        elif self.var_type == VarType.cpp_enum:
+            return 'static_cast<int>({0})'.format(self.name)
+        else:
+            print 'Unsupported types'
+            assert False
 

@@ -58,3 +58,12 @@ def indent(num_spaces):
         spaces += ' '
         num -= 1
     return spaces
+
+
+# returns [string] or none in brackets
+def strings_or_none_in_brackets(string):
+    result_or_none = re.search(r"\[([A-Za-z0-9_]+)\]", string)
+    if result_or_none is not None:
+        return result_or_none.groups()
+    else:
+        return None

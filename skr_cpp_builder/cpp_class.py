@@ -12,6 +12,7 @@ Parse and store C++ class info.
 import re
 
 from skrutil import io_utils
+from skrutil import string_utils
 
 
 _CPP_BR = '\n\n'
@@ -43,12 +44,6 @@ class CppClass:
     def convert_class_name_to_file_name(name):
         return CppClass.__convert_class_name_to_file_name(name)
 
-    # convert 'UserGroup' to 'user_group', only works if first letter is upper case.
-    @staticmethod
-    def __convert_class_name_to_file_name(name):
-        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-        return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
-
     def generate_header(self):
         file_path = io_utils.cpp_object_header_path(self.group_name, self.class_name)
         output_header = open(file_path, 'w')
@@ -62,7 +57,7 @@ class CppClass:
         cpp_class_end = '};'
         cpp_constructor = '{0}();'.format(self.class_name)
         cpp_deconstructor = 'virtual ~{0}();'.format(self.class_name)
-        cpp_init_method = self.generate_init_method_declarasion()
+        cpp_init_method = self.__generate_init_method_declarasion()
         cpp_clone = 'std::unique_ptr<{0}> Clone() const;'.format(self.class_name)
         cpp_getter_setter_split = '// Getter/Setter --------------------------------------------------------'
         cpp_variable_split = '// Variable --------------------------------------------------------'
@@ -128,72 +123,6 @@ class CppClass:
         output_cc.write(self.__init_with_json_implementation() + _CPP_BR)
 
         output_cc.write(_CPP_NAMESPACE_END + _CPP_BR)
-
-    def generate_init_method_declarasion(self):
-        parameters = ''
-        for cpp_var in self.cpp_var_list:
-            parameters += cpp_var.initializer()
-            parameters += ', '
-        parameters = parameters[:-2]  # remove last 2 chars
-        init_method = 'void Init({0});'.format(parameters)
-        return init_method
-
-    def __header_file_name(self):
-        return CppClass.__convert_class_name_to_file_name(self.class_name)
-
-    def __constructor_implementation(self):
-        return '{0}::{0}() {{}}'.format(self.class_name)
-
-    def __deconstructor_implementation(self):
-        return '{0}::~{0}() {{}}'.format(self.class_name)
-
-    def __init_method_implementation(self):
-        parameters = ''
-        for cpp_var in self.cpp_var_list:
-            parameters += cpp_var.initializer()
-            parameters += ', '
-        parameters = parameters[:-2]  # remove last char
-        init_implementation = 'void {0}::Init({1}) {{\n'.format(self.class_name, parameters)
-        for cpp_var in self.cpp_var_list:
-            init_implementation += _CPP_SPACE
-            init_implementation += cpp_var.initializer_implementation()
-            init_implementation += '\n'
-        init_implementation += '}'
-        return init_implementation
-
-    def __init_with_json_implementation(self):
-        impl = 'bool {0}::InitWithJsonOrDie(const std::string& json) {{\n'.format(self.class_name)
-        impl += '{0}string error;\n'.format(_CPP_SPACE)
-        impl += '{0}json11::Json json_obj = json11::Json::parse(json, error);\n\n'.format(_CPP_SPACE)
-        impl += '{0}if (!error.empty()) {{\n'.format(_CPP_SPACE)
-        impl += '{0}{0}sakura::log_error("{1} InitWithJson died");\n'.format(_CPP_SPACE, self.class_name)
-        impl += '{0}{0}return false;\n'.format(_CPP_SPACE)
-        impl += '{0}}}\n\n'.format(_CPP_SPACE)
-
-        for cpp_var in self.cpp_var_list:
-            impl += _CPP_SPACE
-            impl += cpp_var.parse_json()
-            impl += '\n'
-
-        impl += '\n{0}return true;\n'.format(_CPP_SPACE)
-        impl += '}'
-        return impl
-
-    def __clone_implementation(self):
-        impl = 'std::unique_ptr<{0}> {0}::Clone() const {{\n'.format(self.class_name)
-        impl += _CPP_SPACE + 'std::unique_ptr<{0}> {1}(new {0}());\n'.format(self.class_name, self.class_name.lower())
-        impl += _CPP_SPACE + '{0}->Init('.format(self.class_name.lower())
-
-        for cpp_var in self.cpp_var_list:
-            impl += cpp_var.private_var_without_type()
-            impl += ', '
-
-        impl = impl[:-2]  # remove last 2 chars
-        impl += ');\n'
-
-        impl += _CPP_SPACE + 'return {0};\n'.format(self.class_name.lower())
-        impl += '}'
-        return impl
 
     def generate_manager_header(self):
         if self.cpp_manager_or_none is None:
@@ -303,3 +232,99 @@ class CppClass:
         output_cc.write(cpp_manager.sqlite_object_from_record_implementation() + _CPP_BR)
 
         output_cc.write(_CPP_NAMESPACE_END + _CPP_BR)
+
+    def generate_web_api_header(self):
+        if self.cpp_manager_or_none is None:
+            return
+
+        cpp_manager = self.cpp_manager_or_none
+
+        header_file_name = 'web_api_{0}.h'.format(string_utils.cpp_class_name_to_cpp_file_name(self.class_name))
+        file_path = 'build/core/api/{0}'.format(header_file_name)
+        output_header = open(file_path, 'w')
+
+        output_header.write(cpp_manager.generate_wep_api_declarations())
+
+    def generate_web_api_implementation(self):
+        if self.cpp_manager_or_none is None:
+            return
+
+        cpp_manager = self.cpp_manager_or_none
+
+        output_cc = 'web_api_{0}.cc'.format(string_utils.cpp_class_name_to_cpp_file_name(self.class_name))
+        file_path = 'build/core/api/{0}'.format(output_cc)
+        output_cc = open(file_path, 'w')
+
+        output_cc.write(cpp_manager.generate_web_api_implementation())
+
+    def __generate_init_method_declarasion(self):
+        parameters = ''
+        for cpp_var in self.cpp_var_list:
+            parameters += cpp_var.initializer()
+            parameters += ', '
+        parameters = parameters[:-2]  # remove last 2 chars
+        init_method = 'void Init({0});'.format(parameters)
+        return init_method
+
+    def __header_file_name(self):
+        return CppClass.__convert_class_name_to_file_name(self.class_name)
+
+    def __constructor_implementation(self):
+        return '{0}::{0}() {{}}'.format(self.class_name)
+
+    def __deconstructor_implementation(self):
+        return '{0}::~{0}() {{}}'.format(self.class_name)
+
+    def __init_method_implementation(self):
+        parameters = ''
+        for cpp_var in self.cpp_var_list:
+            parameters += cpp_var.initializer()
+            parameters += ', '
+        parameters = parameters[:-2]  # remove last char
+        init_implementation = 'void {0}::Init({1}) {{\n'.format(self.class_name, parameters)
+        for cpp_var in self.cpp_var_list:
+            init_implementation += _CPP_SPACE
+            init_implementation += cpp_var.initializer_implementation()
+            init_implementation += '\n'
+        init_implementation += '}'
+        return init_implementation
+
+    def __init_with_json_implementation(self):
+        impl = 'bool {0}::InitWithJsonOrDie(const std::string& json) {{\n'.format(self.class_name)
+        impl += '{0}string error;\n'.format(_CPP_SPACE)
+        impl += '{0}json11::Json json_obj = json11::Json::parse(json, error);\n\n'.format(_CPP_SPACE)
+        impl += '{0}if (!error.empty()) {{\n'.format(_CPP_SPACE)
+        impl += '{0}{0}sakura::log_error("{1} InitWithJson died");\n'.format(_CPP_SPACE, self.class_name)
+        impl += '{0}{0}return false;\n'.format(_CPP_SPACE)
+        impl += '{0}}}\n\n'.format(_CPP_SPACE)
+
+        for cpp_var in self.cpp_var_list:
+            impl += _CPP_SPACE
+            impl += cpp_var.parse_json()
+            impl += '\n'
+
+        impl += '\n{0}return true;\n'.format(_CPP_SPACE)
+        impl += '}'
+        return impl
+
+    def __clone_implementation(self):
+        impl = 'std::unique_ptr<{0}> {0}::Clone() const {{\n'.format(self.class_name)
+        impl += _CPP_SPACE + 'std::unique_ptr<{0}> {1}(new {0}());\n'.format(self.class_name, self.class_name.lower())
+        impl += _CPP_SPACE + '{0}->Init('.format(self.class_name.lower())
+
+        for cpp_var in self.cpp_var_list:
+            impl += cpp_var.private_var_without_type()
+            impl += ', '
+
+        impl = impl[:-2]  # remove last 2 chars
+        impl += ');\n'
+
+        impl += _CPP_SPACE + 'return {0};\n'.format(self.class_name.lower())
+        impl += '}'
+        return impl
+
+    # convert 'UserGroup' to 'user_group', only works if first letter is upper case.
+    @staticmethod
+    def __convert_class_name_to_file_name(name):
+        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+        return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()

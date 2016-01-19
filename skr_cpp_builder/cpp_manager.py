@@ -9,7 +9,9 @@ Parse and store lesschat/worktile C++ object manager info.
 """
 
 import re
+
 from skrutil.skr_logger import skr_log_warning
+from skrutil import string_utils
 
 
 _CPP_BR = '\n\n'
@@ -42,16 +44,28 @@ class CppManagerDeleteCommand:
             self.where = ''
 
 
+class CppApiDescription:
+
+    def __init__(self, name, alias, method, uri, input_var_list, output_var_list):
+        self.name = name
+        self.alias = alias
+        self.method = method
+        self.uri = uri
+        self.input_var_list = input_var_list
+        self.output_var_list = output_var_list
+
+
 class CppManager:
 
     def __init__(self, manager_name):
-        self.manager_name = manager_name
+        self.manager_name = manager_name  # UserManager
         self.save_commands = []
         self.delete_commands = []
         self.fetch_commands = []
+        self.apis = []
 
-        self.object_name = ''
-        self.plural_object_name = ''
+        self.object_name = ''  # User
+        self.plural_object_name = ''  # Users
 
         self.cpp_variable_list = []
 
@@ -70,6 +84,9 @@ class CppManager:
 
     def add_delete_command(self, delete_command):
         self.delete_commands.append(delete_command)
+
+    def add_api_description(self, api_description):
+        self.apis.append(api_description)
 
     def class_name(self):
         return self.manager_name
@@ -248,6 +265,33 @@ class CppManager:
         impl += '}'
         return impl
 
+    def generate_wep_api_declarations(self):
+        declaration = '// {0} --------------------------------------------------------'.format(self.object_name)
+        declaration += _CPP_BR
+
+        for api in self.apis:
+            declaration += '// {0}\n'.format(api.uri)
+            declaration += 'void {0}({1});'.format(api.name, self.__api_parameters_declaration(api))
+            declaration += _CPP_BR
+
+        return declaration
+
+    def generate_web_api_implementation(self):
+        impl = '#include "web_api.h"\n\n#include "json11/json11.hpp"\n\n#include "utils/string_utils.h"\n#include "utils/json11_utils.h"\n\n'
+        impl += 'using std::string;\nusing std::vector;\nusing std::unique_ptr;\n\nusing sakura::HttpRequest;\nusing sakura::HttpClient;\nusing sakura::HttpResponse;\n\n'
+        impl += 'NS_LCC_BEGIN\n\n'
+        impl += '////////////////////////////////////////////////////////////////////////////////\n'
+        impl += '// WebApi, public:\n\n'
+        impl += '// {0} --------------------------------------------------------'.format(self.object_name)
+        impl += _CPP_BR
+        for api in self.apis:
+            impl += 'void WebApi::{0}({1}) {{\n'.format(api.name, self.__api_parameters_declaration(api))
+            impl += string_utils.indent(2) + self.__api_implementation(api) + '\n'
+            impl += '}'
+            impl += _CPP_BR
+        impl += 'NS_LCC_END'
+        return impl
+
     # returns "ById(const std::string& id)" or "(const std::string& id, const std::string& username)" or "()"
     def __convert_bys_to_string(self, by_string_list):
         if len(by_string_list) == 0:  # ()
@@ -290,6 +334,13 @@ class CppManager:
     # returns None if not found
     def __cpp_var_by_name(self, name_string):
         for cpp_var in self.cpp_variable_list:
+            if cpp_var.name == name_string:
+                return cpp_var
+        return None
+
+    # returns None if not found
+    def __find_cpp_var_by_name(self, name_string, var_list):
+        for cpp_var in var_list:
             if cpp_var.name == name_string:
                 return cpp_var
         return None
@@ -432,3 +483,110 @@ class CppManager:
             impl += 'return {0};\n'.format(self.plural_object_name.lower())
             impl += '}'
             return impl
+
+    def __api_parameters_declaration(self, api_description):
+        declaration = ''
+        for input_var in api_description.input_var_list:
+            declaration += input_var.to_get_description_string()
+            declaration += ', '
+
+        declaration += 'std::function<void(bool success, const std::string& error'
+
+        if len(api_description.output_var_list) > 0:
+            output_declaration = ', '
+            for output_var in api_description.output_var_list:
+                output_declaration += output_var.to_set_description_string()
+                output_declaration += ', '
+            output_declaration = output_declaration[:-2]
+            declaration += output_declaration
+
+        declaration += ')> callback'
+
+        return declaration
+
+    def __api_implementation(self, api_description):
+        var_names_or_none = string_utils.strings_or_none_in_brackets(api_description.uri)
+        cpp_uri = ''
+        if var_names_or_none is not None:
+            cpp_uri = '"'
+            cpp_uri += api_description.uri
+            for var_name in var_names_or_none:
+                cpp_var = self.__find_cpp_var_by_name(var_name, api_description.input_var_list)
+                cpp_uri = cpp_uri.replace(var_name, cpp_var.to_convert_to_string_description())
+            cpp_uri = cpp_uri.replace('[', '" + ')
+            cpp_uri = cpp_uri.replace(']', ' + "')
+            cpp_uri += '"'
+
+            check_cpp_uri = cpp_uri[-5:]
+            if check_cpp_uri == ' + ""':  # parameter is the last component
+                cpp_uri = cpp_uri[:-5]
+        else:
+            cpp_uri = '"{0}"'.format(api_description.uri)
+
+        impl = 'string api_path = {0};'.format(cpp_uri)
+        impl += '\n'
+        impl += string_utils.indent(2) + 'string url = BaseUrlForCurrentTeam() + api_path;' + _CPP_BR
+        impl += string_utils.indent(2) + 'unique_ptr<HttpRequest> request = GenBaseRequestForCurrentTeam(HttpRequest::Type::{0});\n'.format(api_description.method)
+        impl += string_utils.indent(2) + 'request->set_url(url);' + _CPP_BR
+
+        impl += self.__generate_post_or_put_body(api_description)
+
+        impl += string_utils.indent(2) + 'HttpClient::SharedClient()->\n'
+        impl += string_utils.indent(2) + 'Send(std::move(request), [callback](unique_ptr<HttpResponse> response) {\n'
+        impl += string_utils.indent(4) + 'if (response->is_succeed()) {\n'
+        impl += string_utils.indent(6) + 'string error;\n'
+        impl += string_utils.indent(6) + 'json11::Json json_obj = json11::Json::parse(response->response_data_as_string(), error);\n'
+        impl += string_utils.indent(6) + 'int state_code = json_obj[kJsonKeyState].int_value();\n'
+        impl += string_utils.indent(6) + 'if (state_code == 200) {\n'
+
+        output_success_parameters = ''
+        output_fail_parameters = ''
+        for output_var in api_description.output_var_list:
+            impl += output_var.parse_json(8)
+            impl += '\n'
+
+            output_success_parameters += ', '
+            output_success_parameters += output_var.to_move_string()
+
+            output_fail_parameters += ', '
+            output_fail_parameters += output_var.to_null_string()
+
+        impl += string_utils.indent(8) + 'callback(true, ""{0});\n'.format(output_success_parameters)
+        impl += string_utils.indent(6) + '} else {\n'
+        impl += string_utils.indent(8) + 'string ret_error = ErrorMessageFromStateCode(state_code);\n'
+        impl += string_utils.indent(8) + 'callback(false, ret_error{0});\n'.format(output_fail_parameters)
+        impl += string_utils.indent(6) + '}\n'
+        impl += string_utils.indent(4) + '} else {\n'
+        impl += string_utils.indent(6) + 'string ret_error = response->error_buffer();\n'
+        impl += string_utils.indent(6) + 'callback(false, ret_error{0});\n'.format(output_fail_parameters)
+        impl += string_utils.indent(4) + '}\n'
+        impl += string_utils.indent(2) + '});'
+        return impl
+
+    def __generate_post_or_put_body(self, api_description):
+        if api_description.method == 'POST' or api_description.method == 'PUT':
+            valid_var_list = []
+
+            for input_var in api_description.input_var_list:
+                if input_var.json_path is not None and input_var.json_path != '':
+                    valid_var_list.append(input_var)
+            if len(valid_var_list) == 0:
+                return ''
+
+            body = string_utils.indent(2) + 'json11::Json put_or_post_json = json11::Json::object {\n'
+            for var in valid_var_list:
+                json_paths = re.split('/', var.json_path)
+                if len(json_paths) > 2:
+                    print 'We do not support ugly json which has more than 2 levels'
+                    assert False
+                elif len(json_paths) == 1:
+                    body += string_utils.indent(4) + '{{ "{0}", {1} }},\n'.format(var.json_path, var.to_json11_type())
+                elif len(json_paths) == 2:
+                    body += string_utils.indent(4) + '{{ "{0}", json11::Json::object {{{{ "{1}", {2} }}}} }},\n'.format(json_paths[0], json_paths[1], var.to_json11_type())
+            body += string_utils.indent(2) + '};\n'
+            body += string_utils.indent(2) + 'string put_or_post_json_str = put_or_post_json.dump();' + _CPP_BR
+            body += string_utils.indent(2) + 'request->set_request_data(put_or_post_json_str);' + _CPP_BR
+            return body
+        else:
+            print 'Only PUT or POST method can have request_body'
+            return ''
