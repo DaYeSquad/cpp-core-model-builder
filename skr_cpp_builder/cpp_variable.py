@@ -290,12 +290,13 @@ class VarType:
 
 class CppVariable:
 
-    def __init__(self, name, var_type_string, json_path, sql_flag_or_none, cache_desc=''):
+    def __init__(self, name, var_type_string, json_path, sql_flag_or_none, cache_desc='', capture=False):
         self.name = name
         self.var_type = VarType.instance_from_string(var_type_string)
         self.json_path = json_path
         self.sql_flag_or_none = sql_flag_or_none
         self.cache_desc = cache_desc
+        self.capture = capture
 
     def set_enum_class_name(self, enum_class_name):
         self.var_type.set_enum_class_name(enum_class_name)

@@ -26,19 +26,22 @@ _CPP_PUBLIC = 'public:'
 _CPP_PRIVATE = 'private:'
 _CPP_PERSISTENT_STORE_SPLIT = '// Persisent store --------------------------------------------------------'
 _CPP_UTILS_SPLIT = '// Utils --------------------------------------------------------'
+_CPP_HTTP_SPLIT = '// HTTP --------------------------------------------------------'
 
 
 class CppClass:
-    def __init__(self, group_name, class_name, cpp_variable_list, cpp_enum_list, cpp_manager_or_none):
+    def __init__(self, group_name, class_name, cpp_variable_list, cpp_enum_list, cpp_manager_or_none, cpp_replacement_list):
         self.group_name = group_name
         self.class_name = class_name
         self.cpp_var_list = cpp_variable_list
         self.cpp_enum_list = cpp_enum_list
         self.cpp_manager_or_none = cpp_manager_or_none
+        self.cpp_replacement_list = cpp_replacement_list
 
         if self.cpp_manager_or_none is not None:
             self.cpp_manager_or_none.set_object_name(class_name, class_name + 's')
             self.cpp_manager_or_none.set_cpp_variable_list(cpp_variable_list)
+            self.cpp_manager_or_none.set_replacement_list(cpp_replacement_list)
 
     @staticmethod
     def convert_class_name_to_file_name(name):
@@ -153,6 +156,7 @@ class CppClass:
         cpp_manager_fetch_methods = cpp_manager.generate_fetch_declarations(_CPP_SPACE)
         cpp_manager_delete_methods = cpp_manager.generate_delete_declarations(_CPP_SPACE)
         cpp_disallow_copy_and_assign = 'DISALLOW_COPY_AND_ASSIGN({0});'.format(cpp_manager.class_name())
+        cpp_manager_http_methods = cpp_manager.generate_manager_http_declarations(_CPP_SPACE)
 
         output_header.write(def_guard + _CPP_BR)
         output_header.write(cpp_include + _CPP_BR)
@@ -165,6 +169,9 @@ class CppClass:
         output_header.write(_CPP_SPACE + cpp_deconstructor + _CPP_BR)
         output_header.write(_CPP_SPACE + cpp_init_method + _CPP_BR)
         output_header.write(_CPP_SPACE + cpp_default_manager + _CPP_BR)
+
+        output_header.write(_CPP_SPACE + _CPP_HTTP_SPLIT + _CPP_BR)
+        output_header.write(cpp_manager_http_methods)
 
         output_header.write(_CPP_SPACE + _CPP_PERSISTENT_STORE_SPLIT + _CPP_BR)
         output_header.write(cpp_manager_save_methods)
@@ -218,6 +225,9 @@ class CppClass:
         output_cc.write(cpp_manager.generate_deconstructor_implementation() + _CPP_BR)
         output_cc.write(cpp_manager.generate_init_or_die_implementation() + _CPP_BR)
         output_cc.write(cpp_manager.generate_default_manager_implementation() + _CPP_BR)
+
+        output_cc.write(_CPP_HTTP_SPLIT + _CPP_BR)
+        output_cc.write(cpp_manager.generate_manager_http_implementation())
 
         output_cc.write(_CPP_PERSISTENT_STORE_SPLIT + _CPP_BR)
         output_cc.write(cpp_manager.generate_save_implementations())

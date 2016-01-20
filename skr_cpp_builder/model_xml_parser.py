@@ -12,6 +12,8 @@ from cpp_manager import CppManagerFetchCommand
 from cpp_manager import CppManagerDeleteCommand
 from cpp_manager import CppApiDescription
 
+from cpp_replacement import CppReplacement
+
 
 class CppModelXmlParser:
 
@@ -30,6 +32,12 @@ class CppModelXmlParser:
         # start parsing xml
         e = xml.etree.ElementTree.parse(directory)
         root = e.getroot()
+
+        # search all <define/>
+        replacement_list = []
+        for define_node in root.findall('define'):
+            replacement = CppReplacement(define_node.get('name'), define_node.get('description'))
+            replacement_list.append(replacement)
 
         # search directories
         for folder_node in root.findall('group'):
@@ -122,13 +130,17 @@ class CppModelXmlParser:
                             var_json_path = variable_node.get('json_path')
                             var_cache_desc = variable_node.get('cache')
                             var_enum_or_none = variable_node.get('enum')
+                            var_capture_or_none = variable_node.get('capture')
+                            if var_capture_or_none is None:
+                                var_capture_or_none = False
 
-                            var = CppVariable(var_name, var_type_string, var_json_path, None, var_cache_desc)
+                            var = CppVariable(var_name, var_type_string, var_json_path, None, var_cache_desc, var_capture_or_none)
                             var.set_enum_class_name(var_enum_or_none)
 
                             input_var_list.append(var)
 
                         output_var_list = []
+                        extra_list = []
                         outputs_node = api_node.find('outputs')
                         for variable_node in outputs_node.findall('variable'):
                             var_name = variable_node.get('name')
@@ -142,11 +154,15 @@ class CppModelXmlParser:
 
                             output_var_list.append(var)
 
-                        api = CppApiDescription(api_name, api_alias, api_method, api_uri, input_var_list, output_var_list)
+                        # parse <extra/> inside <output/>
+                        for extra_node in outputs_node.findall('extra'):
+                            extra_list.append(extra_node.get('cache'))
+
+                        api = CppApiDescription(api_name, api_alias, api_method, api_uri, input_var_list, output_var_list, extra_list)
                         cpp_manager.add_api_description(api)
 
                 # write object header
-                cpp_class = CppClass(group_name, class_name, cpp_var_list, cpp_enum_list, cpp_manager)
+                cpp_class = CppClass(group_name, class_name, cpp_var_list, cpp_enum_list, cpp_manager, replacement_list)
                 cpp_class.generate_header()
 
                 # write object implementation

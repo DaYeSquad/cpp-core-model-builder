@@ -46,13 +46,14 @@ class CppManagerDeleteCommand:
 
 class CppApiDescription:
 
-    def __init__(self, name, alias, method, uri, input_var_list, output_var_list):
+    def __init__(self, name, alias, method, uri, input_var_list, output_var_list, extra_list):
         self.name = name
         self.alias = alias
         self.method = method
         self.uri = uri
         self.input_var_list = input_var_list
         self.output_var_list = output_var_list
+        self.extra_list = extra_list
 
 
 class CppManager:
@@ -68,6 +69,7 @@ class CppManager:
         self.plural_object_name = ''  # Users
 
         self.cpp_variable_list = []
+        self.cpp_replacement_list = []
 
     def set_object_name(self, class_name, plural_class_name):
         self.object_name = class_name
@@ -75,6 +77,9 @@ class CppManager:
 
     def set_cpp_variable_list(self, cpp_variable_list):
         self.cpp_variable_list = cpp_variable_list
+
+    def set_replacement_list(self, cpp_replacement_list):
+        self.cpp_replacement_list = cpp_replacement_list
 
     def add_save_command(self, save_command):
         self.save_commands.append(save_command)
@@ -290,6 +295,26 @@ class CppManager:
             impl += '}'
             impl += _CPP_BR
         impl += 'NS_LCC_END'
+        return impl
+
+    def generate_manager_http_declarations(self, pre_spaces):
+        declaration = pre_spaces + '// {0} --------------------------------------------------------'.format(self.object_name)
+        declaration += _CPP_BR
+
+        for api in self.apis:
+            declaration += pre_spaces + '// {0}\n'.format(api.uri)
+            declaration += pre_spaces + 'void {0}({1}) const;'.format(api.alias, self.__api_parameters_declaration(api))
+            declaration += _CPP_BR
+
+        return declaration
+
+    def generate_manager_http_implementation(self):
+        impl = ''
+        for api in self.apis:
+            impl += 'void {2}::{0}({1}) const {{\n'.format(api.alias, self.__api_parameters_declaration(api), self.manager_name)
+            impl += self.__manager_http_implementation(api) + '\n'
+            impl += '}'
+            impl += _CPP_BR
         return impl
 
     # returns "ById(const std::string& id)" or "(const std::string& id, const std::string& username)" or "()"
@@ -590,3 +615,116 @@ class CppManager:
         else:
             print 'Only PUT or POST method can have request_body'
             return ''
+
+    def __manager_http_implementation(self, api_description):
+        capture_parameters = ''
+        input_parameters = ''
+        for input_var in api_description.input_var_list:
+            input_parameters += input_var.name + ', '
+
+            if input_var.capture:
+                capture_parameters += input_var.name + ', '
+
+        output_callback_parameters = ''
+        output_parameters = '(bool success, const std::string &error'
+        if len(api_description.output_var_list) > 0:
+            for output_var in api_description.output_var_list:
+                output_parameters += ', '
+                output_parameters += output_var.to_set_description_string()
+
+                output_callback_parameters += ', '
+                output_callback_parameters += output_var.to_move_string()
+        output_parameters += ')'
+
+        impl = string_utils.indent(2) + 'WebApi::Api()->{0}({1}[{3}this, callback]{2} {{\n'.format(api_description.name, input_parameters, output_parameters, capture_parameters)
+        impl += string_utils.indent(4) + 'if (success) {\n'
+
+        for output_var in api_description.output_var_list:
+            impl += self.__cpp_cache_by_cache_description_name(output_var.cache_desc, output_var.name)
+
+        for extra in api_description.extra_list:
+            impl += self.__cpp_cache_by_cache_description_name(extra)
+
+        impl += string_utils.indent(4) + '}\n'
+        impl += string_utils.indent(4) + 'callback(success, error{0});\n'.format(output_callback_parameters)
+        impl += string_utils.indent(2) + '});'
+
+        return impl
+
+    def __cpp_cache_by_cache_description_name(self, cache_desc, name=''):
+        cache_attr = cache_desc
+
+        if cache_attr is None or cache_attr == '':  # if no 'cache'
+            return ''
+
+        impl = ''
+        caches = re.split(',', cache_attr)
+        for cache in caches:
+            if cache[0] == '#':  # if define
+                impl += string_utils.indent(6) + self.__find_replace_string_by_name(cache[1:]) + '\n'
+            else:  # if by command
+                cpp_class = 'this->'
+                method = ''
+
+                # command_components[0]: save(s)/delete(s)/update(s)
+                # command_components[1]: (id, project_id) - replace string
+                command_components = re.split('\(', cache)
+                sql_verb = command_components[0]
+                parameters = ''
+                num_parameters = 0
+                if len(command_components) == 2:
+                    parameters = command_components[1]
+                    parameters = parameters[:-1]
+                    num_parameters = len(re.split(',', parameters))
+                else:
+                    parameters = name
+                    num_parameters = 0
+
+                if sql_verb == 'saves':
+                    method = 'Save{0}ToCache({1});\n'.format(self.plural_object_name, name)
+                elif sql_verb == 'save':
+                    method = 'Save{0}ToCache(*{1});\n'.format(self.object_name, name)
+                elif sql_verb == 'deletes':
+                    if num_parameters == 0:
+                        method = 'Delete{0}FromCacheBy();\n'.format(self.plural_object_name)
+                    elif num_parameters == 1:
+                        by = 'by_{0}'.format(parameters)
+                        by = string_utils.to_title_style_name(by)
+                        method = 'Delete{0}FromCache{2}({1});\n'.format(self.plural_object_name, parameters, by)
+                    else:
+                        method = 'Delete{0}FromCache({1});\n'.format(self.plural_object_name, parameters)
+                elif sql_verb == 'delete':
+                    if num_parameters == 0:
+                        method = 'Delete{0}FromCacheBy();\n'.format(self.object_name)
+                    elif num_parameters == 1:
+                        by = 'by_{0}'.format(parameters)
+                        by = string_utils.to_title_style_name(by)
+                        method = 'Delete{0}FromCache{2}({1});\n'.format(self.object_name, parameters, by)
+                    else:
+                        method = 'Delete{0}FromCache({1});\n'.format(self.object_name, parameters)
+                elif sql_verb[:7] == 'fupdate':  # generate implementation automatically
+                    components = re.split(':', sql_verb)
+                    fetch_by_id = components[1]
+                    impl = string_utils.indent(6) + 'unique_ptr<{0}> {1} = this->Fetch{0}FromCacheBy{2}({3});\n'\
+                        .format(self.object_name,
+                                string_utils.cpp_class_name_to_cpp_file_name(self.object_name),
+                                string_utils.to_title_style_name(fetch_by_id),
+                                fetch_by_id)
+
+                    for parameter in re.split(',', parameters):
+                        impl += string_utils.indent(6) + '{0}->set_{1}({1});\n'.format(string_utils.cpp_class_name_to_cpp_file_name(self.object_name), parameter)
+
+                    impl += string_utils.indent(6) + 'this->Save{0}ToCache(*{1});\n'.format(self.object_name, string_utils.cpp_class_name_to_cpp_file_name(self.object_name))
+                    return impl
+                else:
+                    print 'Unsupported method'
+                    assert False
+                impl += string_utils.indent(6) + cpp_class + method
+
+        return impl
+
+    def __find_replace_string_by_name(self, name):
+        for replacement in self.cpp_replacement_list:
+            if replacement.search == name:
+                return replacement.replace
+        return ''
