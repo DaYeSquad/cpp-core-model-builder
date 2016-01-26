@@ -298,11 +298,9 @@ class CppManager:
         return impl
 
     def generate_manager_http_declarations(self, pre_spaces):
-        declaration = pre_spaces + '// {0} --------------------------------------------------------'.format(self.object_name)
-        declaration += _CPP_BR
+        declaration = ''
 
         for api in self.apis:
-            declaration += pre_spaces + '// {0}\n'.format(api.uri)
             declaration += pre_spaces + 'void {0}({1}) const;'.format(api.alias, self.__api_parameters_declaration(api))
             declaration += _CPP_BR
 
@@ -537,7 +535,7 @@ class CppManager:
             cpp_uri += api_description.uri
             for var_name in var_names_or_none:
                 cpp_var = self.__find_cpp_var_by_name(var_name, api_description.input_var_list)
-                cpp_uri = cpp_uri.replace(var_name, cpp_var.to_convert_to_string_description())
+                cpp_uri = cpp_uri.replace('[{0}]'.format(var_name), '[{0}]'.format(cpp_var.to_convert_to_string_description()))
             cpp_uri = cpp_uri.replace('[', '" + ')
             cpp_uri = cpp_uri.replace(']', ' + "')
             cpp_uri += '"'
@@ -686,7 +684,7 @@ class CppManager:
                     method = 'Save{0}ToCache(*{1});\n'.format(self.object_name, name)
                 elif sql_verb == 'deletes':
                     if num_parameters == 0:
-                        method = 'Delete{0}FromCacheBy();\n'.format(self.plural_object_name)
+                        method = 'Delete{0}FromCache();\n'.format(self.plural_object_name)
                     elif num_parameters == 1:
                         by = 'by_{0}'.format(parameters)
                         by = string_utils.to_title_style_name(by)
@@ -695,7 +693,7 @@ class CppManager:
                         method = 'Delete{0}FromCache({1});\n'.format(self.plural_object_name, parameters)
                 elif sql_verb == 'delete':
                     if num_parameters == 0:
-                        method = 'Delete{0}FromCacheBy();\n'.format(self.object_name)
+                        method = 'Delete{0}FromCache();\n'.format(self.object_name)
                     elif num_parameters == 1:
                         by = 'by_{0}'.format(parameters)
                         by = string_utils.to_title_style_name(by)

@@ -56,3 +56,4 @@ if __name__ == "__main__":
     # jni_parse.parse(input_file_path)
 
     print('写入完成, 请查看 %s 下的 build 文件夹' % (dir_path))
+    print('!!! 记得更新 options.h 中的 DATABASE_VERSION')

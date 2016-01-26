@@ -481,11 +481,14 @@ class CppVariable:
 
     # returns 'static_cast<int>(i)'
     def to_json11_type(self):
-        if self.var_type == VarType.cpp_bool or self.var_type == VarType.cpp_int or self.var_type == VarType.cpp_string \
-                or self.var_type == VarType.cpp_time:
+        if self.var_type == VarType.cpp_int or self.var_type == VarType.cpp_string:
             return self.name
-        elif self.var_type == VarType.cpp_enum:
+        elif self.var_type == VarType.cpp_bool:
+            return '{0} ? 1 : 0'.format(self.name)
+        elif self.var_type == VarType.cpp_enum or self.var_type == VarType.cpp_time:
             return 'static_cast<int>({0})'.format(self.name)
+        elif self.var_type == VarType.cpp_string_array:
+            return 'json11_array_from_strings({0})'.format(self.name)
         else:
             print 'Unsupported types'
             assert False
