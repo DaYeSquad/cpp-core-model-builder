@@ -43,11 +43,11 @@ if __name__ == "__main__":
 
     print('开始解析据...')
 
-    parser = CppModelXmlParser(3.0)
+    parser = CppModelXmlParser(4.0)
     parser.parse(input_file_path)
 
-    # objc_parser = ObjcModelXmlParser(1.0)
-    # objc_parser.parse(input_file_path)
+    objc_parser = ObjcModelXmlParser(4.0)
+    objc_parser.parse(input_file_path)
 
     # java_parser = JavaModelXmlParser(1.0)
     # java_parser.parse(input_file_path)

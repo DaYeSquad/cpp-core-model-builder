@@ -128,7 +128,7 @@ class VarType:
             print 'Unsupported value'
 
     @classmethod
-    @deprecated
+    @deprecated  # use instance_from_string to adapt to new development
     def type_from_string(cls, var_type_string):
         if var_type_string == 'bool':
             return 1
