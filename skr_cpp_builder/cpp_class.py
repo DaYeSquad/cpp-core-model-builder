@@ -30,13 +30,14 @@ _CPP_HTTP_SPLIT = '// HTTP -----------------------------------------------------
 
 
 class CppClass:
-    def __init__(self, group_name, class_name, cpp_variable_list, cpp_enum_list, cpp_manager_or_none, cpp_replacement_list):
+    def __init__(self, group_name, class_name, cpp_variable_list, cpp_enum_list, cpp_manager_or_none, cpp_replacement_list, class_comment):
         self.group_name = group_name
         self.class_name = class_name
         self.cpp_var_list = cpp_variable_list
         self.cpp_enum_list = cpp_enum_list
         self.cpp_manager_or_none = cpp_manager_or_none
         self.cpp_replacement_list = cpp_replacement_list
+        self.class_comment = class_comment
 
         if self.cpp_manager_or_none is not None:
             self.cpp_manager_or_none.set_object_name(class_name, class_name + 's')
@@ -69,6 +70,10 @@ class CppClass:
         output_header.write(def_guard + _CPP_BR)
         output_header.write(cpp_include + _CPP_BR)
         output_header.write(_CPP_NAMESPACE_BEGIN + _CPP_BR)
+
+        if self.class_comment is not None:
+            comment = self.__find_replacement_by_define_name(self.class_comment)
+            output_header.write('{0}'.format(comment))
 
         output_header.write(cpp_class_begin + '\n')
         output_header.write(_CPP_PUBLIC + _CPP_BR)
@@ -338,3 +343,11 @@ class CppClass:
     def __convert_class_name_to_file_name(name):
         s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
         return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+    # returns replacement description by name
+    def __find_replacement_by_define_name(self, define_name):
+        search_name = define_name[1:]
+        for replacement in self.cpp_replacement_list:
+            if replacement.search == search_name:
+                return replacement.replace
+        return ''

@@ -48,6 +48,7 @@ class CppModelXmlParser:
             # search classes
             for class_node in folder_node.findall('class'):
                 class_name = class_node.get('name')
+                class_comment = class_node.get('comment')
 
                 print('Find class {0} under "{1}" group'.format(class_name, group_name))
 
@@ -162,7 +163,7 @@ class CppModelXmlParser:
                         cpp_manager.add_api_description(api)
 
                 # write object header
-                cpp_class = CppClass(group_name, class_name, cpp_var_list, cpp_enum_list, cpp_manager, replacement_list)
+                cpp_class = CppClass(group_name, class_name, cpp_var_list, cpp_enum_list, cpp_manager, replacement_list, class_comment)
                 cpp_class.generate_header()
 
                 # write object implementation

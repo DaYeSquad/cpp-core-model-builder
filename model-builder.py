@@ -29,6 +29,10 @@ class bcolors:
     ENDC = '\033[0m'
 
 if __name__ == "__main__":
+    # 解决中文编码解析问题
+    import sys
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
 
     input_file_path = sys.argv[1]
     dir_path, file_name = os.path.split(input_file_path)
@@ -46,8 +50,8 @@ if __name__ == "__main__":
     parser = CppModelXmlParser(4.0)
     parser.parse(input_file_path)
 
-    objc_parser = ObjcModelXmlParser(4.0)
-    objc_parser.parse(input_file_path)
+    #objc_parser = ObjcModelXmlParser(4.0)
+    #objc_parser.parse(input_file_path)
 
     # java_parser = JavaModelXmlParser(1.0)
     # java_parser.parse(input_file_path)
