@@ -26,12 +26,22 @@ class CppManagerSaveCommand:
 
 class CppManagerFetchCommand:
 
-    def __init__(self, is_plural, where):
+    def __init__(self, is_plural, where, sort_by_or_none, is_asc):
+        self.sort_by_or_none = sort_by_or_none
+        self.is_asc = is_asc
         self.is_plural = is_plural
         if where is not None:
             self.where = where
         else:
             self.where = ''
+
+    def sort_sql(self):
+        if self.sort_by_or_none is not None:
+            order = 'ASC'
+            if self.is_asc is False:
+                order = 'DESC'
+            return ', "{0} {1}"'.format(self.sort_by_or_none, order)
+        return ''
 
 
 class CppManagerDeleteCommand:
@@ -491,7 +501,7 @@ class CppManager:
             impl += _CPP_SPACE
             impl += 'LockMainDatabase();' + _CPP_BR
             impl += _CPP_SPACE
-            impl += '{0}->open(where_condition);\n\n'.format(self.__sqlite_tb_name())
+            impl += '{0}->open(where_condition{1});\n\n'.format(self.__sqlite_tb_name(), fetch_command.sort_sql())
             impl += _CPP_SPACE
             impl += 'for (int i = 0; i < {0}->recordCount(); ++i) {{\n'.format(self.__sqlite_tb_name())
             impl += _CPP_SPACE + _CPP_SPACE

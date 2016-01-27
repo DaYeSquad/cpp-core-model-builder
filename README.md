@@ -25,7 +25,7 @@ python model-builder.py lesschat-model-description.xml
 
 5. manager name should be 'UserManager' (CRUD)
   - <save/> supports "singular"(SaveObjectToCache) and "plural"(SaveObjectsToCache)
-  - <fetch/> supports "singular"(FetchObjectFromCache) and "plural"(FetchObjectsFromCache) and "by" (FetchObjectFromCacheById)
+  - <fetch/> supports "singular"(FetchObjectFromCache) , "plural"(FetchObjectsFromCache) , "by" (FetchObjectFromCacheById), "sort" (means sort by key name) and "desc" (default is ascending, if you set desc='true', will sort as decending).
   - <delete/> supports "singular"(DeleteObjectFromCache) and "plural"(DeleteObjectsFromCache) and "by" (DeleteObjectFromCacheById)
   - <update/> is not supported in version 1.0
   - WARNING: DO NOT use '[string]' variable as "by" filter
