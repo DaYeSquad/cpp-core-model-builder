@@ -140,7 +140,8 @@ class ObjcClass:
         output_header.write('///-----------------------------------------\n')
         output_header.write('\n')
 
-        output_header.write(_OBJC_BR)
+        output_header.write(objc_manager.generate_web_api_declarations())
+
         output_header.write('///-----------------------------------------\n')
         output_header.write('/// @name Persistent store\n')
         output_header.write('///-----------------------------------------\n')
@@ -173,6 +174,9 @@ class ObjcClass:
         output_impl.write(_OBJC_BR)
         output_impl.write(objc_manager.generate_default_manager_implementation())
         output_impl.write(_OBJC_BR)
+        output_impl.write('#pragma mark - HTTP')
+        output_impl.write(_OBJC_BR)
+        output_impl.write(objc_manager.generate_web_api_implementations())
         output_impl.write('#pragma mark - Persistent store')
         output_impl.write(_OBJC_BR)
         output_impl.write(objc_manager.generate_fetch_implementations())

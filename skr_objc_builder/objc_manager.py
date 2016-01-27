@@ -14,6 +14,7 @@ class ObjcManager:
         self.save_commands = []
         self.delete_commands = []
         self.fetch_commands = []
+        self.apis = []
 
         self.object_name = ''
         self.plural_object_name = ''
@@ -35,6 +36,9 @@ class ObjcManager:
 
     def add_delete_command(self, delete_command):
         self.delete_commands.append(delete_command)
+
+    def add_api_description(self, api_description):
+        self.apis.append(api_description)
 
     def class_name(self):
         return self.manager_name
@@ -60,6 +64,60 @@ class ObjcManager:
         impl = ''
         for fetch_command in self.fetch_commands:
             impl += self.__fetch_implementation(fetch_command)
+            impl += _OBJC_BR
+        return impl
+
+    def generate_web_api_declarations(self):
+        declaration = ''
+        for api in self.apis:
+            declaration += self.__web_api_declaration(api)
+            declaration += ';'
+            declaration += _OBJC_BR
+
+        return declaration
+
+
+    def generate_web_api_implementations(self):
+        impl = ''
+        for api in self.apis:
+            impl += self.__web_api_declaration(api)
+            impl += ' {\n'
+            impl += string_utils.indent(2)
+            impl += '_coreManagerHandler->\n'
+            impl += string_utils.indent(2)
+            impl += api.alias + '('
+            for input_var in api.input_var_list:
+                impl += input_var.cast_to_cpp_parameter()
+                impl += ', '
+            impl += '[successBlock, failureBlock](bool success, const std::string& errorUTF8String'
+            for output_var in api.output_var_list:
+                impl += ', {0}'.format(output_var.objc_wrapper_from_cpp_parameter())
+            impl += ') {\n'
+            impl += string_utils.indent(2)
+            impl += 'if (success) {\n'
+            for output_var in api.output_var_list:
+                impl += output_var.objc_form_cpp_parameter(4)
+                impl += _OBJC_BR
+
+            impl += string_utils.indent(4)
+            impl += 'successBlock('
+
+            for i, output_var in enumerate(api.output_var_list):
+                if i != 0:
+                    impl += ', '
+                impl += string_utils.to_objc_property_name(output_var.name)
+
+            impl += ');\n'
+            impl += string_utils.indent(2)
+            impl += '} else {\n'
+            impl += string_utils.indent(4)
+            impl += 'NSString *error = [NSString stringWithUTF8String:errorUTF8String.c_str()];\n'
+            impl += string_utils.indent(4)
+            impl += 'failureBlock(LCCErrorWithNSString(error));\n'
+            impl += string_utils.indent(2)
+            impl += '}'
+            impl += '\n'
+            impl += '}'
             impl += _OBJC_BR
         return impl
 
@@ -147,7 +205,8 @@ class ObjcManager:
             impl += string_utils.indent(2)
             impl += 'return [{0} copy];\n'.format(string_utils.first_char_to_lower(self.plural_object_name))
             impl += '}\n'
-            return impl
+            self.impl = impl
+            return self.impl
 
     def __cpp_fetch_method_name(self, fetch_command):
         by_list = []
@@ -187,3 +246,28 @@ class ObjcManager:
             bys_string = bys_string[:-2]  # remove last 2 chars
             bys_string += ')'
             return bys_string
+
+    def __web_api_declaration(self, api):
+        declaration = ''
+        declaration += '- (void){0}'.format(string_utils.first_char_to_lower(api.alias))
+        if len(api.input_var_list) > 0:
+                if len(api.input_var_list) == 1:
+                    declaration += 'By'
+                else:
+                    declaration += 'With'
+                for i, input_var in enumerate(api.input_var_list):
+                    input_name = string_utils.to_objc_property_name(input_var.name)
+                    if i == 0:
+                        input_name = string_utils.first_char_to_upper(input_name)
+                    declaration += '{0}:({1}){2} '.format(input_name, input_var.var_type.to_objc_getter_string(), string_utils.first_char_to_lower(input_name))
+                declaration += 'success(void (^)('
+        else:
+            declaration += 'Success(void (^)('
+        if len(api.output_var_list) > 0:
+            for i, output_var in enumerate(api.output_var_list):
+                declaration += output_var.var_type.to_objc_getter_string()
+                declaration += string_utils.to_objc_property_name(output_var.name)
+                if i != len(api.output_var_list) - 1:
+                    declaration += ', '
+        declaration += '))successBlock failure:(void (^)(NSError *error))failureBlock'
+        return declaration
