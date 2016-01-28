@@ -93,7 +93,7 @@ class VarType:
         elif self.value == 6:
             return 'NSTimeInterval'
         elif self.value == 7:
-            return 'NSArrary<LCC{0} *> *'.format(self.object_class_name)
+            return 'NSArray<LCC{0} *> *'.format(self.object_class_name)
         elif self.value == 8:
             return 'LCC{0} *'.format(self.object_class_name)
         else:
