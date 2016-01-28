@@ -97,7 +97,15 @@ class ObjcModelXmlParser:
                             is_plural = True
 
                         by = fetch_node.get('by')
-                        fetch_command = CppManagerFetchCommand(is_plural, by)
+                        sort_by_or_none = fetch_node.get('sort')
+                        is_asc = True
+                        if sort_by_or_none is not None:
+                            desc_desciption_or_none = fetch_node.get('desc')
+                            if desc_desciption_or_none is not None:
+                                if desc_desciption_or_none == 'true':
+                                    is_asc = False
+
+                        fetch_command = CppManagerFetchCommand(is_plural, by, sort_by_or_none, is_asc)
                         objc_manager.add_fetch_command(fetch_command)
 
                     # parse all <api/>

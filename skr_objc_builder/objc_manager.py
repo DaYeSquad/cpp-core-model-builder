@@ -93,13 +93,13 @@ class ObjcManager:
             for output_var in api.output_var_list:
                 impl += ', {0}'.format(output_var.objc_wrapper_from_cpp_parameter())
             impl += ') {\n'
-            impl += string_utils.indent(2)
+            impl += string_utils.indent(4)
             impl += 'if (success) {\n'
             for output_var in api.output_var_list:
-                impl += output_var.objc_form_cpp_parameter(4)
+                impl += output_var.objc_form_cpp_parameter(6)
                 impl += _OBJC_BR
 
-            impl += string_utils.indent(4)
+            impl += string_utils.indent(6)
             impl += 'successBlock('
 
             for i, output_var in enumerate(api.output_var_list):
@@ -108,16 +108,16 @@ class ObjcManager:
                 impl += string_utils.to_objc_property_name(output_var.name)
 
             impl += ');\n'
-            impl += string_utils.indent(2)
+            impl += string_utils.indent(4)
             impl += '} else {\n'
-            impl += string_utils.indent(4)
+            impl += string_utils.indent(6)
             impl += 'NSString *error = [NSString stringWithUTF8String:errorUTF8String.c_str()];\n'
-            impl += string_utils.indent(4)
+            impl += string_utils.indent(6)
             impl += 'failureBlock(LCCErrorWithNSString(error));\n'
+            impl += string_utils.indent(4)
+            impl += '}\n'
             impl += string_utils.indent(2)
-            impl += '}'
-            impl += '\n'
-            impl += '}'
+            impl += '});\n}'
             impl += _OBJC_BR
         return impl
 
@@ -260,9 +260,9 @@ class ObjcManager:
                     if i == 0:
                         input_name = string_utils.first_char_to_upper(input_name)
                     declaration += '{0}:({1}){2} '.format(input_name, input_var.var_type.to_objc_getter_string(), string_utils.first_char_to_lower(input_name))
-                declaration += 'success(void (^)('
+                declaration += 'success:(void (^)('
         else:
-            declaration += 'Success(void (^)('
+            declaration += 'Success:(void (^)('
         if len(api.output_var_list) > 0:
             for i, output_var in enumerate(api.output_var_list):
                 declaration += output_var.var_type.to_objc_getter_string()
