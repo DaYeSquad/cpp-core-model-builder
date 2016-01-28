@@ -9,10 +9,8 @@ _OBJC_SPACE = '  '
 class ObjcVariable:
 
     def __init__(self, name, var_type_string):
-        var_type = VarType.type_from_string(var_type_string)
-
         self.name = name
-        self.var_type = VarType(var_type)
+        self.var_type = VarType.instance_from_string(var_type_string)
 
     def set_enum_class_name(self, enum_class_name):
         self.var_type.set_enum_class_name(enum_class_name)
@@ -86,9 +84,41 @@ class ObjcVariable:
             return '[{0} UTF8String]'.format(self.__objc_name())
         elif self.var_type == VarType.cpp_string_array:
             return '[LCCObjcAdapter stringVectorsFromArrayOfNSString:{0}]'.format(self.__objc_name())
+        elif self.var_type == VarType.cpp_enum:
+            return '(lesschat::{0}){1}'.format(self.var_type.cpp_enum_type_string(), self.name)
+        elif self.var_type == VarType.cpp_int:
+            return '(int){0}'.format(self.name)
+        elif self.var_type == VarType.cpp_bool:
+            return self.name
         else:
-            return '({0}){1}'.format(self.var_type.to_objc_getter_string(), self.name)
+            return '({0}){1}'.format(self.var_type.to_getter_string(), self.name)
+
+    # from std::vector<std::unique_ptr<Calendar>> to std::vector<std::unique_ptr<lesschat::Calendar>>, (Array also is)
+    def objc_wrapper_from_cpp_parameter(self):
+        if self.var_type == VarType.cpp_object_array:
+            return 'std::vector<std::unique_ptr<lesschat::{0}>> core{1}'.format(self.var_type.object_class_name, string_utils.to_title_style_name(self.name))
+        elif self.var_type == VarType.cpp_object:
+            return 'std::unique_ptr<lesschat::{0}> core{0}'.format(self.var_type.object_class_name, string_utils.to_title_style_name(self.name))
+        else:
+            return '{0} {1}'.format(self.var_type.to_getter_string(), self.name)
 
     # from 'display_name' to 'DisplayName'
     def to_title_style_name(self):
         return string_utils.to_title_style_name(self.name)
+
+    # form coreCalendar to LCCCallendar *calendar = [LCCCalendar calendarWithCoreCalendar:coreCalendar]; (Objc Array also is)
+    def objc_form_cpp_parameter(self, indent):
+        objc_code = ''
+        if self.var_type == VarType.cpp_object_array:
+            objc_code += string_utils.indent(indent)
+            objc_code += 'NSMutableArray *{0} = [NSMutableArray array];\n'.format(string_utils.to_objc_property_name(self.name))
+            objc_code += string_utils.indent(indent)
+            objc_code += 'for (auto it = core{0}.begin(); it != core{0}.end(); ++it) {{\n'.format(string_utils.to_title_style_name(self.name))
+            objc_code += string_utils.indent(2 + indent)
+            objc_code += '[{0} addObject:[LCC{1} {2}WithCore{1}:**it]];\n'.format(string_utils.to_objc_property_name(self.name), self.var_type.object_class_name, string_utils.first_char_to_lower(self.var_type.object_class_name))
+            objc_code += string_utils.indent(indent)
+            objc_code += '}'
+        elif self.var_type == VarType.cpp_object:
+            objc_code += string_utils.indent(indent)
+            objc_code += 'LCC{0} *{1} = [LCC{0} {1}WithCore{0}:core{0}];'.format(self.var_type.object_class_name, string_utils.to_objc_property_name(self.name))
+        return objc_code

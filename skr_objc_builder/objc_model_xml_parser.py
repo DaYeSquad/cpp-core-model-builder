@@ -6,6 +6,7 @@ from skrutil import string_utils
 from skr_cpp_builder.cpp_manager import CppManagerSaveCommand
 from skr_cpp_builder.cpp_manager import CppManagerFetchCommand
 from skr_cpp_builder.cpp_manager import CppManagerDeleteCommand
+from skr_cpp_builder.cpp_manager import CppApiDescription
 
 from objc_class import ObjcClass
 from objc_variable import ObjcVariable
@@ -98,6 +99,40 @@ class ObjcModelXmlParser:
                         by = fetch_node.get('by')
                         fetch_command = CppManagerFetchCommand(is_plural, by)
                         objc_manager.add_fetch_command(fetch_command)
+
+                    # parse all <api/>
+                    for api_node in manager_or_none.findall('api'):                        
+                        api_name = api_node.get('name')
+                        api_alias = api_node.get('alias')
+                        api_method = api_node.get('method')
+                        api_uri = api_node.get('uri')
+
+                        input_var_list = []
+                        inputs_node = api_node.find('inputs')
+                        for variable_node in inputs_node.findall('variable'):
+                            var_name = variable_node.get('name')
+                            var_type_string = variable_node.get('type')
+                            var_enum_or_none = variable_node.get('enum')
+
+                            var = ObjcVariable(var_name, var_type_string)
+                            var.set_enum_class_name(var_enum_or_none)
+
+                            input_var_list.append(var)
+
+                        output_var_list = []
+                        outputs_node = api_node.find('outputs')
+                        for variable_node in outputs_node.findall('variable'):
+                            var_name = variable_node.get('name')
+                            var_type_string = variable_node.get('type')
+                            var_enum_or_none = variable_node.get('enum')
+
+                            var = ObjcVariable(var_name, var_type_string)
+                            var.set_enum_class_name(var_enum_or_none)
+
+                            output_var_list.append(var)
+
+                        api = CppApiDescription(api_name, api_alias, api_method, api_uri, input_var_list, output_var_list, [])
+                        objc_manager.add_api_description(api)
 
                 # write objective-c++ wrapper core addition header
                 objc_wrapper = ObjcClass(group_name, class_name, objc_var_list, objc_enum_list, objc_manager)
