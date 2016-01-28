@@ -319,7 +319,6 @@ class CppVariable:
 
     def setter(self):
         # ignores getter if read-only
-        print(self.is_read_only)
         if self.is_read_only:
             return ''
 
