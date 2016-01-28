@@ -153,8 +153,11 @@ class CppManager:
     def sqlite_key_declaration(self):
         declarations = ''
         for cpp_var in self.cpp_variable_list:
+            sql_var_name = cpp_var.name
+            if cpp_var.override_sql_key is not None:
+                sql_var_name = cpp_var.override_sql_key
             declarations += 'static std::string const {0} = "{1}";\n'\
-                .format(cpp_var.to_sql_key(), cpp_var.name)
+                .format(cpp_var.to_sql_key(), sql_var_name)
         declarations += '\nstatic std::string const kSqlAnd = " AND ";\n'
         return declarations
 

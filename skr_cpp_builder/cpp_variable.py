@@ -303,6 +303,8 @@ class CppVariable:
         self.capture = capture
         self.is_read_only = is_read_only
 
+        self.override_sql_key = None
+
     def set_enum_class_name(self, enum_class_name):
         self.var_type.set_enum_class_name(enum_class_name)
 
@@ -310,6 +312,9 @@ class CppVariable:
         if json_search_path is None:
             json_search_path = ''
         self.var_type.set_json_search_path_for_string_array(json_search_path)
+
+    def set_override_sql_key(self, key):
+        self.override_sql_key = key
 
     def getter(self):
         if self.var_type == VarType.cpp_bool:

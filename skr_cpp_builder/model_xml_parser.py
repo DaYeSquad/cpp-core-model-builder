@@ -189,6 +189,7 @@ class CppModelXmlParser:
         variable_sql_flag = var_node.get('sql_flag')
         var_cache_desc = var_node.get('cache')
         variable_json_search_path = var_node.get('json_search_path')
+        var_override_sql_key_or_none = var_node.get('override_sql_key')
 
         variable_is_read_only = var_node.get('readonly')
         if variable_is_read_only is None:
@@ -206,4 +207,5 @@ class CppModelXmlParser:
         cpp_var = CppVariable(variable_name, variable_type, variable_json_path, variable_sql_flag, var_cache_desc, var_capture_or_none, variable_is_read_only)
         cpp_var.set_enum_class_name(variable_enum_or_none)
         cpp_var.set_json_search_path(variable_json_search_path)
+        cpp_var.set_override_sql_key(var_override_sql_key_or_none)
         return cpp_var
