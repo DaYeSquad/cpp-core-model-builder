@@ -294,13 +294,14 @@ class VarType:
 
 class CppVariable:
 
-    def __init__(self, name, var_type_string, json_path, sql_flag_or_none, cache_desc='', capture=False):
+    def __init__(self, name, var_type_string, json_path, sql_flag_or_none, cache_desc='', capture=False, is_read_only=False):
         self.name = name
         self.var_type = VarType.instance_from_string(var_type_string)
         self.json_path = json_path
         self.sql_flag_or_none = sql_flag_or_none
         self.cache_desc = cache_desc
         self.capture = capture
+        self.is_read_only = is_read_only
 
     def set_enum_class_name(self, enum_class_name):
         self.var_type.set_enum_class_name(enum_class_name)
@@ -317,6 +318,11 @@ class CppVariable:
             return '{0} {1}() const {{ return {1}_; }}'.format(self.var_type.to_getter_string(), self.name)
 
     def setter(self):
+        # ignores getter if read-only
+        print(self.is_read_only)
+        if self.is_read_only:
+            return ''
+
         return 'void set_{0}({1} {0}) {{ {0}_ = {0}; }}'.format(self.name, self.var_type.to_setter_string())
 
     def private_var(self):

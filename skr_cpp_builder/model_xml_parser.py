@@ -66,16 +66,7 @@ class CppModelXmlParser:
                 # parse all <variable/>
                 cpp_var_list = []
                 for variable in class_node.findall('variable'):
-                    variable_name = variable.get('name')
-                    variable_type = variable.get('type')
-                    variable_json_path = variable.get('json_path')
-                    variable_enum_or_none = variable.get('enum')
-                    variable_sql_flag = variable.get('sql_flag')
-                    variable_json_search_path = variable.get('json_search_path')
-
-                    cpp_var = CppVariable(variable_name, variable_type, variable_json_path, variable_sql_flag)
-                    cpp_var.set_enum_class_name(variable_enum_or_none)
-                    cpp_var.set_json_search_path(variable_json_search_path)
+                    cpp_var = self.__parse_variable_node(variable)
                     cpp_var_list.append(cpp_var)
 
                 # parse <manager/>
@@ -188,3 +179,31 @@ class CppModelXmlParser:
 
                 # write web_api_object.cc under "api" folder
                 cpp_class.generate_web_api_implementation()
+
+    # returns cpp_variable
+    def __parse_variable_node(self, var_node):
+        variable_name = var_node.get('name')
+        variable_type = var_node.get('type')
+        variable_json_path = var_node.get('json_path')
+        variable_enum_or_none = var_node.get('enum')
+        variable_sql_flag = var_node.get('sql_flag')
+        var_cache_desc = var_node.get('cache')
+        variable_json_search_path = var_node.get('json_search_path')
+
+        variable_is_read_only = var_node.get('readonly')
+        if variable_is_read_only is None:
+            variable_is_read_only = False
+        else:
+            if variable_is_read_only == 'true':
+                variable_is_read_only = True
+            else:
+                variable_is_read_only = False
+
+        var_capture_or_none = var_node.get('capture')
+        if var_capture_or_none is None:
+            var_capture_or_none = False
+
+        cpp_var = CppVariable(variable_name, variable_type, variable_json_path, variable_sql_flag, var_cache_desc, var_capture_or_none, variable_is_read_only)
+        cpp_var.set_enum_class_name(variable_enum_or_none)
+        cpp_var.set_json_search_path(variable_json_search_path)
+        return cpp_var
