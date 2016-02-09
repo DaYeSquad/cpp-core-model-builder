@@ -20,23 +20,50 @@ _CPP_SPACE = '  '
 
 
 class CppManagerSaveCommand:
+    """Represents 'SaveObject(s)FromCacheByKey' (<save/>)
+    """
 
-    def __init__(self, is_plural):
+    def __init__(self, is_plural, table_name_list):
+        """Init CppManagerSaveCommand with some required parameters.
+
+        Args:
+            is_plural: can be True or False
+            table_name: should be a string describes override table_name, if table_name is empty, it will use default table_name
+        """
         self.is_plural = is_plural
+        self.table_name_list = table_name_list
 
 
 class CppManagerFetchCommand:
+    """Represents 'FetchObject(s)FromCacheByKey' (<fetch/>)
+    """
 
-    def __init__(self, is_plural, where, sort_by_or_none, is_asc):
+    def __init__(self, is_plural, where, sort_by_or_none, is_asc, table_name_list):
+        """Init CppManagerFetchCommand with some required parameters.
+
+        Args:
+            is_plural: can be True or False
+            where: should be class variable names separated by comma (eg: 'uid,username,pwd')
+            sort_by_or_none: should be class variable name (eg: 'uid') or None
+            is_asc: can be True or False, used with sort_by_or_none
+            table_name_list: should be table names override default one or none
+        """
         self.sort_by_or_none = sort_by_or_none
         self.is_asc = is_asc
         self.is_plural = is_plural
+        self.table_name_list = table_name_list
+
         if where is not None:
             self.where = where
         else:
             self.where = ''
 
     def sort_sql(self):
+        """Sort SQL for easySQLite.
+
+        Returns:
+            'key ASC' or 'key DESC'
+        """
         if self.sort_by_or_none is not None:
             order = 'ASC'
             if self.is_asc is False:
@@ -46,9 +73,13 @@ class CppManagerFetchCommand:
 
 
 class CppManagerDeleteCommand:
+    """Represents 'DeleteObject(s)FromCacheByKey' (<delete/>)
+    """
 
-    def __init__(self, is_plural, where):
+    def __init__(self, is_plural, where, table_name_list):
         self.is_plural = is_plural
+        self.table_name_list = table_name_list
+
         if where is not None:
             self.where = where
         else:
@@ -197,10 +228,11 @@ class CppManager:
         if table_name == '':
             impl += 'void {0}::UnsafeSave{1}ToCache(const {1}& {2}) const {{\n'\
                 .format(self.manager_name, self.object_name, self.object_name.lower())
+            impl += _CPP_SPACE + 'sql::Record record = RecordBy{0}({1});\n'.format(self.object_name, self.object_name.lower())
         else:
             impl += 'void {0}::UnsafeSave{1}To{3}(const {1}& {2}) const {{\n'\
                 .format(self.manager_name, self.object_name, self.object_name.lower(), string_utils.to_title_style_name(table_name))
-        impl += _CPP_SPACE + 'sql::Record record = RecordBy{0}({1});\n'.format(self.object_name, self.object_name.lower())
+            impl += _CPP_SPACE + 'sql::Record record = RecordBy{0}From{2}({1});\n'.format(self.object_name, self.object_name.lower(), string_utils.to_title_style_name(table_name))
         impl += _CPP_SPACE + '{0}->addOrReplaceRecord(&record);\n'.format(self.__sqlite_tb_name(table_name))
         impl += '}'
         return impl
@@ -432,26 +464,36 @@ class CppManager:
         if save_command.is_plural:
             impl = 'void {0}::Save{3}ToCache(const std::vector<std::unique_ptr<{1}>>& {2}) const {{\n'\
                 .format(self.manager_name, self.object_name, self.plural_object_name.lower(), self.plural_object_name)
-            impl += _CPP_SPACE
-            impl += 'LockMainDatabase();\n\n  BeginTransaction();' + _CPP_BR
-            impl += _CPP_SPACE
-            impl += 'for (auto it = {0}.begin(); it != {0}.end(); ++it) {{\n'.format(self.plural_object_name.lower())
-            impl += _CPP_SPACE + _CPP_SPACE
-            impl += 'UnsafeSave{0}ToCache(**it);\n'.format(self.object_name)
-            impl += _CPP_SPACE
-            impl += '}\n\n'
-            impl += _CPP_SPACE
-            impl += 'CommitTransaction();\n\n  UnlockMainDatabase();\n'
+            impl += '  LockMainDatabase();\n\n  BeginTransaction();' + _CPP_BR
+            impl += '  for (auto it = {0}.begin(); it != {0}.end(); ++it) {{\n'.format(self.plural_object_name.lower())
+
+            if len(save_command.table_name_list) == 0:
+                impl += '    UnsafeSave{0}ToCache(**it);\n'.format(self.object_name)
+            else:
+                for table_name in save_command.table_name_list:
+                    if table_name == self.plural_object_name:
+                        impl += '    UnsafeSave{0}ToCache(**it);\n'.format(self.object_name)
+                    else:
+                        impl += '    UnsafeSave{0}To{1}(**it);\n'.format(self.object_name, string_utils.to_title_style_name(table_name))
+
+            impl += '  }\n\n'
+            impl += '  CommitTransaction();\n\n  UnlockMainDatabase();\n'
             impl += '}'
             return impl
         else:
             impl = 'void {0}::Save{1}ToCache(const {1}& {2}) const {{\n'.format(self.manager_name, self.object_name, self.object_name.lower())
-            impl += _CPP_SPACE
-            impl += 'LockMainDatabase();' + _CPP_BR
-            impl += _CPP_SPACE
-            impl += 'UnsafeSave{0}ToCache({1});'.format(self.object_name, self.object_name.lower()) + _CPP_BR
-            impl += _CPP_SPACE
-            impl += 'UnlockMainDatabase();\n'
+            impl += '  LockMainDatabase();' + _CPP_BR
+
+            if len(save_command.table_name_list) == 0:
+                impl += '  UnsafeSave{0}ToCache({1});'.format(self.object_name, self.object_name.lower()) + _CPP_BR
+            else:
+                for table_name in save_command.table_name_list:
+                    if table_name == self.plural_object_name.lower():
+                        impl += '  UnsafeSave{0}ToCache({1});'.format(self.object_name, self.object_name.lower()) + _CPP_BR
+                    else:
+                        impl += '  UnsafeSave{0}To{2}({1});'.format(self.object_name, self.object_name.lower(), string_utils.to_title_style_name(table_name)) + _CPP_BR
+
+            impl += '  UnlockMainDatabase();\n'
             impl += '}'
             return impl
 
@@ -466,12 +508,18 @@ class CppManager:
                 .format(self.manager_name, self.object_name, self.__convert_bys_to_string(by_list))
             impl += _CPP_SPACE
             impl += where_sql + _CPP_BR
-            impl += _CPP_SPACE
-            impl += 'LockMainDatabase();' + _CPP_BR
-            impl += _CPP_SPACE
-            impl += '{0}->deleteRecords(where_condition);\n\n'.format(self.__sqlite_tb_name())
-            impl += _CPP_SPACE
-            impl += 'UnlockMainDatabase();\n'
+            impl += '  LockMainDatabase();' + _CPP_BR
+
+            if len(delete_command.table_name_list) == 0:
+                impl += '  {0}->deleteRecords(where_condition);\n\n'.format(self.__sqlite_tb_name())
+            else:
+                for table_name in delete_command.table_name_list:
+                    if table_name == self.plural_object_name:
+                        impl += '  {0}->deleteRecords(where_condition);\n\n'.format(self.__sqlite_tb_name())
+                    else:
+                        impl += '  {0}->deleteRecords(where_condition);\n\n'.format(self.__sqlite_tb_name(table_name))
+
+            impl += '  UnlockMainDatabase();\n'
             impl += '}'
             return impl
         else:
@@ -486,8 +534,16 @@ class CppManager:
             impl += where_sql + _CPP_BR
             impl += _CPP_SPACE
             impl += 'LockMainDatabase();' + _CPP_BR
-            impl += _CPP_SPACE
-            impl += '{0}->deleteRecords(where_condition);\n\n'.format(self.__sqlite_tb_name())
+
+            if len(delete_command.table_name_list) == 0:
+                impl += '  {0}->deleteRecords(where_condition);\n\n'.format(self.__sqlite_tb_name())
+            else:
+                for table_name in delete_command.table_name_list:
+                    if table_name == self.plural_object_name:
+                        impl += '  {0}->deleteRecords(where_condition);\n\n'.format(self.__sqlite_tb_name())
+                    else:
+                        impl += '  {0}->deleteRecords(where_condition);\n\n'.format(self.__sqlite_tb_name(table_name))
+
             impl += _CPP_SPACE
             impl += 'UnlockMainDatabase();\n'
             impl += '}'
@@ -503,31 +559,25 @@ class CppManager:
         if not fetch_command.is_plural:
             impl = 'std::unique_ptr<{0}> {2}::Fetch{0}FromCache{1} const {{\n'\
                     .format(self.object_name, self.__convert_bys_to_string(by_list), self.manager_name)
-            impl += _CPP_SPACE
-            impl += where_sql + _CPP_BR
-            impl += _CPP_SPACE
-            impl += 'LockMainDatabase();' + _CPP_BR
-            impl += _CPP_SPACE
-            impl += '{0}->open(where_condition);\n\n'.format(self.__sqlite_tb_name())
-            impl += _CPP_SPACE
-            impl += 'if ({0}->recordCount() != 0) {{\n'.format(self.__sqlite_tb_name())
-            impl += _CPP_SPACE + _CPP_SPACE
-            impl += 'sql::Record* record = {0}->getRecord(0);\n'.format(self.__sqlite_tb_name())
-            impl += _CPP_SPACE + _CPP_SPACE
-            impl += 'unique_ptr<{0}> rtn({0}FromRecord(record));\n'.format(self.object_name)
-            impl += _CPP_SPACE + _CPP_SPACE
-            impl += 'UnlockMainDatabase();\n'
-            impl += _CPP_SPACE + _CPP_SPACE
-            impl += 'return rtn;\n'
-            impl += _CPP_SPACE
-            impl += '}\n\n'
-            impl += _CPP_SPACE
-            impl += 'UnlockMainDatabase();' + _CPP_BR
-            impl += _CPP_SPACE
-            impl += 'return nullptr;\n'
+            impl += _CPP_SPACE + where_sql + _CPP_BR
+            impl += '  LCC_DB_LOCK_GUARD;' + _CPP_BR
+
+            tb_list = copy.copy(fetch_command.table_name_list)
+            for table_name in tb_list:
+                impl += '  {0}->open(where_condition);\n'.format(self.__sqlite_tb_name(table_name))
+                impl += '  if ({0}->recordCount() != 0) {{\n'.format(self.__sqlite_tb_name(table_name))
+                impl += '    sql::Record* record = {0}->getRecord(0);\n'.format(self.__sqlite_tb_name(table_name))
+                impl += '    unique_ptr<{0}> rtn({0}FromRecord(record));\n'.format(self.object_name)
+                impl += '    return rtn;\n'
+                impl += '  }' + _CPP_BR
+            impl += '  return nullptr;\n'
             impl += '}'
             return impl
         else:
+            # table_name_list is not supported in plural case.
+            if len(fetch_command.table_name_list) > 0:
+                skr_log_warning('"tables" attribute only supported <fetch singular="true"/>')
+
             impl = 'std::vector<std::unique_ptr<{0}>> {3}::Fetch{1}FromCache{2} const {{\n\n'\
                     .format(self.object_name, self.plural_object_name, self.__convert_bys_to_string(by_list), self.manager_name)
             impl += _CPP_SPACE

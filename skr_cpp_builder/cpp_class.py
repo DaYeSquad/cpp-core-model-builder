@@ -5,10 +5,6 @@
 # Copyright (c) 2016 - Frank Lin
 
 
-"""
-Parse and store C++ class info.
-"""
-
 import re
 
 from skrutil import io_utils
@@ -30,6 +26,8 @@ _CPP_HTTP_SPLIT = '// HTTP -----------------------------------------------------
 
 
 class CppClass:
+    """Parse and store C++ class info.
+    """
     def __init__(self, group_name, class_name, cpp_variable_list, cpp_enum_list, cpp_manager_or_none, cpp_replacement_list, class_comment):
         self.group_name = group_name
         self.class_name = class_name

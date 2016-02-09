@@ -1,4 +1,5 @@
 import xml.etree.ElementTree
+import re
 
 from skrutil import io_utils
 
@@ -21,6 +22,11 @@ class CppModelXmlParser:
         self.version = version
 
     def parse(self, directory):
+        """Parse module description xml file and translate them into Cpp objects.
+
+        Args:
+            directory: Path of xml file including the file.
+        """
         # create core folder if not exists and remove last build
         core_dir_path = 'build/core'
         io_utils.make_directory_if_not_exists(core_dir_path)
@@ -66,7 +72,7 @@ class CppModelXmlParser:
                 # parse all <variable/>
                 cpp_var_list = []
                 for variable in class_node.findall('variable'):
-                    cpp_var = self.__parse_variable_node(variable)
+                    cpp_var = CppModelXmlParser.__parse_variable_node(variable)
                     cpp_var_list.append(cpp_var)
 
                 # parse <manager/>
@@ -78,41 +84,17 @@ class CppModelXmlParser:
 
                     # parse all <save/>
                     for save_node in manager_node_or_none.findall('save'):
-                        is_plural = False
-                        plural_node = save_node.get('plural')
-                        if plural_node is not None:
-                            is_plural = True
-                        save_command = CppManagerSaveCommand(is_plural)
+                        save_command = CppModelXmlParser.__parse_save_node(save_node)
                         cpp_manager.add_save_command(save_command)
 
                     # parse all <delete/>
                     for delete_node in manager_node_or_none.findall('delete'):
-                        is_plural = False
-                        plural_node = delete_node.get('plural')
-                        if plural_node is not None:
-                            is_plural = True
-
-                        by = delete_node.get('by')
-                        delete_command = CppManagerDeleteCommand(is_plural, by)
+                        delete_command = CppModelXmlParser.__parse_delete_command(delete_node)
                         cpp_manager.add_delete_command(delete_command)
 
                     # parse all <fetch/>
                     for fetch_node in manager_node_or_none.findall('fetch'):
-                        is_plural = False
-                        plural_node = fetch_node.get('plural')
-                        if plural_node is not None:
-                            is_plural = True
-
-                        by = fetch_node.get('by')
-                        sort_by_or_none = fetch_node.get('sort')
-                        is_asc = True
-                        if sort_by_or_none is not None:
-                            desc_desciption_or_none = fetch_node.get('desc')
-                            if desc_desciption_or_none is not None:
-                                if desc_desciption_or_none == 'true':
-                                    is_asc = False
-
-                        fetch_command = CppManagerFetchCommand(is_plural, by, sort_by_or_none, is_asc)
+                        fetch_command = CppModelXmlParser.__parse_fetch_node(fetch_node)
                         cpp_manager.add_fetch_command(fetch_command)
 
                     # parse all <api/>
@@ -188,8 +170,16 @@ class CppModelXmlParser:
                 # write web_api_object.cc under "api" folder
                 cpp_class.generate_web_api_implementation()
 
-    # returns cpp_variable
-    def __parse_variable_node(self, var_node):
+    @staticmethod
+    def __parse_variable_node(var_node):
+        """Parse <variable/>
+
+        Args:
+            var_node: variable node
+
+        Returns:
+            instance CppVariable object
+        """
         variable_name = var_node.get('name')
         variable_type = var_node.get('type')
         variable_json_path = var_node.get('json_path')
@@ -217,3 +207,85 @@ class CppModelXmlParser:
         cpp_var.set_json_search_path(variable_json_search_path)
         cpp_var.set_override_sql_key(var_override_sql_key_or_none)
         return cpp_var
+
+    @staticmethod
+    def __parse_fetch_node(fetch_node):
+        """Parse <fetch/>
+
+        Args:
+            fetch_node: fetch node
+
+        Returns:
+            instance CppFetchCommand object
+        """
+        is_plural = False
+        plural_node = fetch_node.get('plural')
+        if plural_node is not None:
+            is_plural = True
+
+        by = fetch_node.get('by')
+        sort_by_or_none = fetch_node.get('sort')
+        is_asc = True
+        if sort_by_or_none is not None:
+            desc_desciption_or_none = fetch_node.get('desc')
+            if desc_desciption_or_none is not None:
+                if desc_desciption_or_none == 'true':
+                    is_asc = False
+
+        table_names_or_none = fetch_node.get('tables')
+        table_name_list = []
+        if table_names_or_none is None or table_names_or_none == '':
+            table_name_list = []
+        else:
+            table_name_list = re.split(',', table_names_or_none)
+
+        fetch_command = CppManagerFetchCommand(is_plural, by, sort_by_or_none, is_asc, table_name_list)
+        return fetch_command
+
+    @staticmethod
+    def __parse_save_node(save_node):
+        """Parse <save/>
+
+        Args:
+            save_node: save node
+
+        Returns:
+            instance CppSaveCommand object
+        """
+        is_plural = False
+        plural_node = save_node.get('plural')
+        if plural_node is not None:
+            is_plural = True
+
+        table_name_list = []
+        table_names_or_none = save_node.get('tables')
+        if table_names_or_none is not None:
+            table_name_list = re.split(',', table_names_or_none)
+
+        save_command = CppManagerSaveCommand(is_plural, table_name_list)
+        return save_command
+
+    @staticmethod
+    def __parse_delete_command(delete_node):
+        """Parse <delete/>
+
+        Args:
+            delete_node: delete node
+
+        Returns:
+            instance CppDeleteCommand object
+        """
+        is_plural = False
+        plural_node = delete_node.get('plural')
+        if plural_node is not None:
+            is_plural = True
+
+        by = delete_node.get('by')
+
+        table_name_list = []
+        table_names_or_none = delete_node.get('tables')
+        if table_names_or_none is not None:
+            table_name_list = re.split(',', table_names_or_none)
+
+        delete_command = CppManagerDeleteCommand(is_plural, by, table_name_list)
+        return delete_command
