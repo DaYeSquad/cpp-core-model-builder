@@ -9,6 +9,7 @@ Parse and store lesschat/worktile C++ object manager info.
 """
 
 import re
+import copy
 
 from skrutil.skr_logger import skr_log_warning
 from skrutil import string_utils
@@ -67,6 +68,8 @@ class CppApiDescription:
 
 
 class CppManager:
+    """Object Manager methods declaration and implementation.
+    """
 
     def __init__(self, manager_name):
         self.manager_name = manager_name  # UserManager
@@ -81,6 +84,8 @@ class CppManager:
         self.cpp_variable_list = []
         self.cpp_replacement_list = []
 
+        self.table_name_list = []
+
     def set_object_name(self, class_name, plural_class_name):
         self.object_name = class_name
         self.plural_object_name = plural_class_name
@@ -90,6 +95,9 @@ class CppManager:
 
     def set_replacement_list(self, cpp_replacement_list):
         self.cpp_replacement_list = cpp_replacement_list
+
+    def set_table_name_list(self, table_name_list):
+        self.table_name_list = table_name_list
 
     def add_save_command(self, save_command):
         self.save_commands.append(save_command)
@@ -106,17 +114,39 @@ class CppManager:
     def class_name(self):
         return self.manager_name
 
-    def sqlite_table_var(self):
-        return 'std::unique_ptr<sql::Table> {0};'.format(self.__sqlite_tb_name())
+    def sqlite_table_var(self, given_name=None):
+        if given_name is None or given_name == '':
+            return 'std::unique_ptr<sql::Table> {0};'.format(self.__sqlite_tb_name())
+        else:
+            return 'std::unique_ptr<sql::Table> {0}_tb_;'.format(given_name)
 
-    def sqlite_record_by_object_declaration(self):
-        return 'sql::Record RecordBy{0}(const {0}& {1}) const;'.format(self.object_name, self.object_name.lower())
+    def sqlite_record_by_object_declaration(self, table_name=''):
+        """Returns 'sql::Record RecordByObject(const Object& obj) const;' (if table_name is empty)
+            or
+            'sql::Record RecordByTaskFromTable(const Task& task) const; declaration'
+        """
+        if table_name == '':
+            return 'sql::Record RecordBy{0}(const {0}& {1}) const;'\
+                .format(self.object_name, self.object_name.lower())
+        else:
+            return 'sql::Record RecordBy{0}From{2}(const {0}& {1}) const;'\
+                .format(self.object_name, self.object_name.lower(), string_utils.to_title_style_name(table_name))
 
-    def sqlite_record_by_object_implementation(self):
-        impl = 'sql::Record {0}::RecordBy{1}(const {1}& {2}) const {{\n'\
-            .format(self.manager_name, self.object_name, self.object_name.lower())
-        impl += _CPP_SPACE
-        impl += 'sql::Record record({0}->fields());\n\n'.format(self.__sqlite_tb_name())
+    def sqlite_record_by_object_implementation(self, table_name=''):
+        """Returns 'sql::Record RecordByObject(const Object& obj) const;' (if table_name is empty)
+            or
+            'sql::Record RecordByTaskFromTable(const Task& task) const; implementation'
+        """
+        impl = ''
+        if table_name == '':
+            impl += 'sql::Record {0}::RecordBy{1}(const {1}& {2}) const {{\n'\
+                .format(self.manager_name, self.object_name, self.object_name.lower())
+            impl += _CPP_SPACE + 'sql::Record record({0}->fields());\n\n'.format(self.__sqlite_tb_name())
+        else:
+            impl += 'sql::Record {0}::RecordBy{1}From{3}(const {1}& {2}) const {{\n'\
+                .format(self.manager_name, self.object_name, self.object_name.lower(), string_utils.to_title_style_name(table_name))
+            impl += _CPP_SPACE + 'sql::Record record({0}->fields());\n\n'.format(self.__sqlite_tb_name(table_name))
+
         for cpp_var in self.cpp_variable_list:
             impl += _CPP_SPACE
             impl += cpp_var.to_set_sql_string(self.object_name.lower())
@@ -128,9 +158,11 @@ class CppManager:
         return impl
 
     def sqlite_object_from_record_declaration(self):
+        """Returns 'std::unique_ptr<Object> ObjectFromRecord(sql::Record* record) const;' declaration"""
         return 'std::unique_ptr<{0}> {0}FromRecord(sql::Record* record) const;'.format(self.object_name)
 
     def sqlite_object_from_record_implementation(self):
+        """Returns 'std::unique_ptr<Object> ObjectFromRecord(sql::Record* record) const;' implementation"""
         impl = 'std::unique_ptr<{0}> {1}::{0}FromRecord(sql::Record* record) const {{\n'.format(self.object_name, self.manager_name)
         for cpp_var in self.cpp_variable_list:
             impl += _CPP_SPACE
@@ -147,6 +179,29 @@ class CppManager:
         impl += ');\n'
         impl += _CPP_SPACE
         impl += 'return {0};\n'.format(self.object_name.lower())
+        impl += '}'
+        return impl
+
+    def unsafe_save_declaration(self, pre_spaces, table_name=''):
+        """Returns 'UnsafeSaveObjectToCache' or 'UnsafeSaveObjectToTable' declaration"""
+        if table_name == '':
+            return '{2}void UnsafeSave{0}ToCache(const {0}& {1}) const;\n\n'\
+                .format(self.object_name, self.object_name.lower(), pre_spaces)
+        else:
+            return '{2}void UnsafeSave{0}To{3}(const {0}& {1}) const;\n\n'\
+                .format(self.object_name, self.object_name.lower(), pre_spaces, string_utils.to_title_style_name(table_name))
+
+    def unsafe_save_implementation(self, table_name=''):
+        """Returns 'UnsafeSaveObjectToCache' or 'UnsafeSaveObjectToTable' implementation"""
+        impl = ''
+        if table_name == '':
+            impl += 'void {0}::UnsafeSave{1}ToCache(const {1}& {2}) const {{\n'\
+                .format(self.manager_name, self.object_name, self.object_name.lower())
+        else:
+            impl += 'void {0}::UnsafeSave{1}To{3}(const {1}& {2}) const {{\n'\
+                .format(self.manager_name, self.object_name, self.object_name.lower(), string_utils.to_title_style_name(table_name))
+        impl += _CPP_SPACE + 'sql::Record record = RecordBy{0}({1});\n'.format(self.object_name, self.object_name.lower())
+        impl += _CPP_SPACE + '{0}->addOrReplaceRecord(&record);\n'.format(self.__sqlite_tb_name(table_name))
         impl += '}'
         return impl
 
@@ -169,10 +224,6 @@ class CppManager:
         declarations += _CPP_SPACE + 'sql::Field(sql::DEFINITION_END),\n'
         declarations += '};'
         return declarations
-
-    def unsafe_save_declaration(self, pre_spaces):
-        return '{2}void UnsafeSave{0}ToCache(const {0}& {1}) const;\n\n'\
-            .format(self.object_name, self.object_name.lower(), pre_spaces)
 
     def generate_save_declarations(self, pre_spaces):
         declaration = ''
@@ -249,19 +300,8 @@ class CppManager:
         impl = 'bool {0}::InitOrDie() {{\n'.format(self.manager_name)
         impl += _CPP_SPACE + 'bool success = true;' + _CPP_BR
         impl += _CPP_SPACE + 'do {\n'
-        impl += _CPP_SPACE + _CPP_SPACE
-        impl += '{0} = unique_ptr<sql::Table>(new sql::Table(MainDatabaseHandler(), "{1}", {2}));'\
-                .format(self.__sqlite_tb_name(), self.manager_name, self.__sqlite_field_definition_name()) + _CPP_BR
-        impl += _CPP_SPACE + _CPP_SPACE
-        impl += 'if (!{0}->exists()) {{\n'.format(self.__sqlite_tb_name())
-        impl += _CPP_SPACE + _CPP_SPACE + _CPP_SPACE
-        impl += 'success = {0}->create();\n'.format(self.__sqlite_tb_name())
-        impl += _CPP_SPACE + _CPP_SPACE + _CPP_SPACE
-        impl += 'LCC_ASSERT(success);\n'
-        impl += _CPP_SPACE + _CPP_SPACE
-        impl += '}' + _CPP_BR
-        impl += _CPP_SPACE
-        impl += '} while(0);' + _CPP_BR
+        impl += self.__tables_init_implementation()
+        impl += _CPP_SPACE + '} while(0);' + _CPP_BR
         impl += _CPP_SPACE
         impl += 'return success;\n'
         impl += '}'
@@ -270,16 +310,6 @@ class CppManager:
     def generate_default_manager_implementation(self):
         impl = 'const {0}* {0}::DefaultManager() {{\n'.format(self.manager_name)
         impl += _CPP_SPACE + 'return Director::DefaultDirector()->{0}();\n'.format(self.__convert_class_name_to_file_name(self.manager_name))
-        impl += '}'
-        return impl
-
-    def generate_unsafe_save_implementation(self):
-        impl = 'void {0}::UnsafeSave{1}ToCache(const {1}& {2}) const {{\n'\
-            .format(self.manager_name, self.object_name, self.object_name.lower())
-        impl += _CPP_SPACE
-        impl += 'sql::Record record = RecordBy{0}({1});\n'.format(self.object_name, self.object_name.lower())
-        impl += _CPP_SPACE
-        impl += '{0}->addOrReplaceRecord(&record);\n'.format(self.__sqlite_tb_name())
         impl += '}'
         return impl
 
@@ -386,8 +416,11 @@ class CppManager:
         return 'definition_{0}'.format(self.plural_object_name.lower())
 
     # returns "users_tb_"
-    def __sqlite_tb_name(self):
-        return '{0}_tb_'.format(self.plural_object_name.lower())
+    def __sqlite_tb_name(self, table_name=''):
+        if table_name == '':
+            return '{0}_tb_'.format(self.plural_object_name.lower())
+        else:
+            return '{0}_tb_'.format(table_name.lower())
 
     # convert 'UserGroup' to 'user_group', only works if first letter is upper case.
     @staticmethod
@@ -739,3 +772,24 @@ class CppManager:
             if replacement.search == name:
                 return replacement.replace
         return ''
+
+    def __tables_init_implementation(self):
+        default_table_name = self.plural_object_name.lower()
+        tb_list = copy.copy(self.table_name_list)
+        tb_list.append(default_table_name)
+
+        impl = ''
+        for table_name in tb_list:
+            cpp_table_name = '{0}_tb_'.format(table_name)
+            impl += _CPP_SPACE + _CPP_SPACE
+            impl += '{0} = unique_ptr<sql::Table>(new sql::Table(MainDatabaseHandler(), "{1}", {2}));'\
+                    .format(cpp_table_name, table_name, self.__sqlite_field_definition_name()) + _CPP_BR
+            impl += _CPP_SPACE + _CPP_SPACE
+            impl += 'if (!{0}->exists()) {{\n'.format(cpp_table_name)
+            impl += _CPP_SPACE + _CPP_SPACE + _CPP_SPACE
+            impl += 'success = {0}->create();\n'.format(cpp_table_name)
+            impl += _CPP_SPACE + _CPP_SPACE + _CPP_SPACE
+            impl += 'LCC_ASSERT(success);\n'
+            impl += _CPP_SPACE + _CPP_SPACE
+            impl += '}' + _CPP_BR
+        return impl

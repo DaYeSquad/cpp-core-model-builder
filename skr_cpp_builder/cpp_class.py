@@ -185,10 +185,19 @@ class CppClass:
 
         output_header.write(_CPP_PRIVATE + '\n')
         output_header.write(_CPP_SPACE + cpp_manager.sqlite_table_var() + _CPP_BR)
+        for table_name in cpp_manager.table_name_list:
+            output_header.write(_CPP_SPACE + cpp_manager.sqlite_table_var(table_name) + _CPP_BR)
+
         output_header.write(_CPP_SPACE + _CPP_UTILS_SPLIT + _CPP_BR)
         output_header.write(_CPP_SPACE + cpp_manager.sqlite_record_by_object_declaration() + _CPP_BR)
-        output_header.write(_CPP_SPACE + cpp_manager.sqlite_object_from_record_declaration() + _CPP_BR)
+        for table_name in cpp_manager.table_name_list:
+            output_header.write(_CPP_SPACE + cpp_manager.sqlite_record_by_object_declaration(table_name) + _CPP_BR)
+
         output_header.write(cpp_manager.unsafe_save_declaration(_CPP_SPACE))
+        for table_name in cpp_manager.table_name_list:
+            output_header.write(cpp_manager.unsafe_save_declaration(_CPP_SPACE, table_name))
+
+        output_header.write(_CPP_SPACE + cpp_manager.sqlite_object_from_record_declaration() + _CPP_BR)
 
         output_header.write('\n' + _CPP_SPACE + cpp_disallow_copy_and_assign + '\n')
 
@@ -242,8 +251,14 @@ class CppClass:
         output_cc.write(cpp_private_mark + _CPP_BR)
 
         output_cc.write(_CPP_UTILS_SPLIT + _CPP_BR)
-        output_cc.write(cpp_manager.generate_unsafe_save_implementation() + _CPP_BR)
+        output_cc.write(cpp_manager.unsafe_save_implementation() + _CPP_BR)
+        for table_name in cpp_manager.table_name_list:
+            output_cc.write(cpp_manager.unsafe_save_implementation(table_name) + _CPP_BR)
+
         output_cc.write(cpp_manager.sqlite_record_by_object_implementation() + _CPP_BR)
+        for table_name in cpp_manager.table_name_list:
+            output_cc.write(cpp_manager.sqlite_record_by_object_implementation(table_name) + _CPP_BR)
+
         output_cc.write(cpp_manager.sqlite_object_from_record_implementation() + _CPP_BR)
 
         output_cc.write(_CPP_NAMESPACE_END + _CPP_BR)

@@ -71,13 +71,13 @@ class CppModelXmlParser:
 
                 # parse <manager/>
                 cpp_manager = None
-                manager_or_none = class_node.find('manager')
-                if manager_or_none is not None:
-                    manager_name = manager_or_none.get('name')
+                manager_node_or_none = class_node.find('manager')
+                if manager_node_or_none is not None:
+                    manager_name = manager_node_or_none.get('name')
                     cpp_manager = CppManager(manager_name)
 
                     # parse all <save/>
-                    for save_node in manager_or_none.findall('save'):
+                    for save_node in manager_node_or_none.findall('save'):
                         is_plural = False
                         plural_node = save_node.get('plural')
                         if plural_node is not None:
@@ -86,7 +86,7 @@ class CppModelXmlParser:
                         cpp_manager.add_save_command(save_command)
 
                     # parse all <delete/>
-                    for delete_node in manager_or_none.findall('delete'):
+                    for delete_node in manager_node_or_none.findall('delete'):
                         is_plural = False
                         plural_node = delete_node.get('plural')
                         if plural_node is not None:
@@ -97,7 +97,7 @@ class CppModelXmlParser:
                         cpp_manager.add_delete_command(delete_command)
 
                     # parse all <fetch/>
-                    for fetch_node in manager_or_none.findall('fetch'):
+                    for fetch_node in manager_node_or_none.findall('fetch'):
                         is_plural = False
                         plural_node = fetch_node.get('plural')
                         if plural_node is not None:
@@ -116,7 +116,7 @@ class CppModelXmlParser:
                         cpp_manager.add_fetch_command(fetch_command)
 
                     # parse all <api/>
-                    for api_node in manager_or_none.findall('api'):
+                    for api_node in manager_node_or_none.findall('api'):
                         api_name = api_node.get('name')
                         api_alias = api_node.get('alias')
                         api_method = api_node.get('method')
@@ -160,6 +160,14 @@ class CppModelXmlParser:
 
                         api = CppApiDescription(api_name, api_alias, api_method, api_uri, input_var_list, output_var_list, extra_list)
                         cpp_manager.add_api_description(api)
+
+                    # parse <tables/>
+                    table_name_list = []
+                    tables_node_or_none = manager_node_or_none.find('tables')
+                    if tables_node_or_none is not None:
+                        for table_node in tables_node_or_none.findall('table'):
+                            table_name_list.append(table_node.get('name'))
+                    cpp_manager.set_table_name_list(table_name_list)
 
                 # write object header
                 cpp_class = CppClass(group_name, class_name, cpp_var_list, cpp_enum_list, cpp_manager, replacement_list, class_comment)
