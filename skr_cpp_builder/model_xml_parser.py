@@ -257,7 +257,9 @@ class CppModelXmlParser:
         else:
             table_name_list = re.split(',', table_names_or_none)
 
-        fetch_command = CppManagerFetchCommand(is_plural, by, sort_by_or_none, is_asc, table_name_list)
+        alias_attr = fetch_node.get('alias')
+
+        fetch_command = CppManagerFetchCommand(is_plural, by, sort_by_or_none, is_asc, table_name_list, alias_attr)
         return fetch_command
 
     @staticmethod
@@ -286,7 +288,9 @@ class CppModelXmlParser:
         else:
             table_name_list = re.split(',', table_names_or_none)
 
-        fetch_command = CppManagerFetchCommand(True, by, sort_by_or_none, is_asc, table_name_list)
+        alias_attr = fetches_node.get('alias')
+
+        fetch_command = CppManagerFetchCommand(True, by, sort_by_or_none, is_asc, table_name_list, alias_attr)
         return fetch_command
 
     @staticmethod
@@ -313,7 +317,9 @@ class CppModelXmlParser:
         if table_names_or_none is not None:
             table_name_list = re.split(',', table_names_or_none)
 
-        save_command = CppManagerSaveCommand(is_plural, table_name_list)
+        alias_attr = save_node.get('alias')
+
+        save_command = CppManagerSaveCommand(is_plural, table_name_list, alias_attr)
         return save_command
 
     @staticmethod
@@ -331,7 +337,9 @@ class CppModelXmlParser:
         if table_names_or_none is not None:
             table_name_list = re.split(',', table_names_or_none)
 
-        save_command = CppManagerSaveCommand(True, table_name_list)
+        alias_attr = saves_node.get('alias')
+
+        save_command = CppManagerSaveCommand(True, table_name_list, alias_attr)
         return save_command
 
     @staticmethod
@@ -360,7 +368,9 @@ class CppModelXmlParser:
         if table_names_or_none is not None:
             table_name_list = re.split(',', table_names_or_none)
 
-        delete_command = CppManagerDeleteCommand(is_plural, by, table_name_list)
+        alias_attr = delete_node.get('alias')
+
+        delete_command = CppManagerDeleteCommand(is_plural, by, table_name_list, alias_attr)
         return delete_command
 
     @staticmethod
@@ -380,5 +390,7 @@ class CppModelXmlParser:
         if table_names_or_none is not None:
             table_name_list = re.split(',', table_names_or_none)
 
-        delete_command = CppManagerDeleteCommand(True, by, table_name_list)
+        alias_attr = deletes_node.get('alias')
+
+        delete_command = CppManagerDeleteCommand(True, by, table_name_list, alias_attr)
         return delete_command

@@ -23,7 +23,7 @@ class CppManagerSaveCommand:
     """Represents 'SaveObject(s)FromCacheByKey' (<save/>)
     """
 
-    def __init__(self, is_plural, table_name_list):
+    def __init__(self, is_plural, table_name_list, alias_or_none):
         """Init CppManagerSaveCommand with some required parameters.
 
         Args:
@@ -32,13 +32,14 @@ class CppManagerSaveCommand:
         """
         self.is_plural = is_plural
         self.table_name_list = table_name_list
+        self.alias_or_none = alias_or_none
 
 
 class CppManagerFetchCommand:
     """Represents 'FetchObject(s)FromCacheByKey' (<fetch/>)
     """
 
-    def __init__(self, is_plural, where, sort_by_or_none, is_asc, table_name_list):
+    def __init__(self, is_plural, where, sort_by_or_none, is_asc, table_name_list, alias_or_none):
         """Init CppManagerFetchCommand with some required parameters.
 
         Args:
@@ -52,6 +53,7 @@ class CppManagerFetchCommand:
         self.is_asc = is_asc
         self.is_plural = is_plural
         self.table_name_list = table_name_list
+        self.alias_or_none = alias_or_none
 
         if where is not None:
             self.where = where
@@ -76,9 +78,10 @@ class CppManagerDeleteCommand:
     """Represents 'DeleteObject(s)FromCacheByKey' (<delete/>)
     """
 
-    def __init__(self, is_plural, where, table_name_list):
+    def __init__(self, is_plural, where, table_name_list, alias_or_none):
         self.is_plural = is_plural
         self.table_name_list = table_name_list
+        self.alias_or_none = alias_or_none
 
         if where is not None:
             self.where = where
