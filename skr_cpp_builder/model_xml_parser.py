@@ -87,14 +87,29 @@ class CppModelXmlParser:
                         save_command = CppModelXmlParser.__parse_save_node(save_node)
                         cpp_manager.add_save_command(save_command)
 
+                    # parse all <saves/>
+                    for saves_node in manager_node_or_none.findall('saves'):
+                        save_command = CppModelXmlParser.__parse_saves_node(saves_node)
+                        cpp_manager.add_save_command(save_command)
+
                     # parse all <delete/>
                     for delete_node in manager_node_or_none.findall('delete'):
                         delete_command = CppModelXmlParser.__parse_delete_command(delete_node)
                         cpp_manager.add_delete_command(delete_command)
 
+                    # parse all <deletes/>
+                    for deletes_node in manager_node_or_none.findall('deletes'):
+                        delete_command = CppModelXmlParser.__parse_delete_command(deletes_node)
+                        cpp_manager.add_delete_command(delete_command)
+
                     # parse all <fetch/>
                     for fetch_node in manager_node_or_none.findall('fetch'):
                         fetch_command = CppModelXmlParser.__parse_fetch_node(fetch_node)
+                        cpp_manager.add_fetch_command(fetch_command)
+
+                    # parse all <fetches/>
+                    for fetches_node in manager_node_or_none.findall('fetches'):
+                        fetch_command = CppModelXmlParser.__parse_fetch_node(fetches_node)
                         cpp_manager.add_fetch_command(fetch_command)
 
                     # parse all <api/>
@@ -219,9 +234,12 @@ class CppModelXmlParser:
             instance CppFetchCommand object
         """
         is_plural = False
-        plural_node = fetch_node.get('plural')
-        if plural_node is not None:
+        plural_attr = fetch_node.get('plural')
+        singular_attr = fetch_node.get('singular')
+        if plural_attr is not None:
             is_plural = True
+        elif singular_attr is not None:
+            is_plural = False
 
         by = fetch_node.get('by')
         sort_by_or_none = fetch_node.get('sort')
@@ -243,6 +261,35 @@ class CppModelXmlParser:
         return fetch_command
 
     @staticmethod
+    def __parse_fetches_node(fetches_node):
+        """Parse <fetches/>
+
+        Args:
+            fetches_node: fetch node
+
+        Returns:
+            instance CppFetchCommand object
+        """
+        by = fetches_node.get('by')
+        sort_by_or_none = fetches_node.get('sort')
+        is_asc = True
+        if sort_by_or_none is not None:
+            desc_desciption_or_none = fetches_node.get('desc')
+            if desc_desciption_or_none is not None:
+                if desc_desciption_or_none == 'true':
+                    is_asc = False
+
+        table_names_or_none = fetches_node.get('tables')
+        table_name_list = []
+        if table_names_or_none is None or table_names_or_none == '':
+            table_name_list = []
+        else:
+            table_name_list = re.split(',', table_names_or_none)
+
+        fetch_command = CppManagerFetchCommand(True, by, sort_by_or_none, is_asc, table_name_list)
+        return fetch_command
+
+    @staticmethod
     def __parse_save_node(save_node):
         """Parse <save/>
 
@@ -252,10 +299,14 @@ class CppModelXmlParser:
         Returns:
             instance CppSaveCommand object
         """
+        # if we have "singular" or "plural" attributes, consider as old style
         is_plural = False
-        plural_node = save_node.get('plural')
-        if plural_node is not None:
+        plural_attr = save_node.get('plural')
+        singular_attr = save_node.get('singular')
+        if plural_attr is not None:
             is_plural = True
+        if singular_attr is not None:
+            is_plural = False
 
         table_name_list = []
         table_names_or_none = save_node.get('tables')
@@ -263,6 +314,24 @@ class CppModelXmlParser:
             table_name_list = re.split(',', table_names_or_none)
 
         save_command = CppManagerSaveCommand(is_plural, table_name_list)
+        return save_command
+
+    @staticmethod
+    def __parse_saves_node(saves_node):
+        """Parse <saves/>
+
+        Args:
+            saves_node: saves node
+
+        Returns:
+            instance CppSaveCommand object
+        """
+        table_name_list = []
+        table_names_or_none = saves_node.get('tables')
+        if table_names_or_none is not None:
+            table_name_list = re.split(',', table_names_or_none)
+
+        save_command = CppManagerSaveCommand(True, table_name_list)
         return save_command
 
     @staticmethod
@@ -275,10 +344,14 @@ class CppModelXmlParser:
         Returns:
             instance CppDeleteCommand object
         """
+        # if we have "singular" or "plural" attributes, consider as old style
         is_plural = False
-        plural_node = delete_node.get('plural')
-        if plural_node is not None:
+        plural_attr = delete_node.get('plural')
+        singular_attr = delete_node.get('singular')
+        if plural_attr is not None:
             is_plural = True
+        elif singular_attr is not None:
+            is_plural = False
 
         by = delete_node.get('by')
 
@@ -288,4 +361,24 @@ class CppModelXmlParser:
             table_name_list = re.split(',', table_names_or_none)
 
         delete_command = CppManagerDeleteCommand(is_plural, by, table_name_list)
+        return delete_command
+
+    @staticmethod
+    def __parse_deletes_command(deletes_node):
+        """Parse <delete/>
+
+        Args:
+            deletes_node: delete node
+
+        Returns:
+            instance CppDeleteCommand object
+        """
+        by = deletes_node.get('by')
+
+        table_name_list = []
+        table_names_or_none = deletes_node.get('tables')
+        if table_names_or_none is not None:
+            table_name_list = re.split(',', table_names_or_none)
+
+        delete_command = CppManagerDeleteCommand(True, by, table_name_list)
         return delete_command
