@@ -34,6 +34,7 @@ python model-builder.py lesschat-model-description.xml
   - UPDATED SINCE 4.2 :
   - 1) Since 4.2, you can also use <save/> and <saves/> without "singular" or "plural" to describe the singular style or plural style you are using. (The new style is recomanded in new development)
   - 2) Sometimes we find we need to use two tables to seperate objects and list of objects storage, so we introduce "tables" attribute to solve the problem, its grammer is <saves tables='my_tasks,tasks'/>, the builder will then genearate the methods for my_tasks_tb_ and tasks_tb_.
+  - 3) Due to new "tables" attribute supported, to rename the save, delete, fetch methods, we introduce "alias" (eg: <saves alias='SaveMyTasksToCache'), the builder will use the alias name as method name, default parameters and return values as it once was.
 
 6. Since 3.0, you can use model-builder to generate WebApi and cache methods by using <api/>:
   - name : Name of WebApi

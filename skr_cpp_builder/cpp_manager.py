@@ -264,12 +264,22 @@ class CppManager:
         declaration = ''
         for save_command in self.save_commands:
             if not save_command.is_plural:
-                declaration += '{2}void Save{0}ToCache(const {0}& {1}) const;\n\n'.format(self.object_name,
-                                                                                          self.object_name.lower(),
-                                                                                          pre_spaces)
+                if save_command.alias_or_none is None:
+                    declaration += '{2}void Save{0}ToCache(const {0}& {1}) const;\n\n'.format(self.object_name,
+                                                                                              self.object_name.lower(),
+                                                                                              pre_spaces)
+                else:
+                    declaration += '{2}void {3}(const {0}& {1}) const;\n\n'.format(self.object_name,
+                                                                                   self.object_name.lower(),
+                                                                                   pre_spaces,
+                                                                                   save_command.alias_or_none)
             else:
-                declaration += '{0}void Save{1}ToCache(const std::vector<std::unique_ptr<{2}>>& {3}s) const;\n\n'\
-                    .format(pre_spaces, self.plural_object_name, self.object_name, self.object_name.lower())
+                if save_command.alias_or_none is None:
+                    declaration += '{0}void Save{1}ToCache(const std::vector<std::unique_ptr<{2}>>& {3}s) const;\n\n'\
+                        .format(pre_spaces, self.plural_object_name, self.object_name, self.object_name.lower())
+                else:
+                    declaration += '{0}void {1}(const std::vector<std::unique_ptr<{2}>>& {3}s) const;\n\n'\
+                        .format(pre_spaces, save_command.alias_or_none, self.object_name, self.object_name.lower())
         return declaration
 
     def generate_save_implementations(self):
@@ -286,13 +296,25 @@ class CppManager:
                 by_list = re.split(',', delete_command.where)
 
             if not delete_command.is_plural:
+                # validation
                 if len(by_list) == 0:
                     skr_log_warning('Singular often comes with at least one by parameter')
-                declaration += '{0}void Delete{1}FromCache{2} const;\n\n'\
-                    .format(pre_spaces, self.object_name, self.__convert_bys_to_string(by_list))
+
+                # logic
+                if delete_command.alias_or_none is None:
+                    declaration += '{0}void Delete{1}FromCache{2} const;\n\n'\
+                        .format(pre_spaces, self.object_name, self.__convert_bys_to_string(by_list))
+                else:
+                    declaration += '{0}void {1}{2} const;\n\n'\
+                        .format(pre_spaces, self.object_name, self.__convert_bys_to_string(by_list), delete_command.alias_or_none)
             else:
-                declaration += '{0}void Delete{1}FromCache{2} const;\n\n'\
-                    .format(pre_spaces, self.plural_object_name, self.__convert_bys_to_string(by_list))
+                if delete_command.alias_or_none is None:
+                    declaration += '{0}void Delete{1}FromCache{2} const;\n\n'\
+                        .format(pre_spaces, self.plural_object_name, self.__convert_bys_to_string(by_list))
+                else:
+                    print(delete_command.alias_or_none)
+                    declaration += '{0}void {1}{2} const;\n\n'\
+                        .format(pre_spaces, delete_command.alias_or_none, self.__convert_bys_to_string(by_list))
         return declaration
 
     def generate_delete_implementations(self):
@@ -309,13 +331,24 @@ class CppManager:
                 by_list = re.split(',', fetch_command.where)
 
             if not fetch_command.is_plural:
+                # validation
                 if len(by_list) == 0:
                     skr_log_warning('Singular often comes with at least one by parameter')
-                declaration += '{0}std::unique_ptr<{1}> Fetch{1}FromCache{2} const;\n\n'\
-                    .format(pre_spaces, self.object_name, self.__convert_bys_to_string(by_list))
+
+                # logic
+                if fetch_command.alias_or_none is None:
+                    declaration += '{0}std::unique_ptr<{1}> Fetch{1}FromCache{2} const;\n\n'\
+                        .format(pre_spaces, self.object_name, self.__convert_bys_to_string(by_list))
+                else:
+                    declaration += '{0}std::unique_ptr<{1}> {3}{2} const;\n\n'\
+                        .format(pre_spaces, self.object_name, self.__convert_bys_to_string(by_list), fetch_command.alias_or_none)
             else:
-                declaration += '{0}std::vector<std::unique_ptr<{1}>> Fetch{2}FromCache{3} const;\n\n'\
-                    .format(pre_spaces, self.object_name, self.plural_object_name, self.__convert_bys_to_string(by_list))
+                if fetch_command.alias_or_none is None:
+                    declaration += '{0}std::vector<std::unique_ptr<{1}>> Fetch{2}FromCache{3} const;\n\n'\
+                        .format(pre_spaces, self.object_name, self.plural_object_name, self.__convert_bys_to_string(by_list))
+                else:
+                    declaration += '{0}std::vector<std::unique_ptr<{1}>> {2}{3} const;\n\n'\
+                        .format(pre_spaces, self.object_name, fetch_command.alias_or_none, self.__convert_bys_to_string(by_list))
         return declaration
 
     def generate_fetch_implementations(self):
@@ -465,8 +498,13 @@ class CppManager:
 
     def __save_implementation(self, save_command):
         if save_command.is_plural:
-            impl = 'void {0}::Save{3}ToCache(const std::vector<std::unique_ptr<{1}>>& {2}) const {{\n'\
-                .format(self.manager_name, self.object_name, self.plural_object_name.lower(), self.plural_object_name)
+            impl = ''
+            if save_command.alias_or_none is None:
+                impl += 'void {0}::Save{3}ToCache(const std::vector<std::unique_ptr<{1}>>& {2}) const {{\n'\
+                    .format(self.manager_name, self.object_name, self.plural_object_name.lower(), self.plural_object_name)
+            else:
+                impl += 'void {0}::{3}(const std::vector<std::unique_ptr<{1}>>& {2}) const {{\n'\
+                    .format(self.manager_name, self.object_name, self.plural_object_name.lower(), save_command.alias_or_none)
             impl += '  LockMainDatabase();\n\n  BeginTransaction();' + _CPP_BR
             impl += '  for (auto it = {0}.begin(); it != {0}.end(); ++it) {{\n'.format(self.plural_object_name.lower())
 
@@ -507,8 +545,14 @@ class CppManager:
             if delete_command.where != '':
                 by_list = re.split(',', delete_command.where)
                 where_sql = self.__convert_bys_to_sql_where(by_list)
-            impl = 'void {0}::Delete{1}FromCache{2} const {{\n'\
-                .format(self.manager_name, self.object_name, self.__convert_bys_to_string(by_list))
+
+            impl = ''
+            if delete_command.alias_or_none is None:
+                impl += 'void {0}::Delete{1}FromCache{2} const {{\n'\
+                    .format(self.manager_name, self.object_name, self.__convert_bys_to_string(by_list))
+            else:
+                impl += 'void {0}::{1}{2} const {{\n'\
+                    .format(self.manager_name, delete_command.alias_or_none, self.__convert_bys_to_string(by_list))
             impl += _CPP_SPACE
             impl += where_sql + _CPP_BR
             impl += '  LockMainDatabase();' + _CPP_BR
@@ -531,8 +575,14 @@ class CppManager:
             if delete_command.where != '':
                 by_list = re.split(',', delete_command.where)
                 where_sql = self.__convert_bys_to_sql_where(by_list)
-            impl = 'void {0}::Delete{1}FromCache{2} const {{\n'\
-                .format(self.manager_name, self.plural_object_name, self.__convert_bys_to_string(by_list))
+
+            impl = ''
+            if delete_command.alias_or_none is None:
+                impl += 'void {0}::Delete{1}FromCache{2} const {{\n'\
+                    .format(self.manager_name, self.plural_object_name, self.__convert_bys_to_string(by_list))
+            else:
+                impl += 'void {0}::{1}{2} const {{\n'\
+                    .format(self.manager_name, delete_command.alias_or_none, self.__convert_bys_to_string(by_list))
             impl += _CPP_SPACE
             impl += where_sql + _CPP_BR
             impl += _CPP_SPACE
@@ -560,8 +610,13 @@ class CppManager:
             where_sql = self.__convert_bys_to_sql_where(by_list)
 
         if not fetch_command.is_plural:
-            impl = 'std::unique_ptr<{0}> {2}::Fetch{0}FromCache{1} const {{\n'\
-                    .format(self.object_name, self.__convert_bys_to_string(by_list), self.manager_name)
+            impl = ''
+            if fetch_command.alias_or_none is None:
+                impl += 'std::unique_ptr<{0}> {2}::Fetch{0}FromCache{1} const {{\n'\
+                        .format(self.object_name, self.__convert_bys_to_string(by_list), self.manager_name)
+            else:
+                impl += 'std::unique_ptr<{0}> {2}::{3}{1} const {{\n'\
+                        .format(self.object_name, self.__convert_bys_to_string(by_list), self.manager_name, fetch_command.alias_or_none)
             impl += _CPP_SPACE + where_sql + _CPP_BR
             impl += '  LCC_DB_LOCK_GUARD;' + _CPP_BR
 
@@ -577,32 +632,35 @@ class CppManager:
             impl += '}'
             return impl
         else:
+            # validations
             # table_name_list is not supported in plural case.
-            if len(fetch_command.table_name_list) > 0:
+            if len(fetch_command.table_name_list) > 0 and fetch_command.alias_or_none is None:
                 skr_log_warning('"tables" attribute only supported <fetch singular="true"/>')
+            elif len(fetch_command.table_name_list) > 1 and fetch_command.alias_or_none is not None:
+                skr_log_warning('"tables" attribute only supported at most 1 override name')
 
-            impl = 'std::vector<std::unique_ptr<{0}>> {3}::Fetch{1}FromCache{2} const {{\n\n'\
-                    .format(self.object_name, self.plural_object_name, self.__convert_bys_to_string(by_list), self.manager_name)
-            impl += _CPP_SPACE
-            impl += 'vector<unique_ptr<{0}>> {1};\n\n'.format(self.object_name, self.plural_object_name.lower())
-            impl += _CPP_SPACE
-            impl += where_sql + _CPP_BR
-            impl += _CPP_SPACE
-            impl += 'LockMainDatabase();' + _CPP_BR
-            impl += _CPP_SPACE
-            impl += '{0}->open(where_condition{1});\n\n'.format(self.__sqlite_tb_name(), fetch_command.sort_sql())
-            impl += _CPP_SPACE
-            impl += 'for (int i = 0; i < {0}->recordCount(); ++i) {{\n'.format(self.__sqlite_tb_name())
-            impl += _CPP_SPACE + _CPP_SPACE
-            impl += 'sql::Record* record = {0}->getRecord(i);\n'.format(self.__sqlite_tb_name())
-            impl += _CPP_SPACE + _CPP_SPACE
-            impl += '{0}.push_back({1}FromRecord(record));\n'.format(self.plural_object_name.lower(), self.object_name)
-            impl += _CPP_SPACE
-            impl += '}\n\n'
-            impl += _CPP_SPACE
-            impl += 'UnlockMainDatabase();' + _CPP_BR
-            impl += _CPP_SPACE
-            impl += 'return {0};\n'.format(self.plural_object_name.lower())
+            # logic
+            override_table_name = ''
+            if len(fetch_command.table_name_list) > 0:
+                override_table_name = fetch_command.table_name_list[0]
+
+            impl = ''
+            if fetch_command.alias_or_none is None:
+                impl += 'std::vector<std::unique_ptr<{0}>> {3}::Fetch{1}FromCache{2} const {{\n\n'\
+                        .format(self.object_name, self.plural_object_name, self.__convert_bys_to_string(by_list), self.manager_name)
+            else:
+                impl += 'std::vector<std::unique_ptr<{0}>> {3}::{1}{2} const {{\n\n'\
+                        .format(self.object_name, fetch_command.alias_or_none, self.__convert_bys_to_string(by_list), self.manager_name)
+            impl += '  vector<unique_ptr<{0}>> {1};\n\n'.format(self.object_name, self.plural_object_name.lower())
+            impl += _CPP_SPACE + where_sql + _CPP_BR
+            impl += '  LockMainDatabase();' + _CPP_BR
+            impl += '  {0}->open(where_condition{1});\n\n'.format(self.__sqlite_tb_name(override_table_name), fetch_command.sort_sql())
+            impl += '  for (int i = 0; i < {0}->recordCount(); ++i) {{\n'.format(self.__sqlite_tb_name(override_table_name))
+            impl += '    sql::Record* record = {0}->getRecord(i);\n'.format(self.__sqlite_tb_name(override_table_name))
+            impl += '    {0}.push_back({1}FromRecord(record));\n'.format(self.plural_object_name.lower(), self.object_name)
+            impl += '  }\n\n'
+            impl += '  UnlockMainDatabase();' + _CPP_BR
+            impl += '  return {0};\n'.format(self.plural_object_name.lower())
             impl += '}'
             return impl
 

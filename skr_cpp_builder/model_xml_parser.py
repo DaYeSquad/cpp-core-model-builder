@@ -99,7 +99,7 @@ class CppModelXmlParser:
 
                     # parse all <deletes/>
                     for deletes_node in manager_node_or_none.findall('deletes'):
-                        delete_command = CppModelXmlParser.__parse_delete_command(deletes_node)
+                        delete_command = CppModelXmlParser.__parse_deletes_command(deletes_node)
                         cpp_manager.add_delete_command(delete_command)
 
                     # parse all <fetch/>
@@ -109,7 +109,7 @@ class CppModelXmlParser:
 
                     # parse all <fetches/>
                     for fetches_node in manager_node_or_none.findall('fetches'):
-                        fetch_command = CppModelXmlParser.__parse_fetch_node(fetches_node)
+                        fetch_command = CppModelXmlParser.__parse_fetches_node(fetches_node)
                         cpp_manager.add_fetch_command(fetch_command)
 
                     # parse all <api/>
