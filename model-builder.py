@@ -53,8 +53,8 @@ if __name__ == "__main__":
     # objc_parser = ObjcModelXmlParser(4.0)
     # objc_parser.parse(input_file_path)
 
-    # java_parser = JavaModelXmlParser(4.0)
-    # java_parser.parse(input_file_path)
+    java_parser = JavaModelXmlParser(4.0)
+    java_parser.parse(input_file_path)
 
     jni_parse = JniModelXmlParse(4.0)
     jni_parse.parse(input_file_path)

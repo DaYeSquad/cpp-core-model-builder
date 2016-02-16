@@ -59,7 +59,7 @@ class VarType(Enum):
             return 3
         elif var_type_string == 'enum':
             return 4
-        elif var_type_string == 'string_array':
+        elif var_type_string == '[string]':
             return 5
         elif var_type_string == 'time':
             return 6
