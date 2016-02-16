@@ -33,6 +33,10 @@ class JavaClass:
         file_path = 'build/com/lesschat/core/' + self.group_name + '/' + file_name
         output_java = open(file_path, 'w')
 
+        java_package = 'package com.lesschat.core.' + self.group_name + ';'
+
+        output_java.write(java_package + _JAVA_BR)
+
         java_import = 'import android.os.Parcel;\n'
         java_import += 'import android.os.Parcelable;' + _JAVA_BR
         java_import += 'import com.lesschat.core.jni.CoreObject;' + _JAVA_BR
@@ -172,6 +176,10 @@ class JavaClass:
         file_name = self.java_manager_or_none.manager_name + '.java'
         file_path = 'build/com/lesschat/core/' + self.group_name + '/' + file_name
         output_java = open(file_path, 'w')
+
+        java_package = 'package com.lesschat.core.' + self.group_name + ';'
+
+        output_java.write(java_package + _JAVA_BR)
 
         java_import = 'import com.lesschat.core.api.WebApiResponse;\n'
         java_import += 'import com.lesschat.core.{0}.{1}.*;\n'.format(self.group_name, self.class_name)
