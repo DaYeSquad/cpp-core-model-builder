@@ -4,9 +4,9 @@ from skrutil import string_utils
 
 from jni_variable import JniVariable
 from jni_manager import JniManager
-from skr_cpp_builder.cpp_manager import CppManagerSaveCommand
-from skr_cpp_builder.cpp_manager import CppManagerFetchCommand
-from skr_cpp_builder.cpp_manager import CppManagerDeleteCommand
+from skr_jni_builder.jni_manager import JniManagerSaveCommand
+from skr_jni_builder.jni_manager import JniManagerFetchCommand
+from skr_jni_builder.jni_manager import JniManagerDeleteCommand
 
 from jni_class import JniClass
 
@@ -18,7 +18,7 @@ class JniModelXmlParse:
 
     def parse(self, directory):
         # create core folder if not exists and remove last build
-        jni_dir_path = 'jni'
+        jni_dir_path = 'build/jni'
         io_utils.make_directory_if_not_exists(jni_dir_path)
 
         # start parsing xml
@@ -59,7 +59,7 @@ class JniModelXmlParse:
                         plural_node = save_node.get('plural')
                         if plural_node is not None:
                             is_plural = True
-                        save_command = CppManagerSaveCommand(is_plural)
+                        save_command = JniManagerSaveCommand(is_plural)
                         jni_manager.add_save_command(save_command)
 
                     # parse all <delete/>
@@ -70,7 +70,7 @@ class JniModelXmlParse:
                             is_plural = True
 
                         by = delete_node.get('by')
-                        delete_command = CppManagerDeleteCommand(is_plural, by)
+                        delete_command = JniManagerDeleteCommand(is_plural, by)
                         jni_manager.add_delete_command(delete_command)
 
                     # parse all <fetch/>
@@ -81,7 +81,7 @@ class JniModelXmlParse:
                             is_plural = True
 
                         by = fetch_node.get('by')
-                        fetch_command = CppManagerFetchCommand(is_plural, by)
+                        fetch_command = JniManagerFetchCommand(is_plural, by)
                         jni_manager.add_fetch_command(fetch_command)
 
                 # write jni wrapper header

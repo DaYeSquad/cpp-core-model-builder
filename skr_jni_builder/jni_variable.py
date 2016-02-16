@@ -5,7 +5,7 @@ from skrutil import string_utils
 class JniVariable:
 
     def __init__(self, name, var_type_string, group_name, class_name):
-        var_type = VarType.type_from_string(var_type_string)
+        var_type = VarType.instance_from_string(var_type_string)
 
         self.name = name
         self.var_type = VarType(var_type)

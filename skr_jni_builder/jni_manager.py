@@ -5,6 +5,30 @@ from skrutil import string_utils
 _JNI_BR = '\n\n'
 _JNI_SPACE = '  '
 
+
+class JniManagerFetchCommand:
+    def __init__(self, is_plural, where):
+        self.is_plural = is_plural
+        if where is not None:
+            self.where = where
+        else:
+            self.where = ''
+
+
+class JniManagerSaveCommand:
+    def __init__(self, is_plural):
+        self.is_plural = is_plural
+
+
+class JniManagerDeleteCommand:
+    def __init__(self, is_plural, where):
+        self.is_plural = is_plural
+        if where is not None:
+            self.where = where
+        else:
+            self.where = ''
+
+
 class JniManager:
     def __init__(self, manager_name):
         self.manager_name = manager_name

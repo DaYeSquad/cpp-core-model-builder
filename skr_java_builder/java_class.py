@@ -30,7 +30,7 @@ class JavaClass:
 
     def generate_java(self):
         file_name = self.class_name + '.java'
-        file_path = 'com/lesschat/core/' + self.group_name + '/' + file_name
+        file_path = 'build/com/lesschat/core/' + self.group_name + '/' + file_name
         output_java = open(file_path, 'w')
 
         java_import = 'import android.os.Parcel;\n'
@@ -170,7 +170,7 @@ class JavaClass:
             return
         manager_name = self.java_manager_or_none.manager_name
         file_name = self.java_manager_or_none.manager_name + '.java'
-        file_path = 'com/lesschat/core/' + self.group_name + '/' + file_name
+        file_path = 'build/com/lesschat/core/' + self.group_name + '/' + file_name
         output_java = open(file_path, 'w')
 
         java_import = 'import com.lesschat.core.api.WebApiResponse;\n'

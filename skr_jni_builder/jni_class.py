@@ -22,7 +22,7 @@ class JniClass:
 
     def generate_header(self):
         file_name = 'com_lesschat_core_{0}_{1}.h'.format(self.group_name, self.class_name)
-        file_path = 'jni/' + file_name
+        file_path = 'build/jni/' + file_name
         output_header = open(file_path, 'w')
 
         def_guard = '#ifndef _Included_com_lesschat_core_{0}_{1}\n#define _Included_com_lesschat_core_{0}_{1}'.format(
@@ -53,7 +53,7 @@ class JniClass:
 
     def generate_implementation(self):
         file_name = 'com_lesschat_core_{0}_{1}.cc'.format(self.group_name, self.class_name)
-        file_path = 'jni/' + file_name
+        file_path = 'build/jni/' + file_name
         output_header = open(file_path, 'w')
 
         style_class_name = string_utils.cpp_class_name_to_cpp_file_name(self.class_name)
@@ -88,7 +88,7 @@ class JniClass:
         jni_manager = self.jni_manager_or_none
 
         file_name = 'com_lesschat_core_{0}_{1}Manager.h'.format(self.group_name, self.class_name)
-        file_path = 'jni/' + file_name
+        file_path = 'build/jni/' + file_name
         output_header = open(file_path, 'w')
 
         def_header = '#ifndef _Included_com_lesschat_core_{0}_{1}Manager\n' \
@@ -112,7 +112,7 @@ class JniClass:
         jni_manager = self.jni_manager_or_none
 
         file_name = 'com_lesschat_core_{0}_{1}Manager.cc'.format(self.group_name, self.class_name)
-        file_path = 'jni/' + file_name
+        file_path = 'build/jni/' + file_name
         output_header = open(file_path, 'w')
 
         header_name = '#include "com_lesschat_core_{0}_{1}Manager.h"\n'.format(self.group_name, self.class_name)

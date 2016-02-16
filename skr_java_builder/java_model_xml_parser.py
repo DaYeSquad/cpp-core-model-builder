@@ -17,7 +17,7 @@ class JavaModelXmlParser:
 
     def parse(self, directory):
         # create core folder if not exists and remove last build
-        core_dir_path = 'com/lesschat/core/'
+        core_dir_path = 'build/com/lesschat/core/'
         if os.path.exists(core_dir_path):
             shutil.rmtree(core_dir_path)
             os.makedirs(core_dir_path)
@@ -31,7 +31,7 @@ class JavaModelXmlParser:
         # search directories
         for folder_node in root.findall('group'):
             group_name = folder_node.get('name')
-            group_path = 'com/lesschat/core/' + group_name
+            group_path = 'build/com/lesschat/core/' + group_name
             if os.path.exists(group_path):
                 shutil.rmtree(group_path)
                 os.makedirs(group_path)
