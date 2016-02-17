@@ -96,12 +96,16 @@ class JavaModelXmlParser:
                     # parse all <fetch/>
                     for fetch_node in manager_or_none.findall('fetch'):
                         is_plural = False
-                        plural_node = fetch_node.get('plural')
-                        if plural_node is not None:
-                            is_plural = True
-
                         by = fetch_node.get('by')
-                        fetch_command = JavaManagerFetchCommand(is_plural, by)
+                        alias = fetch_node.get('alias')
+                        fetch_command = JavaManagerFetchCommand(is_plural, by, alias)
+                        java_manager.add_fetch_command(fetch_command)
+
+                    for fetch_node in manager_or_none.findall('fetches'):
+                        is_plural = True
+                        by = fetch_node.get('by')
+                        alias = fetch_node.get('alias')
+                        fetch_command = JavaManagerFetchCommand(is_plural, by, alias)
                         java_manager.add_fetch_command(fetch_command)
 
                 # write object header

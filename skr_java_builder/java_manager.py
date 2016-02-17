@@ -1,6 +1,7 @@
 import re
 from java_variable import VarType
 from skrutil.skr_logger import skr_log_warning
+from skrutil import string_utils
 
 _JAVA_BR = '\n\n'
 _JAVA_SPACE = '    '
@@ -14,12 +15,18 @@ def function_space(count):
 
 
 class JavaManagerFetchCommand:
-    def __init__(self, is_plural, where):
+    def __init__(self, is_plural, where, alias):
         self.is_plural = is_plural
+
         if where is not None:
             self.where = where
         else:
             self.where = ''
+
+        if alias is not None:
+            self.alias = alias
+        else:
+            self.alias = ''
 
 
 class JavaManager:
@@ -47,24 +54,37 @@ class JavaManager:
             if fetch_command.where != '':
                 by_list = re.split(',', fetch_command.where)
 
+            if fetch_command.alias != '':
+                fetch_fun_name = string_utils.first_char_to_lower(fetch_command.alias)
+                fetch_fun_name_native = fetch_command.alias
+            elif not fetch_command.is_plural:
+                fetch_fun_name = 'fetch{0}FromCache'.format(self.__rename_object_name_if_list())
+                fetch_fun_name_native = 'Fetch{0}FromCache'.format(self.object_name)
+            else:
+                fetch_fun_name = 'fetch{0}FromCache'.format(self.plural_object_name)
+                fetch_fun_name_native = 'Fetch{0}FromCache'.format(self.plural_object_name)
+
             if not fetch_command.is_plural:
                 if len(by_list) == 0:
                     skr_log_warning('Singular often comes with at least one by parameter')
-                fetch_function += function_space(1) + 'public {0} fetch{0}FromCache{1} {{\n' \
-                    .format(self.__rename_object_name_if_list(), self.__convert_bys_to_string(by_list, False, False))
-                fetch_function += function_space(2) + 'long handler = nativeFetch{0}FromCache{1};\n\n' \
-                    .format(self.object_name, self.__convert_bys_to_string(by_list, False, True))
+                fetch_function += function_space(1) + 'public {0} '.format(self.__rename_object_name_if_list())
+                fetch_function += fetch_fun_name + self.__convert_bys_to_string(by_list, False, False) + '{\n'
+
+                fetch_function += function_space(2) + 'long handler = native' + fetch_fun_name_native
+                fetch_function += self.__convert_bys_to_string(by_list, False, True) + ';\n\n'
+
                 fetch_function += function_space(2) + 'if (handler == JniHelper.sNullPointer) {\n'
                 fetch_function += function_space(3) + 'return null;\n'
                 fetch_function += function_space(2) + '}\n\n'
                 fetch_function += function_space(2) + 'return new {0}(handler);\n'.format(self.__rename_object_name_if_list())
                 fetch_function += function_space(1) + '}' + _JAVA_BR
             else:
-                fetch_function += function_space(1) + 'public List<{0}> fetch{1}FromCache{2} {{\n' \
-                    .format(self.__rename_object_name_if_list(), self.plural_object_name,
-                            self.__convert_bys_to_string(by_list, False, False))
-                fetch_function += function_space(2) + 'long[] handlers = nativeFetch{0}FromCache{1};\n\n'\
-                    .format(self.plural_object_name, self.__convert_bys_to_string(by_list, False, True))
+                fetch_function += function_space(1) + 'public List<{0}> '.format(self.__rename_object_name_if_list())
+                fetch_function += fetch_fun_name + self.__convert_bys_to_string(by_list, False, False) + ' {\n'
+
+                fetch_function += function_space(2) + 'long[] handlers = native' + fetch_fun_name_native
+                fetch_function += self.__convert_bys_to_string(by_list, False, True) + ';\n\n'
+
                 fetch_function += function_space(2) + 'List<{0}> {1} = new ArrayList<>();\n'\
                     .format(self.__rename_object_name_if_list(), self.__to_object_name_java_style() + 's')
                 fetch_function += function_space(2) + 'for (long handler: handlers) {\n'
@@ -83,19 +103,30 @@ class JavaManager:
             if fetch_command.where != '':
                 by_list = re.split(',', fetch_command.where)
 
+            if fetch_command.alias != '':
+                fetch_fun_name_native = fetch_command.alias
+            elif not fetch_command.is_plural:
+                fetch_fun_name_native = 'Fetch{0}FromCache'.format(self.object_name)
+            else:
+                fetch_fun_name_native = 'Fetch{0}FromCache'.format(self.plural_object_name)
+
             if not fetch_command.is_plural:
                 if len(by_list) == 0:
                     skr_log_warning('Singular often comes with at least one by parameter')
-                fetch_function += function_space(1) + 'private native {0} nativeFetch{1}FromCache{2};'\
-                    .format('long', self.object_name, self.__convert_bys_to_string(by_list, True, False)) + _JAVA_BR
+                fetch_function += function_space(1) + 'private native long native' + fetch_fun_name_native
+                fetch_function += self.__convert_bys_to_string(by_list, True, False) + ';' + _JAVA_BR
             else:
-                fetch_function += function_space(1) + 'private native long[] nativeFetch{0}FromCache{1};'\
-                    .format(self.plural_object_name, self.__convert_bys_to_string(by_list, True, False)) + _JAVA_BR
+                fetch_function += function_space(1) + 'private native long[] native' + fetch_fun_name_native
+                fetch_function += self.__convert_bys_to_string(by_list, True, False) + ';' + _JAVA_BR
         return fetch_function
 
     # returns "ById(String id)" or "(String id, String username)" or "()"
     def __convert_bys_to_string(self, by_string_list, is_native_declaration, is_native_call):
         if len(by_string_list) == 0:  # ()
+            if is_native_declaration:
+                return '(long handler)'
+            elif is_native_call:
+                return '(mNativeHandler)'
             return '()'
         elif len(by_string_list) == 1:  # "ById(String id)"
             by_string = by_string_list[0]
