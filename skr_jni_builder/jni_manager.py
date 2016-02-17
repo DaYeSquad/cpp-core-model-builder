@@ -7,8 +7,14 @@ _JNI_SPACE = '  '
 
 
 class JniManagerFetchCommand:
-    def __init__(self, is_plural, where):
+    def __init__(self, is_plural, where, alias):
         self.is_plural = is_plural
+
+        if alias is not None:
+            self.alias = alias
+        else:
+            self.alias = ''
+
         if where is not None:
             self.where = where
         else:
@@ -91,14 +97,24 @@ class JniManager:
 
             bys = self.__convert_bys_to_string(by_list, self.fetch_has_sign)
 
+            if fetch_command.alias != '':
+                fetch_fun_name = fetch_command.alias
+            elif not fetch_command.is_plural:
+                fetch_fun_name = 'Fetch{0}FromCache'.format(self.object_name)
+            else:
+                fetch_fun_name = 'Fetch{0}FromCache'.format(self.plural_object_name)
+
             if not fetch_command.is_plural:
                 if len(by_list) == 0:
                     skr_log_warning('Singular often comes with at least one by parameter')
-                declaration += 'JNIEXPORT jlong JNICALL Java_com_lesschat_core_{0}_{1}_nativeFetch{2}FromCache{3}'\
-                    .format(self.group_name, self.manager_name, self.object_name, bys)
+                declaration += 'JNIEXPORT jlong JNICALL Java_com_lesschat_core_{0}_{1}_native'.\
+                    format(self.group_name, self.manager_name)
+                declaration += fetch_fun_name + bys
+
             else:
-                declaration += 'JNIEXPORT jlongArray JNICALL Java_com_lesschat_core_{0}_{1}_nativeFetch{2}FromCache{3}'\
-                    .format(self.group_name, self.manager_name, self.plural_object_name, bys)
+                declaration += 'JNIEXPORT jlongArray JNICALL Java_com_lesschat_core_{0}_{1}_native'.\
+                    format(self.group_name, self.manager_name)
+                declaration += fetch_fun_name + bys
         return declaration
 
     def generate_fetch_implementations(self):
@@ -116,11 +132,19 @@ class JniManager:
 
         bys = self.__convert_bys_to_string_impl(by_list, self.fetch_has_sign)
 
+        if fetch_command.alias != '':
+            fetch_fun_name = fetch_command.alias
+        elif not fetch_command.is_plural:
+            fetch_fun_name = 'Fetch{0}FromCache'.format(self.object_name)
+        else:
+            fetch_fun_name = 'Fetch{0}FromCache'.format(self.plural_object_name)
+
         if not fetch_command.is_plural:
             if len(by_list) == 0:
                     skr_log_warning('Singular often comes with at least one by parameter')
-            impl += 'JNIEXPORT jlong JNICALL Java_com_lesschat_core_{0}_{1}_nativeFetch{2}FromCache{3}'\
-                    .format(self.group_name, self.manager_name, self.object_name, bys)
+            impl += 'JNIEXPORT jlong JNICALL Java_com_lesschat_core_{0}_{1}_native'\
+                    .format(self.group_name, self.manager_name)
+            impl += fetch_fun_name + bys
             impl += _JNI_SPACE + 'const lesschat::{0}* core_manager = reinterpret_cast<lesschat::{0}*>(handler);'\
                 .format(self.manager_name)
             impl += _JNI_BR
@@ -138,7 +162,7 @@ class JniManager:
             else:
                 cpp_method_by = ''
 
-            cpp_method_name = 'Fetch{0}FromCache{1}'.format(self.object_name, cpp_method_by)
+            cpp_method_name = fetch_fun_name + cpp_method_by
             cpp_method_param = cpp_method_param[:-2]
             impl += _JNI_SPACE + 'std::unique_ptr<lesschat::{0}> core_object = core_manager->{1}({2});\n\n'\
                 .format(self.object_name, cpp_method_name, cpp_method_param)
@@ -146,8 +170,9 @@ class JniManager:
             impl += _JNI_SPACE + 'return reinterpret_cast<long>(core_object.release());\n}'
 
         else:
-            impl += 'JNIEXPORT jlongArray JNICALL Java_com_lesschat_core_{0}_{1}_nativeFetch{2}FromCache{3}'\
-                    .format(self.group_name, self.manager_name, self.plural_object_name, bys)
+            impl += 'JNIEXPORT jlongArray JNICALL Java_com_lesschat_core_{0}_{1}_native'\
+                    .format(self.group_name, self.manager_name)
+            impl += fetch_fun_name + bys
             impl += _JNI_SPACE + 'const lesschat::{0}* core_manager = reinterpret_cast<lesschat::{0}*>(handler);'\
                 .format(self.manager_name)
             impl += _JNI_BR
@@ -164,7 +189,7 @@ class JniManager:
             else:
                 cpp_method_by = ''
 
-            cpp_method_name = 'Fetch{0}FromCache{1}'.format(self.plural_object_name, cpp_method_by)
+            cpp_method_name = fetch_fun_name + cpp_method_by
             cpp_method_param = cpp_method_param[:-2]
             impl += _JNI_SPACE
             impl += 'std::vector<std::unique_ptr<lesschat::{0}>> core_objects = core_manager->{1}({2});\n\n'\
