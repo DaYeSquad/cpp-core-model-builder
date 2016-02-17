@@ -9,6 +9,7 @@ from java_enum import JavaEnum
 
 from java_manager import JavaManager
 from java_manager import JavaManagerFetchCommand
+from java_manager import JavaApiDescription
 
 
 class JavaModelXmlParser:
@@ -107,6 +108,37 @@ class JavaModelXmlParser:
                         alias = fetch_node.get('alias')
                         fetch_command = JavaManagerFetchCommand(is_plural, by, alias)
                         java_manager.add_fetch_command(fetch_command)
+
+                    # parse all <api/>
+                    for api_node in manager_or_none.findall('api'):
+                        function_name = api_node.get('alias')
+
+                        input_var_list = []
+                        inputs_node = api_node.find('inputs')
+                        for variable_node in inputs_node.findall('variable'):
+                            var_name = variable_node.get('name')
+                            var_type_string = variable_node.get('type')
+                            var_enum_or_none = variable_node.get('enum')
+
+                            var = JavaVariable(var_name, var_type_string)
+                            var.set_enum_class_name(var_enum_or_none)
+
+                            input_var_list.append(var)
+
+                        output_var_list = []
+                        outputs_node = api_node.find('outputs')
+                        for variable_node in outputs_node.findall('variable'):
+                            var_name = variable_node.get('name')
+                            var_type_string = variable_node.get('type')
+                            var_enum_or_none = variable_node.get('enum')
+
+                            var = JavaVariable(var_name, var_type_string)
+                            var.set_enum_class_name(var_enum_or_none)
+
+                            output_var_list.append(var)
+
+                        api = JavaApiDescription(function_name, input_var_list, output_var_list)
+                        java_manager.add_api_description(api)
 
                 # write object header
                 # java_class = JavaClass(group_name, class_name, java_var_list, java_enum_list, java_manager)

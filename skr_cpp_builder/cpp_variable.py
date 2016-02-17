@@ -131,6 +131,26 @@ class VarType:
         else:
             print 'Unsupported value'
 
+    def to_java_getter_setter_string(self):
+        if self.value == 1:
+            return 'boolean'
+        elif self.value == 2:
+            return 'int'
+        elif self.value == 3:
+            return 'String'
+        elif self.value == 4:
+            return self.java_enum_type_string()
+        elif self.value == 5:
+            return 'List<String>'
+        elif self.value == 6:
+            return 'long'
+        elif self.value == 7:
+            return 'List<{0}>'.format(self.object_class_name)
+        elif self.value == 8:
+            return self.object_class_name
+        else:
+            print 'Unsupported value'
+
     @classmethod
     @deprecated  # use instance_from_string to adapt to new development
     def type_from_string(cls, var_type_string):
@@ -199,6 +219,13 @@ class VarType:
         for enum_path in enum_paths:
             objc_enum += enum_path
         return objc_enum
+
+    def java_enum_type_string(self):
+        if self.value != 4 and self.enum_class_name is None or self.enum_class_name == '':
+            return ''
+        enum_paths = re.split('\.', self.enum_class_name)
+        java_enum = enum_paths[len(enum_paths) - 1]
+        return java_enum
 
     def cpp_json11_array_it_search_string(self):
         paths = re.split('\.', self.json_search_path)

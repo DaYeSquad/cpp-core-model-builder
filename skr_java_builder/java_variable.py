@@ -1,6 +1,7 @@
 from enum import Enum
 import re
 from skrutil.skr_logger import skr_log_warning
+from skr_cpp_builder.cpp_variable import VarType
 
 
 _JAVA_BR = '\n\n'
@@ -14,67 +15,67 @@ def function_space(count):
     return space
 
 
-class VarType(Enum):
-    java_bool = 1
-    java_int = 2
-    java_string = 3
-    java_enum = 4
-    java_string_array = 5
-    java_time = 6
-
-    def __init__(self, value):
-        self.enum_class_name = ''
-
-    def set_enum_class_name(self, enum_class_name):
-        if enum_class_name is None:
-            enum_class_name = ''
-
-        self.enum_class_name = enum_class_name
-
-        # check input
-        if self.value == 4 and enum_class_name == '':
-            skr_log_warning('Enum value should declare its enum class name via "enum"')
-
-    def to_getter_setter_string(self):
-        if self.value == 1:
-            return 'boolean'
-        elif self.value == 2:
-            return 'int'
-        elif self.value == 3:
-            return 'String'
-        elif self.value == 4:
-            return self.java_enum_type_string()
-        elif self.value == 5:
-            return 'List<String>'
-        elif self.value == 6:
-            return 'long'
-
-    @classmethod
-    def type_from_string(cls, var_type_string):
-        if var_type_string == 'bool':
-            return 1
-        elif var_type_string == 'int':
-            return 2
-        elif var_type_string == 'string':
-            return 3
-        elif var_type_string == 'enum':
-            return 4
-        elif var_type_string == '[string]':
-            return 5
-        elif var_type_string == 'time':
-            return 6
-
-    def java_enum_type_string(self):
-        if self.value != 4 and self.enum_class_name is None or self.enum_class_name == '':
-            return ''
-        enum_paths = re.split('\.', self.enum_class_name)
-        java_enum = enum_paths[len(enum_paths) - 1]
-        return java_enum
+# class VarType(Enum):
+#     java_bool = 1
+#     java_int = 2
+#     java_string = 3
+#     java_enum = 4
+#     java_string_array = 5
+#     java_time = 6
+#
+#     def __init__(self, value):
+#         self.enum_class_name = ''
+#
+#     def set_enum_class_name(self, enum_class_name):
+#         if enum_class_name is None:
+#             enum_class_name = ''
+#
+#         self.enum_class_name = enum_class_name
+#
+#         # check input
+#         if self.value == 4 and enum_class_name == '':
+#             skr_log_warning('Enum value should declare its enum class name via "enum"')
+#
+#     def to_getter_setter_string(self):
+#         if self.value == 1:
+#             return 'boolean'
+#         elif self.value == 2:
+#             return 'int'
+#         elif self.value == 3:
+#             return 'String'
+#         elif self.value == 4:
+#             return self.java_enum_type_string()
+#         elif self.value == 5:
+#             return 'List<String>'
+#         elif self.value == 6:
+#             return 'long'
+#
+#     @classmethod
+#     def type_from_string(cls, var_type_string):
+#         if var_type_string == 'bool':
+#             return 1
+#         elif var_type_string == 'int':
+#             return 2
+#         elif var_type_string == 'string':
+#             return 3
+#         elif var_type_string == 'enum':
+#             return 4
+#         elif var_type_string == '[string]':
+#             return 5
+#         elif var_type_string == 'time':
+#             return 6
+#
+#     def java_enum_type_string(self):
+#         if self.value != 4 and self.enum_class_name is None or self.enum_class_name == '':
+#             return ''
+#         enum_paths = re.split('\.', self.enum_class_name)
+#         java_enum = enum_paths[len(enum_paths) - 1]
+#         return java_enum
 
 
 class JavaVariable:
     def __init__(self, name, var_type_string):
-        var_type = VarType.type_from_string(var_type_string)
+        var_type = VarType.instance_from_string(var_type_string)
 
         var_name_str = ''
         get_set_name = ''
@@ -98,20 +99,20 @@ class JavaVariable:
         self.java_enum = self.var_type.java_enum_type_string()
 
     def getter(self):
-        if self.var_type == VarType.java_bool:
-            return function_space(1) + 'public {0} is{1}() {{ return nativeIs{1}(mNativeHandler); }}'.format(self.var_type.to_getter_setter_string(), self.get_set_name_str)
-        elif self.var_type == VarType.java_string_array:
+        if self.var_type == VarType.cpp_bool:
+            return function_space(1) + 'public {0} is{1}() {{ return nativeIs{1}(mNativeHandler); }}'.format(self.var_type.to_java_getter_setter_string(), self.get_set_name_str)
+        elif self.var_type == VarType.cpp_string_array:
             return self.to_get_string_array_string()
-        elif self.var_type == VarType.java_enum:
+        elif self.var_type == VarType.cpp_enum:
             return function_space(1) + 'public {0} get{1}() {{ return {0}.get{0}ByValue(nativeGet{1}(mNativeHandler)); }}'.format(self.java_enum,
                                                                                                                             self.get_set_name_str)
         else:
-            return function_space(1) + 'public {0} get{1}() {{ return nativeGet{1}(mNativeHandler); }}'.format(self.var_type.to_getter_setter_string(), self.get_set_name_str)
+            return function_space(1) + 'public {0} get{1}() {{ return nativeGet{1}(mNativeHandler); }}'.format(self.var_type.to_java_getter_setter_string(), self.get_set_name_str)
 
     def setter(self):
-        if self.var_type == VarType.java_string_array:
+        if self.var_type == VarType.cpp_string_array:
             return self.to_set_string_array_string()
-        elif self.var_type == VarType.java_enum:
+        elif self.var_type == VarType.cpp_enum:
             return function_space(1) + 'public void set{0}({2} {1}) {{ nativeSet{0}(mNativeHandler, {1}.getValue()); }}'.format(self.get_set_name_str,
                                                                                                                                self.name_str,
                                                                                                                                self.java_enum)
@@ -121,21 +122,21 @@ class JavaVariable:
                                                                                                                      self.var_type.to_getter_setter_string())
 
     def native_getter(self):
-        if self.var_type == VarType.java_bool:
-            return function_space(1) + 'private native {0} nativeIs{1}(long handler);'.format(self.var_type.to_getter_setter_string(), self.get_set_name_str)
-        elif self.var_type == VarType.java_string_array:
+        if self.var_type == VarType.cpp_bool:
+            return function_space(1) + 'private native {0} nativeIs{1}(long handler);'.format(self.var_type.to_java_getter_setter_string(), self.get_set_name_str)
+        elif self.var_type == VarType.cpp_string_array:
             return function_space(1) + 'private native String[] nativeGet{0}(long handler);'.format(self.get_set_name_str)
-        elif self.var_type == VarType.java_enum:
+        elif self.var_type == VarType.cpp_enum:
             return function_space(1) + 'private native int nativeGet{0}(long handler);'.format(self.get_set_name_str)
         else:
-            return function_space(1) + 'private native {0} nativeGet{1}(long handler);'.format(self.var_type.to_getter_setter_string(),
+            return function_space(1) + 'private native {0} nativeGet{1}(long handler);'.format(self.var_type.to_java_getter_setter_string(),
                                                                                                self.get_set_name_str)
 
     def native_setter(self):
-        if self.var_type == VarType.java_string_array:
+        if self.var_type == VarType.cpp_string_array:
             return function_space(1) + 'private native void nativeSet{0}(long handler, String[] {1});'.format(self.get_set_name_str,
                                                                                                              self.name_str)
-        elif self.var_type == VarType.java_enum:
+        elif self.var_type == VarType.cpp_enum:
             return function_space(1) + 'private native void nativeSet{0}(long handler, {1} {2});'.format(self.get_set_name_str,
                                                                                                         'int',
                                                                                                         self.name_str)

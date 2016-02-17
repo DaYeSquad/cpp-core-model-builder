@@ -88,24 +88,24 @@ class JavaClass:
             java_var = self.java_var_list[index]
             java_var_type = java_var.var_type
             if index == 0:
-                if java_var_type == VarType.java_enum:
+                if java_var_type == VarType.cpp_enum:
                     constructor += '{0} {1},\n'.format(java_var.java_enum, java_var.name_str)
-                elif java_var_type == VarType.java_string_array:
+                elif java_var_type == VarType.cpp_string_array:
                     constructor += 'String[] {0},\n'.format(java_var.name_str)
                 else:
-                    constructor += '{0} {1},\n'.format(java_var.var_type.to_getter_setter_string(), java_var.name_str)
+                    constructor += '{0} {1},\n'.format(java_var.var_type.to_java_getter_setter_string(), java_var.name_str)
             else:
-                if java_var_type == VarType.java_enum:
+                if java_var_type == VarType.cpp_enum:
                     constructor += space_str + '{0} {1},\n'.format(java_var.java_enum, java_var.name_str)
-                elif java_var_type == VarType.java_string_array:
+                elif java_var_type == VarType.cpp_string_array:
                     constructor += space_str + 'String[] {0},\n'.format(java_var.name_str)
                 else:
-                    constructor += space_str + '{0} {1},\n'.format(java_var.var_type.to_getter_setter_string(), java_var.name_str)
+                    constructor += space_str + '{0} {1},\n'.format(java_var.var_type.to_java_getter_setter_string(), java_var.name_str)
         constructor = constructor[:-2]
         constructor += '){\n'
         constructor += function_space(2) + 'mNativeHandler = nativeCreate{0}('.format(self.class_name)
         for java_var in self.java_var_list:
-            if java_var.var_type == VarType.java_enum:
+            if java_var.var_type == VarType.cpp_enum:
                 constructor += java_var.name_str + '.getValue(), '
             else:
                 constructor += java_var.name_str + ', '
@@ -124,19 +124,19 @@ class JavaClass:
             java_var = self.java_var_list[index]
             java_var_type = java_var.var_type
             if index == 0:
-                if java_var_type == VarType.java_enum:
+                if java_var_type == VarType.cpp_enum:
                     native_constructor += 'int {0},\n'.format(java_var.name_str)
-                elif java_var_type == VarType.java_string_array:
+                elif java_var_type == VarType.cpp_string_array:
                     native_constructor += 'String[] {0},\n'.format(java_var.name_str)
                 else:
-                    native_constructor += '{0} {1},\n'.format(java_var.var_type.to_getter_setter_string(), java_var.name_str)
+                    native_constructor += '{0} {1},\n'.format(java_var.var_type.to_java_getter_setter_string(), java_var.name_str)
             else:
-                if java_var_type == VarType.java_enum:
+                if java_var_type == VarType.cpp_enum:
                     native_constructor += space_str + 'int {0},\n'.format(java_var.name_str)
-                elif java_var_type == VarType.java_string_array:
+                elif java_var_type == VarType.cpp_string_array:
                     native_constructor += space_str + 'String[] {0},\n'.format(java_var.name_str)
                 else:
-                    native_constructor += space_str + '{0} {1},\n'.format(java_var.var_type.to_getter_setter_string(), java_var.name_str)
+                    native_constructor += space_str + '{0} {1},\n'.format(java_var.var_type.to_java_getter_setter_string(), java_var.name_str)
         native_constructor = native_constructor[:-2]
         native_constructor += ');' + _JAVA_BR
         return native_constructor
@@ -199,12 +199,17 @@ class JavaClass:
         output_java.write(java_import)
         output_java.write(java_class_start)
 
+        output_java.write(self.java_manager_or_none.generate_http_variable())
+        output_java.write('\n')
+
         output_java.write(function_space(1) + java_manager_constructor.format(manager_name) + _JAVA_BR)
         output_java.write(function_space(1) + java_override)
         output_java.write(function_space(1) + java_manager_dispose)
 
         output_java.write(self.java_manager_or_none.generate_fetch())
+        output_java.write(self.java_manager_or_none.generate_http_function())
         output_java.write(self.java_manager_or_none.generate_fetch_native())
+        output_java.write(self.java_manager_or_none.generate_http_function_native())
 
         output_java.write(java_class_end)
 
