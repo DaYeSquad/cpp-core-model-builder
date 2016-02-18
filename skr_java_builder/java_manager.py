@@ -181,20 +181,20 @@ class JavaManager:
         http_function_response += function_space(2) + 'if (success){\n'
         for variable in api.output_var_list:
             if variable.var_type == VarType.cpp_enum:
-                http_function_response += function_space(2) + '{0}.{1} {2} = {0}.{1}.get{1}ByValue({3});\n'\
+                http_function_response += function_space(3) + '{0}.{1} {2} = {0}.{1}.get{1}ByValue({3});\n'\
                     .format(self.object_name, variable.var_type.to_java_getter_setter_string(), variable.name_str,
                             variable.name_str + '_int')
             if variable.var_type == VarType.cpp_object:
-                http_function_response += function_space(2) + '{0} {1} = new {0}({1}_handler);\n'\
-                    .format(variable.var_type, variable.name_str)
+                http_function_response += function_space(3) + '{0} {1} = new {0}({1}_handler);\n'\
+                    .format(variable.var_type.to_java_getter_setter_string(), variable.name_str)
             if variable.var_type == VarType.cpp_object_array:
-                http_function_response += function_space(2) + 'List<{0}> {1} = new ArrayList<>();\n'\
-                    .format(variable.var_type, variable.name_str)
-                http_function_response += function_space(2) + 'for (long handler : {0}_handler){{\n'\
+                http_function_response += function_space(3) + 'ArrayList<CoreObject> {0} = new ArrayList<>();\n'\
                     .format(variable.name_str)
-                http_function_response += function_space(3) + '{0}.add(new {1}(handler));\n'\
-                    .format(variable.name_str, self.object_name)
-                http_function_response += function_space(2) + '}\n'
+                http_function_response += function_space(3) + 'for (long handler : {0}_handler){{\n'\
+                    .format(variable.name_str)
+                http_function_response += function_space(4) + '{0}.add(new {1}(handler));\n'\
+                    .format(variable.name_str, variable.var_type.object_class_name)
+                http_function_response += function_space(3) + '}\n'
 
         http_function_response += function_space(3) + 'm{0}Response.onSuccess({1});\n'\
             .format(api.function_name, self.__output_variable_call(api.output_var_list))
@@ -208,8 +208,8 @@ class JavaManager:
     def generate_http_function_native(self):
         http_native_function = ''
         for api in self.apis:
-            http_native_function += function_space(1) + 'private native void native{0}(long handler, {1});\n\n'\
-                .format(api.function_name, self.__input_variable_declarations_native(api.input_var_list)[:-2])
+            http_native_function += function_space(1) + 'private native void native{0}(long handler{1});\n\n'\
+                .format(api.function_name, self.__input_variable_declarations_native(api.input_var_list))
         return http_native_function
 
     def __variable_type_from_var_list(self, var_list):
@@ -243,7 +243,7 @@ class JavaManager:
         vars_declarations = ''
         for var in var_list:
             if var.var_type == VarType.cpp_enum:
-                vars_declarations += self.object_name + '.' + var.var_type.to_java_getter_setter_string()\
+                vars_declarations += var.var_type.to_java_getter_setter_string()\
                                      + ' ' + var.name_str + ', '
             else:
                 vars_declarations += var.var_type.to_java_getter_setter_string() + ' ' + var.name_str + ', '
@@ -255,9 +255,9 @@ class JavaManager:
             if var.var_type == VarType.cpp_enum:
                 vars_declarations += ', int ' + var.name_str + '_int'
             elif var.var_type == VarType.cpp_object:
-                vars_declarations += ', long' + var.name_str + '_handler'
+                vars_declarations += ', long ' + var.name_str + '_handler'
             elif var.var_type == VarType.cpp_object_array:
-                vars_declarations += ', long[]' + var.name_str + '_handler'
+                vars_declarations += ', long[] ' + var.name_str + '_handler'
             else:
                 vars_declarations += ', ' + var.var_type + ' ' + var.name_str
         return vars_declarations
@@ -272,13 +272,13 @@ class JavaManager:
         vars_declarations = ''
         for var in var_list:
             if var.var_type == VarType.cpp_enum:
-                vars_declarations += 'int ' + var.name_str + '_int, '
+                vars_declarations += ', int ' + var.name_str + '_int'
             elif var.var_type == VarType.cpp_object:
-                vars_declarations += 'long ' + var.name_str + '_handler, '
+                vars_declarations += ', long ' + var.name_str + '_handler'
             elif var.var_type == VarType.cpp_object_array:
-                vars_declarations += 'long[] ' + var.name_str + '_handler, '
+                vars_declarations += ', long[] ' + var.name_str + '_handler'
             else:
-                vars_declarations += var.var_type.to_java_getter_setter_string() + ' ' + var.name_str + ', '
+                vars_declarations += ', ' + var.var_type.to_java_getter_setter_string() + ' ' + var.name_str
         return vars_declarations
 
     # returns "ById(String id)" or "(String id, String username)" or "()"

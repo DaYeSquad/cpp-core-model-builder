@@ -91,7 +91,7 @@ class JavaVariable:
 
         self.name_str = var_name_str
         self.get_set_name_str = get_set_name
-        self.var_type = VarType(var_type)
+        self.var_type = var_type
         self.java_enum = ''
 
     def set_enum_class_name(self, enum_class_name):

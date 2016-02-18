@@ -194,7 +194,10 @@ class JavaClass:
 
         output_java.write(java_package + _JAVA_BR)
 
-        java_import = 'import com.lesschat.core.api.WebApiResponse;\n'
+        java_import = ''
+        if len(self.java_manager_or_none.apis) != 0:
+            java_import += 'import com.lesschat.core.api.*;\n'
+
         java_import += 'import com.lesschat.core.{0}.{1}.*;\n'.format(self.group_name, self.class_name)
         java_import += 'import com.lesschat.core.jni.CoreObject;\n'
         java_import += 'import com.lesschat.core.director.Director;\n'
