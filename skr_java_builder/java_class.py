@@ -51,10 +51,12 @@ class JavaClass:
         output_java.write(java_import + _JAVA_BR)
         output_java.write(java_class_start + _JAVA_BR)
 
-        output_java.write(self.__constructor())
-        output_java.write(self.__initwith())
+        output_java.write(self.__constructors())
+        # output_java.write(self.__initwith())
         output_java.write(function_space(1) + '@Override\n')
-        output_java.write(function_space(1) + 'public void dispose() {{ nativeRelease{0}(mNativeHandler); }}'.format(self.class_name) + _JAVA_BR)
+        output_java.write(function_space(1) + 'public void dispose() {\n')
+        output_java.write(function_space(2) + 'nativeRelease{0}(mNativeHandler);\n'.format(self.class_name))
+        output_java.write(function_space(1) + '}' + _JAVA_BR)
 
         for java_enum in self.java_enum_list:
             output_java.write(java_enum.generate_java_enum(_JAVA_SPACE) + '\n')
@@ -64,8 +66,8 @@ class JavaClass:
             # output_java.write(java_var.setter() + _JAVA_BR)
 
         output_java.write(_JAVA_BR)
-        output_java.write(self.__native_constructor())
-        output_java.write(self.__native_initwith())
+        output_java.write(self.__native_constructors())
+        # output_java.write(self.__native_initwith())
         output_java.write(function_space(1) + 'private native void nativeRelease{0}(long handler);'.format(self.class_name) + _JAVA_BR)
 
         for java_var in self.java_var_list:
@@ -76,10 +78,17 @@ class JavaClass:
 
         output_java.write(java_class_end)
 
-    def __constructor(self):
-        constructor = function_space(1) + 'public {0}() {{ mNativeHandler = nativeCreate{0}(); }}'.format(self.class_name) + _JAVA_BR
-        constructor += function_space(1) + 'public {0}(long nativeHandler) {{ mNativeHandler = nativeHandler; }}'.format(self.class_name) + _JAVA_BR
-        constructor += function_space(1) + 'public {0}('.format(self.class_name)
+    def __constructors(self):
+        constructor = function_space(1) + 'public {0}() {{ \n        mNativeHandler = nativeCreate{0}(); \n    }}'\
+            .format(self.class_name) + _JAVA_BR
+        constructor += function_space(1) + 'public {0}(long nativeHandler) {{\n'.format(self.class_name)
+        constructor += function_space(2) + 'mNativeHandler = nativeHandler;\n'
+        constructor += function_space(1) + '}\n\n'
+        # constructor += self.__constructor_with_variable()
+        return constructor
+
+    def __constructor_with_variable(self):
+        constructor = function_space(1) + 'public {0}('.format(self.class_name)
         space = len(function_space(1) + 'public {0}('.format(self.class_name))
         space_str = ''
         for space_index in range(0, space):
@@ -114,10 +123,14 @@ class JavaClass:
         constructor += function_space(1) + '}' + _JAVA_BR
         return constructor
 
-    def __native_constructor(self):
+    def __native_constructors(self):
         native_constructor = function_space(1) + 'private native long nativeCreate{0}();'.format(self.class_name) + _JAVA_BR
-        native_constructor += function_space(1) + 'private native long nativeCreate{0}('.format(self.class_name)
+        # native_constructor += self.__native_constructor_with_variable()
+        return native_constructor
+
+    def __native_constructor_with_variable(self):
         space_str = ''
+        native_constructor = function_space(1) + 'private native long nativeCreate{0}('.format(self.class_name)
         for space_index in range(0, len(function_space(1) + 'private native long nativeCreate{0}('.format(self.class_name))):
             space_str += ' '
         for index in range(0, len(self.java_var_list)):

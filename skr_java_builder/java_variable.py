@@ -99,15 +99,25 @@ class JavaVariable:
         self.java_enum = self.var_type.java_enum_type_string()
 
     def getter(self):
+        function_str = ''
         if self.var_type == VarType.cpp_bool:
-            return function_space(1) + 'public {0} is{1}() {{ return nativeIs{1}(mNativeHandler); }}'.format(self.var_type.to_java_getter_setter_string(), self.get_set_name_str)
+            function_str += function_space(1) + 'public {0} is{1}() {{\n'\
+                .format(self.var_type.to_java_getter_setter_string(), self.get_set_name_str)
+            function_str += function_space(2) + 'return nativeIs{0}(mNativeHandler);\n'.format(self.get_set_name_str)
+            function_str += function_space(1) + '}'
         elif self.var_type == VarType.cpp_string_array:
-            return self.to_get_string_array_string()
+            function_str += self.to_get_string_array_string()
         elif self.var_type == VarType.cpp_enum:
-            return function_space(1) + 'public {0} get{1}() {{ return {0}.get{0}ByValue(nativeGet{1}(mNativeHandler)); }}'.format(self.java_enum,
-                                                                                                                            self.get_set_name_str)
+            function_str += function_space(1) + 'public {0} get{1}() {{\n'.format(self.java_enum, self.get_set_name_str)
+            function_str += function_space(2) + 'return {0}.get{0}ByValue(nativeGet{1}(mNativeHandler));\n'\
+                .format(self.java_enum, self.get_set_name_str)
+            function_str += function_space(1) + '}'
         else:
-            return function_space(1) + 'public {0} get{1}() {{ return nativeGet{1}(mNativeHandler); }}'.format(self.var_type.to_java_getter_setter_string(), self.get_set_name_str)
+            function_str += function_space(1) + 'public {0} get{1}() {{\n'.\
+                format(self.var_type.to_java_getter_setter_string(), self.get_set_name_str)
+            function_str += function_space(2) + 'return nativeGet{0}(mNativeHandler);\n'.format(self.get_set_name_str)
+            function_str += function_space(1) + '}'
+        return function_str
 
     def setter(self):
         if self.var_type == VarType.cpp_string_array:
