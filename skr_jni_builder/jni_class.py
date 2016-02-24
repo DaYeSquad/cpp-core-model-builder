@@ -101,6 +101,7 @@ class JniClass:
         output_header.write(self.def_cpp + _JNI_BR)
 
         output_header.write(jni_manager.generate_fetch_declarations())
+        output_header.write(jni_manager.generate_http_function_declarations())
 
         output_header.write(self.end_def_cpp + '\n')
         output_header.write(end_def_guard + '\n')
@@ -128,6 +129,7 @@ class JniClass:
         output_header.write(_JNI_BR)
 
         output_header.write(jni_manager.generate_fetch_implementations())
+        output_header.write(jni_manager.generate_http_function_implementations())
 
         output_header.write(self.end_def_cpp + '\n')
 

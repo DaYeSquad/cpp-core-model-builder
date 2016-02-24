@@ -5,10 +5,10 @@ from skrutil import string_utils
 class JniVariable:
 
     def __init__(self, name, var_type_string, group_name, class_name):
-        var_type = VarType.instance_from_string(var_type_string)
+        self.var_type = VarType.instance_from_string(var_type_string)
 
         self.name = name
-        self.var_type = VarType(var_type)
+        # self.var_type = VarType(var_type)
         self.group_name = group_name
         self.class_name = class_name
 
@@ -51,12 +51,30 @@ class JniVariable:
             return 'lesschat::JniHelper::JobjectArrayFromStringVector({0})'.format(return_variable)
         elif self.var_type == VarType.cpp_time:
             return 'static_cast<jlong>({0}) * 1000'.format(return_variable)
+        elif self.var_type == VarType.cpp_object:
+            return 'reinterpret_cast<jlong>({0}.release())'.format(return_variable)
+        elif self.var_type == VarType.cpp_object_array:
+            return 'lesschat::JniHelper::JlongArrayFromNativeArray(std::move({0}))'.format(return_variable)
 
     def to_getter_string(self):
-        if self.var_type.value == 4:
+        if self.var_type.value == 1:
+            return 'bool'
+        elif self.var_type.value == 2:
+            return 'int'
+        elif self.var_type.value == 3:
+            return 'std::string'
+        elif self.var_type.value == 4:
             return 'lesschat::' + self.var_type.cpp_enum_type_string()
+        elif self.var_type.value == 5:
+            return 'std::vector<std::string>'
+        elif self.var_type.value == 6:
+            return 'time_t'
+        elif self.var_type.value == 7:
+            return 'std::vector<std::unique_ptr<lesschat::{0}>>'.format(self.var_type.object_class_name)
+        elif self.var_type.value == 8:
+            return 'std::unique_ptr<lesschat::{0}>'.format(self.var_type.object_class_name)
         else:
-            return self.var_type.to_getter_string();
+            print 'Unsupported value'
 
     def cpp_variable_from_jni_variable(self, return_variable):
         if self.var_type == VarType.cpp_bool:

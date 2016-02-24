@@ -1,4 +1,4 @@
-from enum import Enum
+# from enum import Enum
 import re
 from skrutil.skr_logger import skr_log_warning
 from skr_cpp_builder.cpp_variable import VarType

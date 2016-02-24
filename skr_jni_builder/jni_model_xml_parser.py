@@ -7,6 +7,7 @@ from jni_manager import JniManager
 from skr_jni_builder.jni_manager import JniManagerSaveCommand
 from skr_jni_builder.jni_manager import JniManagerFetchCommand
 from skr_jni_builder.jni_manager import JniManagerDeleteCommand
+from skr_jni_builder.jni_manager import JniApiDescription
 
 from jni_class import JniClass
 
@@ -87,6 +88,38 @@ class JniModelXmlParse:
                         alias = fetch_node.get('alias')
                         fetch_command = JniManagerFetchCommand(is_plural, by, alias)
                         jni_manager.add_fetch_command(fetch_command)
+
+                    # parse all <api/>
+                    for api_node in manager_or_none.findall('api'):
+                        api_function_name = api_node.get('name')
+                        function_name = api_node.get('alias')
+
+                        input_var_list = []
+                        inputs_node = api_node.find('inputs')
+                        for variable_node in inputs_node.findall('variable'):
+                            var_name = variable_node.get('name')
+                            var_type_string = variable_node.get('type')
+                            var_enum_or_none = variable_node.get('enum')
+
+                            var = JniVariable(var_name, var_type_string, group_name, class_name)
+                            var.set_enum_class_name(var_enum_or_none)
+
+                            input_var_list.append(var)
+
+                        output_var_list = []
+                        outputs_node = api_node.find('outputs')
+                        for variable_node in outputs_node.findall('variable'):
+                            var_name = variable_node.get('name')
+                            var_type_string = variable_node.get('type')
+                            var_enum_or_none = variable_node.get('enum')
+
+                            var = JniVariable(var_name, var_type_string, group_name, class_name)
+                            var.set_enum_class_name(var_enum_or_none)
+
+                            output_var_list.append(var)
+
+                        api = JniApiDescription(function_name, input_var_list, output_var_list)
+                        jni_manager.add_api_description(api)
 
                 # write jni wrapper header
                 jni_wrapper = JniClass(group_name, class_name, jni_var_list, jni_manager)

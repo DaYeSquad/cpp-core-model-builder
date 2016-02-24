@@ -121,11 +121,11 @@ class VarType:
         elif self.value == 2:
             return 'I'
         elif self.value == 3:
-            return 'Ljava/lang/String_2'
+            return 'Ljava/lang/String;'
         elif self.value == 4:
             return 'I'
         elif self.value == 5:
-            return 'Ljava/lang/String_2_3'
+            return '[Ljava/lang/String;'
         elif self.value == 6:
             return 'J'
         else:
