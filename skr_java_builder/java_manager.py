@@ -159,6 +159,11 @@ class JavaManager:
             if variable.var_type == VarType.cpp_object:
                 http_function += function_space(2) + 'long {0} = {1}.getNativeHandler();\n'\
                     .format(variable.name_str + '_handler', variable.name_str)
+            if variable.var_type == VarType.cpp_string_array:
+                http_function += function_space(2) + 'String[] {0} = new String[{1}.size()];\n'\
+                    .format(variable.name_str + '_strs', variable.name_str)
+                http_function += function_space(2) + '{0}.toArray({1});\n'\
+                    .format(variable.name_str, variable.name_str + '_strs')
             if variable.var_type == VarType.cpp_object_array:
                 http_function += function_space(2) + 'long[] {0} = new long[{1}.size()];\n'\
                     .format(variable.name_str + '_handler', variable.name_str)
@@ -235,6 +240,8 @@ class JavaManager:
                 vars_declarations += ', ' + var.name_str + '_handler'
             elif var.var_type == VarType.cpp_object_array:
                 vars_declarations += ', ' + var.name_str + '_handler'
+            elif var.var_type == VarType.cpp_string_array:
+                vars_declarations += ', ' + var.name_str + '_strs'
             else:
                 vars_declarations += ', ' + var.name_str
         return vars_declarations
@@ -277,6 +284,8 @@ class JavaManager:
                 vars_declarations += ', long ' + var.name_str + '_handler'
             elif var.var_type == VarType.cpp_object_array:
                 vars_declarations += ', long[] ' + var.name_str + '_handler'
+            elif var.var_type == VarType.cpp_string_array:
+                vars_declarations += ', String[] ' + var.name_str + '_strs'
             else:
                 vars_declarations += ', ' + var.var_type.to_java_getter_setter_string() + ' ' + var.name_str
         return vars_declarations
