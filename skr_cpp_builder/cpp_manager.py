@@ -621,13 +621,22 @@ class CppManager:
             impl += '  LCC_DB_LOCK_GUARD;' + _CPP_BR
 
             tb_list = copy.copy(fetch_command.table_name_list)
-            for table_name in tb_list:
-                impl += '  {0}->open(where_condition);\n'.format(self.__sqlite_tb_name(table_name))
-                impl += '  if ({0}->recordCount() != 0) {{\n'.format(self.__sqlite_tb_name(table_name))
-                impl += '    sql::Record* record = {0}->getRecord(0);\n'.format(self.__sqlite_tb_name(table_name))
+
+            if len(tb_list) == 0:
+                impl += '  {0}->open(where_condition);\n'.format(self.__sqlite_tb_name())
+                impl += '  if ({0}->recordCount() != 0) {{\n'.format(self.__sqlite_tb_name())
+                impl += '    sql::Record* record = {0}->getRecord(0);\n'.format(self.__sqlite_tb_name())
                 impl += '    unique_ptr<{0}> rtn({0}FromRecord(record));\n'.format(self.object_name)
                 impl += '    return rtn;\n'
                 impl += '  }' + _CPP_BR
+            else:
+                for table_name in tb_list:
+                    impl += '  {0}->open(where_condition);\n'.format(self.__sqlite_tb_name(table_name))
+                    impl += '  if ({0}->recordCount() != 0) {{\n'.format(self.__sqlite_tb_name(table_name))
+                    impl += '    sql::Record* record = {0}->getRecord(0);\n'.format(self.__sqlite_tb_name(table_name))
+                    impl += '    unique_ptr<{0}> rtn({0}FromRecord(record));\n'.format(self.object_name)
+                    impl += '    return rtn;\n'
+                    impl += '  }' + _CPP_BR
             impl += '  return nullptr;\n'
             impl += '}'
             return impl
