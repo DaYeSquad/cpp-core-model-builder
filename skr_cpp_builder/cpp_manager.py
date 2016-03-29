@@ -421,7 +421,7 @@ class CppManager:
         impl = ''
         for api in self.apis:
             impl += 'void {2}::{0}({1}) const {{\n'.format(api.alias, self.__api_parameters_declaration(api), self.manager_name)
-            impl += self.__manager_http_implementation(api) + '\n'
+            impl += self.__manager_http_implementation_v2(api) + '\n'
             impl += '}'
             impl += _CPP_BR
         return impl
@@ -815,7 +815,55 @@ class CppManager:
 
         return impl
 
-    def __cpp_cache_by_cache_description_name(self, cache_desc, name=''):
+    # v1 we first post HTTP request then update the database while v2 we exchange the steps.
+    def __manager_http_implementation_v2(self, api_description):
+        capture_parameters = ''
+        input_parameters = ''
+        for input_var in api_description.input_var_list:
+            input_parameters += input_var.name + ', '
+
+            if input_var.capture:
+                capture_parameters += input_var.name + ', '
+
+        output_callback_parameters = ''
+        output_parameters = '(bool success, const std::string &error'
+        if len(api_description.output_var_list) > 0:
+            for output_var in api_description.output_var_list:
+                output_parameters += ', '
+                output_parameters += output_var.to_set_description_string()
+
+                output_callback_parameters += ', '
+                output_callback_parameters += output_var.to_move_string()
+        output_parameters += ')'
+
+        impl = ''
+        if api_description.method == 'GET':
+            impl += string_utils.indent(2) + 'WebApi::Api()->{0}({1}[{3}this, callback]{2} {{\n'.format(api_description.name, input_parameters, output_parameters, capture_parameters)
+            impl += string_utils.indent(4) + 'if (success) {\n'
+
+            for output_var in api_description.output_var_list:
+                impl += self.__cpp_cache_by_cache_description_name(output_var.cache_desc, output_var.name)
+
+            for extra in api_description.extra_list:
+                impl += self.__cpp_cache_by_cache_description_name(extra)
+
+            impl += string_utils.indent(4) + '}\n'
+            impl += string_utils.indent(4) + 'callback(success, error{0});\n'.format(output_callback_parameters)
+            impl += string_utils.indent(2) + '});'
+        else:
+            for output_var in api_description.output_var_list:
+                impl += self.__cpp_cache_by_cache_description_name(output_var.cache_desc, output_var.name, 2)
+
+            for extra in api_description.extra_list:
+                impl += self.__cpp_cache_by_cache_description_name(extra, "", 2)
+
+            impl += string_utils.indent(2) + 'WebApi::Api()->{0}({1}[{3}this, callback]{2} {{\n'.format(api_description.name, input_parameters, output_parameters, capture_parameters)
+            impl += string_utils.indent(4) + 'callback(success, error{0});\n'.format(output_callback_parameters)
+            impl += string_utils.indent(2) + '});'
+
+        return impl
+
+    def __cpp_cache_by_cache_description_name(self, cache_desc, name='', indent=6):
         cache_attr = cache_desc
 
         if cache_attr is None or cache_attr == '':  # if no 'cache'
@@ -825,7 +873,7 @@ class CppManager:
         caches = re.split(',', cache_attr)
         for cache in caches:
             if cache[0] == '#':  # if define
-                impl += string_utils.indent(6) + self.__find_replace_string_by_name(cache[1:]) + '\n'
+                impl += string_utils.indent(indent) + self.__find_replace_string_by_name(cache[1:]) + '\n'
             else:  # if by command
                 cpp_class = 'this->'
                 method = ''
@@ -869,21 +917,21 @@ class CppManager:
                 elif sql_verb[:7] == 'fupdate':  # generate implementation automatically
                     components = re.split(':', sql_verb)
                     fetch_by_id = components[1]
-                    impl = string_utils.indent(6) + 'unique_ptr<{0}> {1} = this->Fetch{0}FromCacheBy{2}({3});\n'\
+                    impl = string_utils.indent(indent) + 'unique_ptr<{0}> {1} = this->Fetch{0}FromCacheBy{2}({3});\n'\
                         .format(self.object_name,
                                 string_utils.cpp_class_name_to_cpp_file_name(self.object_name),
                                 string_utils.to_title_style_name(fetch_by_id),
                                 fetch_by_id)
 
                     for parameter in re.split(',', parameters):
-                        impl += string_utils.indent(6) + '{0}->set_{1}({1});\n'.format(string_utils.cpp_class_name_to_cpp_file_name(self.object_name), parameter)
+                        impl += string_utils.indent(indent) + '{0}->set_{1}({1});\n'.format(string_utils.cpp_class_name_to_cpp_file_name(self.object_name), parameter)
 
-                    impl += string_utils.indent(6) + 'this->Save{0}ToCache(*{1});\n'.format(self.object_name, string_utils.cpp_class_name_to_cpp_file_name(self.object_name))
+                    impl += string_utils.indent(indent) + 'this->Save{0}ToCache(*{1});\n'.format(self.object_name, string_utils.cpp_class_name_to_cpp_file_name(self.object_name))
                     return impl
                 else:
                     print 'Unsupported method'
                     assert False
-                impl += string_utils.indent(6) + cpp_class + method
+                impl += string_utils.indent(indent) + cpp_class + method
 
         return impl
 
