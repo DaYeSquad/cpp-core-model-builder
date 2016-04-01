@@ -837,7 +837,7 @@ class CppManager:
         output_parameters += ')'
 
         impl = ''
-        if api_description.method == 'GET':
+        if api_description.method == 'GET' or api_description.method == 'POST':
             impl += string_utils.indent(2) + 'WebApi::Api()->{0}({1}[{3}this, callback]{2} {{\n'.format(api_description.name, input_parameters, output_parameters, capture_parameters)
             impl += string_utils.indent(4) + 'if (success) {\n'
 
