@@ -198,6 +198,7 @@ class JavaClass:
         if len(self.java_manager_or_none.apis) != 0:
             java_import += 'import com.lesschat.core.api.*;\n'
 
+        java_import += "import android.support.annotation.NonNull;"
         java_import += 'import com.lesschat.core.{0}.{1}.*;\n'.format(self.group_name, self.class_name)
         java_import += 'import com.lesschat.core.jni.CoreObject;\n'
         java_import += 'import com.lesschat.core.director.Director;\n'
@@ -208,7 +209,8 @@ class JavaClass:
         java_class_start = 'public class ' + manager_name + ' extends CoreObject {' + _JAVA_BR
         java_class_end = '}'
 
-        java_manager_constructor = 'public static {0} getInstance() {{ return Director.getInstance().get{0}();}}'
+        java_manager_constructor = 'public static @NonNull {0} getInstance() ' \
+                                   '{{ return Director.getInstance().get{0}();}}'
         java_override = '@Override\n'
         java_manager_dispose = 'public void dispose() { }' + _JAVA_BR
 

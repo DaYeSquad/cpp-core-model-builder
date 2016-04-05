@@ -79,13 +79,13 @@ class JavaManager:
             if not fetch_command.is_plural:
                 if len(by_list) == 0:
                     skr_log_warning('Singular often comes with at least one by parameter')
-                fetch_function += function_space(1) + 'public {0} '.format(self.__rename_object_name_if_list())
+                fetch_function += function_space(1) + 'public @Nullable @Unmanaged {0} '.format(self.__rename_object_name_if_list())
                 fetch_function += fetch_fun_name + self.__convert_bys_to_string(by_list, False, False) + '{\n'
 
                 fetch_function += function_space(2) + 'long handler = native' + fetch_fun_name_native
                 fetch_function += self.__convert_bys_to_string(by_list, False, True) + ';\n\n'
 
-                fetch_function += function_space(2) + 'if (handler == JniHelper.sNullPointer) {\n'
+                fetch_function += function_space(2) + 'if (handler == JniHelper.NULLPTR) {\n'
                 fetch_function += function_space(3) + 'return null;\n'
                 fetch_function += function_space(2) + '}\n\n'
                 fetch_function += function_space(2) + 'return new {0}(handler);\n'.format(self.__rename_object_name_if_list())
@@ -149,7 +149,7 @@ class JavaManager:
     def __http_function(self, api):
         http_function = function_space(1) + 'public void ' + string_utils.first_char_to_lower(api.function_name)
         input_variable = self.__input_variable_declarations(api.input_var_list)
-        http_function += '({0}{1}response){{\n'\
+        http_function += '({0} @NonNull{1}response){{\n'\
             .format(input_variable, self.__variable_type_from_var_list(api.output_var_list))
         http_function += function_space(2) + 'm{0}Response'.format(api.function_name) + ' = response;\n'
         for variable in api.input_var_list:
@@ -250,10 +250,11 @@ class JavaManager:
         vars_declarations = ''
         for var in var_list:
             if var.var_type == VarType.cpp_enum:
-                vars_declarations += var.var_type.to_java_getter_setter_string()\
+                vars_declarations += '@NonNull' + var.java_enum \
                                      + ' ' + var.name_str + ', '
             else:
-                vars_declarations += var.var_type.to_java_getter_setter_string() + ' ' + var.name_str + ', '
+                vars_declarations += '@NonNull' + var.var_type.to_java_getter_setter_string() \
+                                     + ' ' + var.name_str + ', '
         return vars_declarations
 
     def __output_variable_declaration(self, var_list):
@@ -266,7 +267,7 @@ class JavaManager:
             elif var.var_type == VarType.cpp_object_array:
                 vars_declarations += ', long[] ' + var.name_str + '_handler'
             else:
-                vars_declarations += ', ' + var.var_type + ' ' + var.name_str
+                vars_declarations += ', @Nullable @Unmanaged' + var.var_type + ' ' + var.name_str
         return vars_declarations
 
     def __output_variable_call(self, var_list):
