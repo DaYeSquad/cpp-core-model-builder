@@ -8,6 +8,9 @@ from skrutil import string_utils
 
 
 class VarType:
+    """
+    Describes C++ field in model xml file.
+    """
     cpp_bool = 1
     cpp_int = 2
     cpp_string = 3
@@ -18,10 +21,17 @@ class VarType:
     cpp_object = 8
 
     def __init__(self, value, object_class_name=''):
+        """
+        VarType constructor.
+
+        Args:
+            value: An integer represents enum integer value.
+            object_class_name: A string only when value is 7 or 8, it means the object in array or itself.
+        """
         self.value = value
         self.enum_class_name = ''
         self.json_search_path = ''
-        self.object_class_name = object_class_name  # if type is 7 or 8, it means the object in array or itself
+        self.object_class_name = object_class_name
 
     def __eq__(self, other):
         return self.value == other
