@@ -6,18 +6,16 @@
 # Copyright (c) 2016 - Frank Lin
 
 """
-Used to execute command to parse lesschat core model xml
+This module provides C++, Java, Objective-C++ code generators.
 """
 
 import os
-import sys
-
-from skrutil import io_utils
 
 from skr_cpp_builder.model_xml_parser import CppModelXmlParser
 from skr_java_builder.java_model_xml_parser import JavaModelXmlParser
 from skr_jni_builder.jni_model_xml_parser import JniModelXmlParse
 from skr_objc_builder.objc_model_xml_parser import ObjcModelXmlParser
+from skrutil import io_utils
 
 
 class bcolors:
@@ -50,8 +48,8 @@ if __name__ == "__main__":
     parser = CppModelXmlParser(4.0)
     parser.parse(input_file_path)
 
-    # objc_parser = ObjcModelXmlParser(4.0)
-    # objc_parser.parse(input_file_path)
+    objc_parser = ObjcModelXmlParser(4.0)
+    objc_parser.parse(input_file_path)
 
     java_parser = JavaModelXmlParser(4.0)
     java_parser.parse(input_file_path)

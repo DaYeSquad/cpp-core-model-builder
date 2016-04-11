@@ -75,7 +75,8 @@ class ObjcModelXmlParser:
                         plural_node = save_node.get('plural')
                         if plural_node is not None:
                             is_plural = True
-                        save_command = CppManagerSaveCommand(is_plural)
+                        alias_attr = save_node.get('alias')
+                        save_command = CppManagerSaveCommand(is_plural, [], alias_attr)
                         objc_manager.add_save_command(save_command)
 
                     # parse all <delete/>
@@ -86,7 +87,8 @@ class ObjcModelXmlParser:
                             is_plural = True
 
                         by = delete_node.get('by')
-                        delete_command = CppManagerDeleteCommand(is_plural, by)
+                        alias_attr = delete_node.get('alias')
+                        delete_command = CppManagerDeleteCommand(is_plural, by, [], alias_attr)
                         objc_manager.add_delete_command(delete_command)
 
                     # parse all <fetch/>
@@ -104,8 +106,8 @@ class ObjcModelXmlParser:
                             if desc_desciption_or_none is not None:
                                 if desc_desciption_or_none == 'true':
                                     is_asc = False
-
-                        fetch_command = CppManagerFetchCommand(is_plural, by, sort_by_or_none, is_asc)
+                        alias_attr = fetch_node.get('alias')
+                        fetch_command = CppManagerFetchCommand(is_plural, by, sort_by_or_none, is_asc, [], alias_attr)
                         objc_manager.add_fetch_command(fetch_command)
 
                     # parse all <api/>
