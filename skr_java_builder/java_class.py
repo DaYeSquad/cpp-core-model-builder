@@ -59,7 +59,7 @@ class JavaClass:
         output_java.write(function_space(1) + '}' + _JAVA_BR)
 
         for java_enum in self.java_enum_list:
-            output_java.write(java_enum.generate_java_enum(_JAVA_SPACE) + '\n')
+            output_java.write(java_enum.generate_android_enum(_JAVA_SPACE) + '\n')
 
         for java_var in self.java_var_list:
             output_java.write(java_var.getter() + _JAVA_BR)
