@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     print('开始解析据...')
 
-    parser = CppModelXmlParser(4.0)
+    parser = CppModelXmlParser(5.0)
     parser.parse(input_file_path)
 
     objc_parser = ObjcModelXmlParser(4.0)
