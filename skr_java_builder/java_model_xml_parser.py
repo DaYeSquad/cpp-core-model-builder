@@ -154,6 +154,6 @@ class JavaModelXmlParser:
                 # java_class.generate_manager_implementation()
 
                 java_class = JavaClass(group_name, class_name, java_var_list, java_enum_list, java_manager)
-                java_class.generate_java()
+                java_class.generate_java_v2()
 
                 java_class.generate_manager()

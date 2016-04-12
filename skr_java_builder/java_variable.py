@@ -4,6 +4,7 @@ from skr_cpp_builder.cpp_variable import VarType
 from skrutil.string_utils import indent
 from skrutil.string_utils import to_title_style_name
 from skrutil.string_utils import to_objc_property_name
+from skrutil.string_utils import first_char_to_lower
 
 
 _JAVA_BR = '\n\n'
@@ -38,11 +39,43 @@ class JavaVariable:
         self.__var_type.set_enum_class_name(enum_class_name)
         self.__java_enum = self.__var_type.java_enum_type_string()
 
-    def getter_v2(self, pre_spaces=4):
+    def private_field_name(self):
+        """Gets Android style Java field name.
+
+        Returns:
+            A string which is Java field name. For example:
+
+            private String mTeamName;
+        """
+        return 'private final {0} m{1};'.format(self.__var_type.to_java_getter_setter_string_v2(),
+                                                self.__title_style_name)
+
+    def input_parameter_name(self):
+        """Gets Android style Java input parameter name.
+
+        Returns:
+            A string which is Java input parameter name. For example:
+
+            String teamName
+        """
+        return '{0} {1}'.format(self.__var_type.to_java_getter_setter_string_v2(),
+                                first_char_to_lower(self.__title_style_name))
+
+    def assignment(self):
+        """Gets assignment implementation.
+
+        Returns:
+            A string which is assignment. For example:
+
+            mTaskId = taskId;
+        """
+        return 'm{0} = {1};'.format(self.__title_style_name, first_char_to_lower(self.__title_style_name))
+
+    def getter_v2(self, num_pre_spaces=4):
         """Getter method using Android style implementation.
 
         Args:
-            pre_spaces: A int describes the count spaces in front of the string.
+            num_pre_spaces: A int describes the count spaces in front of the string.
 
         Returns:
             Java getter method. For example:
@@ -53,24 +86,24 @@ class JavaVariable:
         """
         function_str = ''
         if self.__var_type == VarType.cpp_bool:
-            function_str += indent(pre_spaces) + 'public {0} is{1}() {{\n' \
+            function_str += indent(num_pre_spaces) + 'public {0} is{1}() {{\n' \
                 .format(self.__var_type.to_java_getter_setter_string(), self.__title_style_name)
-            function_str += indent(pre_spaces + 4) + 'return m{0};\n'.format(self.__title_style_name)
-            function_str += indent(pre_spaces) + '}'
+            function_str += indent(num_pre_spaces + 4) + 'return m{0};\n'.format(self.__title_style_name)
+            function_str += indent(num_pre_spaces) + '}'
         elif self.__var_type == VarType.cpp_string_array:
-            function_str += indent(pre_spaces) + 'public String[] get{0}() {{\n'.format(self.__title_style_name)
-            function_str += indent(pre_spaces + 4) + 'return m{0};\n'.format(self.__title_style_name)
-            function_str += indent(pre_spaces) + "}"
+            function_str += indent(num_pre_spaces) + 'public String[] get{0}() {{\n'.format(self.__title_style_name)
+            function_str += indent(num_pre_spaces + 4) + 'return m{0};\n'.format(self.__title_style_name)
+            function_str += indent(num_pre_spaces) + "}"
         elif self.__var_type == VarType.cpp_enum:
-            function_str += indent(pre_spaces) + '@{0}\n'.format(self.__java_enum)
-            function_str += indent(pre_spaces) + 'public int get{0}() {{\n'.format(self.__title_style_name)
-            function_str += indent(pre_spaces + 4) + 'return m{0};\n'.format(self.__title_style_name)
-            function_str += indent(pre_spaces) + '}'
+            function_str += indent(num_pre_spaces) + '@{0}\n'.format(self.__java_enum)
+            function_str += indent(num_pre_spaces) + 'public int get{0}() {{\n'.format(self.__title_style_name)
+            function_str += indent(num_pre_spaces + 4) + 'return m{0};\n'.format(self.__title_style_name)
+            function_str += indent(num_pre_spaces) + '}'
         else:
-            function_str += indent(pre_spaces) + 'public {0} get{1}() {{\n'. \
+            function_str += indent(num_pre_spaces) + 'public {0} get{1}() {{\n'. \
                 format(self.__var_type.to_java_getter_setter_string(), self.__title_style_name)
-            function_str += indent(pre_spaces + 4) + 'return m{0};\n'.format(self.__title_style_name)
-            function_str += indent(pre_spaces) + '}'
+            function_str += indent(num_pre_spaces + 4) + 'return m{0};\n'.format(self.__title_style_name)
+            function_str += indent(num_pre_spaces) + '}'
         return function_str
 
     def getter(self):

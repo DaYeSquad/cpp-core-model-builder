@@ -1,39 +1,96 @@
+#!/usr/bin/env python
+
 from java_variable import VarType
+from skrutil.string_utils import indent
 
 _JAVA_BR = '\n\n'
 _JAVA_SPACE = '    '
 
 
-def function_space(count):
-    space = ''
-    for i in range(1, count + 1):
-        space += _JAVA_SPACE
-    return space
-
-
 class JavaClass:
+    """Java file generator, including package, class, fields, enums and manager.
+    """
+
     def __init__(self, group_name, class_name, java_variable_list, java_enum_list, java_manager_or_none):
-        self.group_name = group_name
-        self.class_name = class_name
-        self.java_var_list = java_variable_list
-        self.java_enum_list = java_enum_list
-        self.java_manager_or_none = java_manager_or_none
+        """Init Java file generator.
 
-        if self.java_manager_or_none is not None:
-            self.java_manager_or_none.set_object_name(class_name, class_name + 's')
-            self.java_manager_or_none.set_java_variable_list(java_variable_list)
+        Args:
+            group_name: A string which is package name, input name is C++ folder name, should be all lowercase. (eg: task)
+            class_name: A string which is class name, input name is C++ class name, should be capitalized. (eg: Task)
+            java_variable_list: A list of <JavaVariable> object which mean all fields in class.
+            java_enum_list: A list of <JavaEnum> object which mean all enums in class.
+            java_manager_or_none: A <JavaManager> object means ObjectManager or none means the class has no ObjectManager.
+        """
+        self.__group_name = group_name
+        self.__class_name = class_name
+        self.__java_var_list = java_variable_list
+        self.__java_enum_list = java_enum_list
+        self.__java_manager_or_none = java_manager_or_none
 
-    # @staticmethod
-    # def __convert_class_name_to_file_name(name):
-    #     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    #     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+        if self.__java_manager_or_none is not None:
+            self.__java_manager_or_none.set_object_name(class_name, class_name + 's')
+            self.__java_manager_or_none.set_java_variable_list(java_variable_list)
 
-    def generate_java(self):
-        file_name = self.class_name + '.java'
-        file_path = 'build/com/lesschat/core/' + self.group_name + '/' + file_name
+    def generate_java_v2(self):
+        file_name = self.__class_name + '.java'
+        file_path = 'build/com/lesschat/core/' + self.__group_name + '/' + file_name
         output_java = open(file_path, 'w')
 
-        java_package = 'package com.lesschat.core.' + self.group_name + ';'
+        java_package = 'package com.lesschat.core.' + self.__group_name + ';'
+
+        output_java.write(java_package + _JAVA_BR)
+
+        java_import = 'import android.support.annotation.IntDef;\n'
+        java_import += 'import java.lang.annotation.Retention;\n'
+        java_import += 'import java.lang.annotation.RetentionPolicy;' + _JAVA_BR
+
+        java_import += 'import com.lesschat.core.base.LessChatObject;\n'
+        java_import += 'import com.lesschat.core.jni.CoreObject;\n'
+        java_import += 'import java.util.ArrayList;\n'
+        java_import += 'import java.util.Arrays;\n'
+        if self.__class_name != 'List':
+            java_import += 'import java.util.List;'
+
+        java_class_start = 'public final class ' + self.__class_name + ' extends LessChatObject {'
+        java_class_end = '}'
+
+        output_java.write(java_import + _JAVA_BR)
+        output_java.write(java_class_start + _JAVA_BR)
+
+        # generates enum in class
+        for java_enum in self.__java_enum_list:
+            output_java.write(java_enum.generate_android_enum(_JAVA_SPACE) + '\n')
+
+        # generates fields in class
+        for java_var in self.__java_var_list:
+            output_java.write(_JAVA_SPACE + java_var.private_field_name() + '\n')
+        output_java.write('\n')
+
+        # generates constructor
+        output_java.write(self.__constructors_v2())
+        output_java.write(_JAVA_BR)
+
+        # generate getters
+        for java_var in self.__java_var_list:
+            output_java.write(java_var.getter_v2() + _JAVA_BR)
+
+        # end brace
+        output_java.write(java_class_end + '\n')
+
+    def generate_java(self):
+        """Gets Java with JNI implementation. The class inherits from |CoreObject| which means invoker should release
+         the object himself/herself by calling |CoreObject.dispose()|.
+
+         New development should use <generate_java_v2> instead.
+
+        Returns:
+            A string which is the class implementation.
+        """
+        file_name = self.__class_name + '.java'
+        file_path = 'build/com/lesschat/core/' + self.__group_name + '/' + file_name
+        output_java = open(file_path, 'w')
+
+        java_package = 'package com.lesschat.core.' + self.__group_name + ';'
 
         output_java.write(java_package + _JAVA_BR)
 
@@ -42,57 +99,106 @@ class JavaClass:
         java_import += 'import com.lesschat.core.jni.CoreObject;' + _JAVA_BR
         java_import += 'import java.util.ArrayList;\n'
         java_import += 'import java.util.Arrays;\n'
-        if self.class_name != 'List':
+        if self.__class_name != 'List':
             java_import += 'import java.util.List;'
 
-        java_class_start = 'public class ' + self.class_name + ' extends CoreObject implements Parcelable {'
+        java_class_start = 'public class ' + self.__class_name + ' extends CoreObject implements Parcelable {'
         java_class_end = '}'
 
         output_java.write(java_import + _JAVA_BR)
         output_java.write(java_class_start + _JAVA_BR)
 
         output_java.write(self.__constructors())
-        # output_java.write(self.__initwith())
-        output_java.write(function_space(1) + '@Override\n')
-        output_java.write(function_space(1) + 'public void dispose() {\n')
-        output_java.write(function_space(2) + 'nativeRelease{0}(mNativeHandler);\n'.format(self.class_name))
-        output_java.write(function_space(1) + '}' + _JAVA_BR)
+        output_java.write(indent(1) + '@Override\n')
+        output_java.write(indent(1) + 'public void dispose() {\n')
+        output_java.write(indent(2) + 'nativeRelease{0}(mNativeHandler);\n'.format(self.__class_name))
+        output_java.write(indent(1) + '}' + _JAVA_BR)
 
-        for java_enum in self.java_enum_list:
-            output_java.write(java_enum.generate_android_enum(_JAVA_SPACE) + '\n')
+        for java_enum in self.__java_enum_list:
+            output_java.write(java_enum.generate_java_enum(_JAVA_SPACE) + '\n')
 
-        for java_var in self.java_var_list:
-            output_java.write(java_var.getter_v2() + _JAVA_BR)
+        for java_var in self.__java_var_list:
+            output_java.write(java_var.getter() + _JAVA_BR)
 
         output_java.write(_JAVA_BR)
         output_java.write(self.__native_constructors())
-        # output_java.write(self.__native_initwith())
-        output_java.write(function_space(1) + 'private native void nativeRelease{0}(long handler);'.format(self.class_name) + _JAVA_BR)
+        output_java.write(indent(1) + 'private native void nativeRelease{0}(long handler);'.format(self.__class_name) + _JAVA_BR)
 
-        for java_var in self.java_var_list:
+        for java_var in self.__java_var_list:
             output_java.write(java_var.native_getter() + _JAVA_BR)
 
         output_java.write(self.__parcelable())
-
         output_java.write(java_class_end)
 
     def __constructors(self):
-        constructor = function_space(1) + 'public {0}() {{ \n        mNativeHandler = nativeCreate{0}(); \n    }}'\
-            .format(self.class_name) + _JAVA_BR
-        constructor += function_space(1) + 'public {0}(long nativeHandler) {{\n'.format(self.class_name)
-        constructor += function_space(2) + 'mNativeHandler = nativeHandler;\n'
-        constructor += function_space(1) + '}\n\n'
-        # constructor += self.__constructor_with_variable()
+        """Java class constructor with native handler as parameter.
+
+        Returns:
+            A string which is the implementation of the constructor. For example:
+
+            public Task(long nativeHandler) {
+                mNativeHandler = nativeHandler;
+            }
+        """
+        constructor = indent(1) + 'public {0}() {{ \n        mNativeHandler = nativeCreate{0}(); \n    }}'\
+            .format(self.__class_name) + _JAVA_BR
+        constructor += indent(1) + 'public {0}(long nativeHandler) {{\n'.format(self.__class_name)
+        constructor += indent(2) + 'mNativeHandler = nativeHandler;\n'
+        constructor += indent(1) + '}\n\n'
+        return constructor
+
+    def __constructors_v2(self):
+        """Java class constructor with all fields as parameters.
+
+        Returns:
+            A string which is the implementation of the constructor. For example:
+
+            /*package*/ File(String fileId,
+                             @File.Type int type,
+                             @File.Visibility int visibility,
+                             @File.Belong int belong,
+                             @File.FolderPermissionSetting int folderPermissionSetting,
+                             String createdBy,
+                             long createdAt,
+                             String updatedBy,
+                             long updatedAt) {
+                             mFileId = fileId;
+                             ... Remainder omitted...
+                        }
+        """
+        package_class = indent(4) + '/*package*/ {0}'.format(self.__class_name)
+        num_line_indent = len(package_class) + 1
+
+        if len(self.__java_var_list) > 1:
+            first_var = self.__java_var_list[0].input_parameter_name()
+            constructor = '{0}({1},\n'.format(package_class, first_var)
+            for var in self.__java_var_list:
+                if first_var == var.input_parameter_name():
+                    continue
+                constructor += indent(num_line_indent) + '{0},'.format(var.input_parameter_name()) + '\n'
+            constructor = constructor[:-2]  # remove break line and last comma
+        elif len(self.__java_var_list) == 1:
+            first_var = self.__java_var_list[0].input_parameter_name()
+            constructor = '{0}({1})'.format(package_class, first_var)
+        else:
+            constructor = '{0}()'.format(package_class)
+
+        constructor += ') {\n'
+
+        for var in self.__java_var_list:
+            constructor += indent(8) + var.assignment() + '\n'
+        constructor += indent(4) + '}'
+
         return constructor
 
     def __constructor_with_variable(self):
-        constructor = function_space(1) + 'public {0}('.format(self.class_name)
-        space = len(function_space(1) + 'public {0}('.format(self.class_name))
+        constructor = indent(1) + 'public {0}('.format(self.__class_name)
+        space = len(indent(1) + 'public {0}('.format(self.__class_name))
         space_str = ''
         for space_index in range(0, space):
             space_str += ' '
-        for index in range(0, len(self.java_var_list)):
-            java_var = self.java_var_list[index]
+        for index in range(0, len(self.__java_var_list)):
+            java_var = self.__java_var_list[index]
             java_var_type = java_var.var_type
             if index == 0:
                 if java_var_type == VarType.cpp_enum:
@@ -110,29 +216,29 @@ class JavaClass:
                     constructor += space_str + '{0} {1},\n'.format(java_var.var_type.to_java_getter_setter_string(), java_var.name_str)
         constructor = constructor[:-2]
         constructor += '){\n'
-        constructor += function_space(2) + 'mNativeHandler = nativeCreate{0}('.format(self.class_name)
-        for java_var in self.java_var_list:
+        constructor += indent(2) + 'mNativeHandler = nativeCreate{0}('.format(self.__class_name)
+        for java_var in self.__java_var_list:
             if java_var.var_type == VarType.cpp_enum:
                 constructor += java_var.name_str + '.getValue(), '
             else:
                 constructor += java_var.name_str + ', '
         constructor = constructor[:-2]
         constructor += ');\n'
-        constructor += function_space(1) + '}' + _JAVA_BR
+        constructor += indent(1) + '}' + _JAVA_BR
         return constructor
 
     def __native_constructors(self):
-        native_constructor = function_space(1) + 'private native long nativeCreate{0}();'.format(self.class_name) + _JAVA_BR
+        native_constructor = indent(1) + 'private native long nativeCreate{0}();'.format(self.__class_name) + _JAVA_BR
         # native_constructor += self.__native_constructor_with_variable()
         return native_constructor
 
     def __native_constructor_with_variable(self):
         space_str = ''
-        native_constructor = function_space(1) + 'private native long nativeCreate{0}('.format(self.class_name)
-        for space_index in range(0, len(function_space(1) + 'private native long nativeCreate{0}('.format(self.class_name))):
+        native_constructor = indent(1) + 'private native long nativeCreate{0}('.format(self.__class_name)
+        for space_index in range(0, len(indent(1) + 'private native long nativeCreate{0}('.format(self.__class_name))):
             space_str += ' '
-        for index in range(0, len(self.java_var_list)):
-            java_var = self.java_var_list[index]
+        for index in range(0, len(self.__java_var_list)):
+            java_var = self.__java_var_list[index]
             java_var_type = java_var.var_type
             if index == 0:
                 if java_var_type == VarType.cpp_enum:
@@ -153,50 +259,50 @@ class JavaClass:
         return native_constructor
 
     def __initwith(self):
-        initwith = function_space(1) + 'public boolean initWithJson(String json) { return nativeInitWithJson(mNativeHandler, json); }'
+        initwith = indent(1) + 'public boolean initWithJson(String json) { return nativeInitWithJson(mNativeHandler, json); }'
         initwith += _JAVA_BR
         return initwith
 
     def __native_initwith(self):
-        native_initwith = function_space(1) + 'private native boolean nativeInitWithJson(long handler, String json);'
+        native_initwith = indent(1) + 'private native boolean nativeInitWithJson(long handler, String json);'
         native_initwith += _JAVA_BR
         return native_initwith
 
     def __parcelable(self):
-        parcelable = function_space(1) + 'public {0}(Parcel in) {{\n'.format(self.class_name)
-        parcelable += function_space(2) + 'mNativeHandler = in.readLong();\n'
-        parcelable += function_space(1) + '}' + _JAVA_BR
-        parcelable += function_space(1) + 'public static final Parcelable.Creator<{0}> CREATOR = new Parcelable.Creator<{0}>() {{\n\n'\
-            .format(self.class_name)
-        parcelable += function_space(2) + 'public {0} createFromParcel(Parcel in) {{ return new {0}(in); }}\n\n'\
-            .format(self.class_name)
-        parcelable += function_space(2) + 'public {0}[] newArray(int size) {{ return new {0}[size]; }}\n'\
-            .format(self.class_name)
-        parcelable += function_space(1) + '};' + _JAVA_BR
-        parcelable += function_space(1) + '@Override\n'
-        parcelable += function_space(1) + 'public int describeContents() { return 0; }' + _JAVA_BR
-        parcelable += function_space(1) + '@Override\n'
-        parcelable += function_space(1) + 'public void writeToParcel(Parcel parcel, int i) { parcel.writeLong(mNativeHandler); }\n'
+        parcelable = indent(1) + 'public {0}(Parcel in) {{\n'.format(self.__class_name)
+        parcelable += indent(2) + 'mNativeHandler = in.readLong();\n'
+        parcelable += indent(1) + '}' + _JAVA_BR
+        parcelable += indent(1) + 'public static final Parcelable.Creator<{0}> CREATOR = new Parcelable.Creator<{0}>() {{\n\n'\
+            .format(self.__class_name)
+        parcelable += indent(2) + 'public {0} createFromParcel(Parcel in) {{ return new {0}(in); }}\n\n'\
+            .format(self.__class_name)
+        parcelable += indent(2) + 'public {0}[] newArray(int size) {{ return new {0}[size]; }}\n'\
+            .format(self.__class_name)
+        parcelable += indent(1) + '};' + _JAVA_BR
+        parcelable += indent(1) + '@Override\n'
+        parcelable += indent(1) + 'public int describeContents() { return 0; }' + _JAVA_BR
+        parcelable += indent(1) + '@Override\n'
+        parcelable += indent(1) + 'public void writeToParcel(Parcel parcel, int i) { parcel.writeLong(mNativeHandler); }\n'
         parcelable += '\n'
         return parcelable
 
     def generate_manager(self):
-        if self.java_manager_or_none is None:
+        if self.__java_manager_or_none is None:
             return
-        manager_name = self.java_manager_or_none.manager_name
-        file_name = self.java_manager_or_none.manager_name + '.java'
-        file_path = 'build/com/lesschat/core/' + self.group_name + '/' + file_name
+        manager_name = self.__java_manager_or_none.manager_name
+        file_name = self.__java_manager_or_none.manager_name + '.java'
+        file_path = 'build/com/lesschat/core/' + self.__group_name + '/' + file_name
         output_java = open(file_path, 'w')
 
-        java_package = 'package com.lesschat.core.' + self.group_name + ';'
+        java_package = 'package com.lesschat.core.' + self.__group_name + ';'
 
         output_java.write(java_package + _JAVA_BR)
 
         java_import = ''
-        if len(self.java_manager_or_none.apis) != 0:
+        if len(self.__java_manager_or_none.apis) != 0:
             java_import += 'import com.lesschat.core.api.*;\n'
 
-        java_import += 'import com.lesschat.core.{0}.{1}.*;\n'.format(self.group_name, self.class_name)
+        java_import += 'import com.lesschat.core.{0}.{1}.*;\n'.format(self.__group_name, self.__class_name)
         java_import += 'import com.lesschat.core.jni.CoreObject;\n'
         java_import += 'import com.lesschat.core.director.Director;\n'
         java_import += 'import com.lesschat.core.jni.JniHelper;\n\n'
@@ -213,18 +319,16 @@ class JavaClass:
         output_java.write(java_import)
         output_java.write(java_class_start)
 
-        output_java.write(self.java_manager_or_none.generate_http_variable())
+        output_java.write(self.__java_manager_or_none.generate_http_variable())
         output_java.write('\n')
 
-        output_java.write(function_space(1) + java_manager_constructor.format(manager_name) + _JAVA_BR)
-        output_java.write(function_space(1) + java_override)
-        output_java.write(function_space(1) + java_manager_dispose)
+        output_java.write(indent(1) + java_manager_constructor.format(manager_name) + _JAVA_BR)
+        output_java.write(indent(1) + java_override)
+        output_java.write(indent(1) + java_manager_dispose)
 
-        output_java.write(self.java_manager_or_none.generate_fetch())
-        output_java.write(self.java_manager_or_none.generate_http_function())
-        output_java.write(self.java_manager_or_none.generate_fetch_native())
-        output_java.write(self.java_manager_or_none.generate_http_function_native())
+        output_java.write(self.__java_manager_or_none.generate_fetch())
+        output_java.write(self.__java_manager_or_none.generate_http_function())
+        output_java.write(self.__java_manager_or_none.generate_fetch_native())
+        output_java.write(self.__java_manager_or_none.generate_http_function_native())
 
         output_java.write(java_class_end)
-
-

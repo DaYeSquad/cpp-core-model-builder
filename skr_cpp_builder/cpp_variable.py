@@ -8,7 +8,9 @@ from skrutil import string_utils
 
 
 class VarType:
-    """Describes C++ field in model xml file.
+    """Describes C++ type in model xml file. Supports following types:
+    bool, int, std::string, enum, std::vector<std::string>, time_t, std::vector<std::unique_ptr<Object>>,
+    std::unique_ptr<Object>.
     """
     cpp_bool = 1
     cpp_int = 2
@@ -155,6 +157,26 @@ class VarType:
             return 'long'
         elif self.value == 7:
             return 'List<{0}>'.format(self.object_class_name)
+        elif self.value == 8:
+            return self.object_class_name
+        else:
+            print 'Unsupported value'
+
+    def to_java_getter_setter_string_v2(self):
+        if self.value == 1:
+            return 'boolean'
+        elif self.value == 2:
+            return 'int'
+        elif self.value == 3:
+            return 'String'
+        elif self.value == 4:
+            return '@{0} int'.format(self.enum_class_name)
+        elif self.value == 5:
+            return 'String[]'
+        elif self.value == 6:
+            return 'long'
+        elif self.value == 7:
+            return '{0}[]'.format(self.object_class_name)
         elif self.value == 8:
             return self.object_class_name
         else:
