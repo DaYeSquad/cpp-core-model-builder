@@ -1,21 +1,32 @@
+#!/usr/bin/env python
+
 import re
 from java_variable import VarType
 from skrutil.skr_logger import skr_log_warning
 from skrutil import string_utils
+from skrutil.string_utils import indent
 
 _JAVA_BR = '\n\n'
 _JAVA_SPACE = '    '
 
 
-def function_space(count):
-    space = ''
-    for i in range(1, count + 1):
-        space += _JAVA_SPACE
-    return space
-
-
 class JavaManagerFetchCommand:
+    """Used for Java FetchObject(s)FromCache method.
+
+    Attributes:
+        is_plural: A bool describes method target is singular or plural.
+        where: A string value represents SQL where syntax.
+        alias: A string value tells manager to use another name.
+    """
+
     def __init__(self, is_plural, where, alias):
+        """Init fetch method necessary info.
+
+        Args:
+            is_plural: A bool describes method target is singular or plural.
+            where: A string value represents SQL where syntax.
+            alias: A string value tells manager to use another name.
+        """
         self.is_plural = is_plural
 
         if where is not None:
@@ -30,38 +41,84 @@ class JavaManagerFetchCommand:
 
 
 class JavaApiDescription:
+    """Used for giving manager necessary info for generating WebAPI description.
 
+    Attributes:
+            function_name: A string describes the function name used in WebApi.
+            input_var_list: A list of <JavaVariable> describes the input variables.
+            output_var_list: A list of <JavaVariable> describes the output variables.
+    """
     def __init__(self, function_name, input_var_list, output_var_list):
+        """Init API description with necessary parameters.
+
+        Args:
+            function_name: A string describes the function name used in WebApi.
+            input_var_list: A list of <JavaVariable> describes the input variables.
+            output_var_list: A list of <JavaVariable> describes the output variables.
+        """
         self.function_name = function_name
         self.input_var_list = input_var_list
         self.output_var_list = output_var_list
 
 
 class JavaManager:
+    """Used for generating Java manager implementation code.
+
+    Attributes:
+        manager_name: A string describes the manager's name.
+        apis: List of <JavaApiDescription> describes manager's APIs.
+    """
+
     def __init__(self, manager_name):
-        self.manager_name = manager_name
-        self.object_name = ''
-        self.plural_object_name = ''
-        self.java_variable_list = []
-        self.fetch_commands = []
-        self.apis = []
+        """Init with manager class name.
+
+        Args:
+            manager_name: The manager class name.
+        """
+        self.__manager_name = manager_name
+        self.__object_name = ''
+        self.__plural_object_name = ''
+        self.__java_variable_list = []
+        self.__fetch_commands = []
+        self.__apis = []
 
     def set_object_name(self, class_name, plural_class_name):
-        self.object_name = class_name
-        self.plural_object_name = plural_class_name
+        """Sets the object name and plural class name for manager.
+
+        Args:
+            class_name: A string which is the object class name (eg: User).
+            plural_class_name: A string which is the object class name in plural case (eg: Butterflies).
+        """
+        self.__object_name = class_name
+        self.__plural_object_name = plural_class_name
 
     def set_java_variable_list(self, java_variable_list):
-        self.java_variable_list = java_variable_list
+        self.__java_variable_list = java_variable_list
 
     def add_fetch_command(self, fetch_command):
-        self.fetch_commands.append(fetch_command)
+        """Adds fetch command.
+
+        Args:
+            fetch_command: A <JavaFetchCommand> object has the necessary info for generating fetch method.
+        """
+        self.__fetch_commands.append(fetch_command)
 
     def add_api_description(self, api_description):
-        self.apis.append(api_description)
+        """Adds API description.
 
-    def generate_fetch(self):
+        Args:
+            api_description: A <JavaApiDescription> object that has necessary info for generating WebApi methods.
+        """
+        self.__apis.append(api_description)
+
+    def generate_fetch_v2(self):
+        """Gets fetch method implementation code. Paris with <generate_fetch_native_v2>.
+
+        Returns:
+            A string describes Java fetch method implementation code.
+        """
         fetch_function = ''
-        for fetch_command in self.fetch_commands:
+        for fetch_command in self.__fetch_commands:
             by_list = []
             if fetch_command.where != '':
                 by_list = re.split(',', fetch_command.where)
@@ -70,47 +127,100 @@ class JavaManager:
                 fetch_fun_name = string_utils.first_char_to_lower(fetch_command.alias)
                 fetch_fun_name_native = fetch_command.alias
             elif not fetch_command.is_plural:
-                fetch_fun_name = 'fetch{0}FromCache'.format(self.__rename_object_name_if_list())
-                fetch_fun_name_native = 'Fetch{0}FromCache'.format(self.object_name)
+                fetch_fun_name = 'fetch{0}FromCache'.format(self.__java_object_name())
+                fetch_fun_name_native = 'Fetch{0}FromCache'.format(self.__object_name)
             else:
-                fetch_fun_name = 'fetch{0}FromCache'.format(self.plural_object_name)
-                fetch_fun_name_native = 'Fetch{0}FromCache'.format(self.plural_object_name)
+                fetch_fun_name = 'fetch{0}FromCache'.format(self.__plural_object_name)
+                fetch_fun_name_native = 'Fetch{0}FromCache'.format(self.__plural_object_name)
+
+            if not fetch_command.is_plural:  # singular implementation
+                if len(by_list) == 0:
+                    skr_log_warning('Singular often comes with at least one by parameter')
+                fetch_function += indent(4) + 'public @Nullable {0} '.format(self.__java_object_name())
+                fetch_function += fetch_fun_name + self.__convert_bys_to_string(by_list, False, False) + '{\n'
+
+                parameters = self.__convert_bys_to_input_parameters(by_list)
+                parameters_with_type = self.__convert_bys_to_string(by_list, False, False)
+                parameters_for_func = re.sub('\([^]]*\)', parameters, parameters_with_type)
+                fetch_function += indent(8) + 'return native{0}{1};\n'.format(fetch_fun_name_native,
+                                                                              parameters_for_func)
+                fetch_function += indent(4) + '}' + _JAVA_BR
+            else:  # regular implementation
+                fetch_function += indent(4) + 'public {0}[] '.format(self.__java_object_name())
+                fetch_function += fetch_fun_name + self.__convert_bys_to_string(by_list, False, False) + ' {\n'
+
+                parameters = self.__convert_bys_to_input_parameters(by_list)
+                parameters_with_type = self.__convert_bys_to_string(by_list, False, False)
+                parameters_for_func = re.sub('\([^]]*\)', parameters, parameters_with_type)
+                fetch_function += indent(8) + 'return native{0}{1};\n'.format(fetch_fun_name_native,
+                                                                              parameters_for_func)
+                fetch_function += indent(4) + '}' + _JAVA_BR
+        return fetch_function
+
+    def generate_fetch(self):
+        """Gets fetch method implementation code. Paris with <generate_fetch_native>.
+
+        New development should use <generate_fetch_v2>.
+
+        Returns:
+            A string describes Java fetch method implementation code.
+        """
+        fetch_function = ''
+        for fetch_command in self.__fetch_commands:
+            by_list = []
+            if fetch_command.where != '':
+                by_list = re.split(',', fetch_command.where)
+
+            if fetch_command.alias != '':
+                fetch_fun_name = string_utils.first_char_to_lower(fetch_command.alias)
+                fetch_fun_name_native = fetch_command.alias
+            elif not fetch_command.is_plural:
+                fetch_fun_name = 'fetch{0}FromCache'.format(self.__java_object_name())
+                fetch_fun_name_native = 'Fetch{0}FromCache'.format(self.__object_name)
+            else:
+                fetch_fun_name = 'fetch{0}FromCache'.format(self.__plural_object_name)
+                fetch_fun_name_native = 'Fetch{0}FromCache'.format(self.__plural_object_name)
 
             if not fetch_command.is_plural:
                 if len(by_list) == 0:
                     skr_log_warning('Singular often comes with at least one by parameter')
-                fetch_function += function_space(1) + 'public {0} '.format(self.__rename_object_name_if_list())
+                fetch_function += indent(4) + 'public {0} '.format(self.__java_object_name())
                 fetch_function += fetch_fun_name + self.__convert_bys_to_string(by_list, False, False) + '{\n'
 
-                fetch_function += function_space(2) + 'long handler = native' + fetch_fun_name_native
+                fetch_function += indent(8) + 'long handler = native' + fetch_fun_name_native
                 fetch_function += self.__convert_bys_to_string(by_list, False, True) + ';\n\n'
 
-                fetch_function += function_space(2) + 'if (handler == JniHelper.sNullPointer) {\n'
-                fetch_function += function_space(3) + 'return null;\n'
-                fetch_function += function_space(2) + '}\n\n'
-                fetch_function += function_space(2) + 'return new {0}(handler);\n'.format(self.__rename_object_name_if_list())
-                fetch_function += function_space(1) + '}' + _JAVA_BR
+                fetch_function += indent(8) + 'if (handler == JniHelper.sNullPointer) {\n'
+                fetch_function += indent(12) + 'return null;\n'
+                fetch_function += indent(8) + '}\n\n'
+                fetch_function += indent(8) + 'return new {0}(handler);\n'.format(self.__java_object_name())
+                fetch_function += indent(4) + '}' + _JAVA_BR
             else:
-                fetch_function += function_space(1) + 'public List<{0}> '.format(self.__rename_object_name_if_list())
+                fetch_function += indent(4) + 'public List<{0}> '.format(self.__java_object_name())
                 fetch_function += fetch_fun_name + self.__convert_bys_to_string(by_list, False, False) + ' {\n'
 
-                fetch_function += function_space(2) + 'long[] handlers = native' + fetch_fun_name_native
+                fetch_function += indent(8) + 'long[] handlers = native' + fetch_fun_name_native
                 fetch_function += self.__convert_bys_to_string(by_list, False, True) + ';\n\n'
 
-                fetch_function += function_space(2) + 'List<{0}> {1} = new ArrayList<>();\n'\
-                    .format(self.__rename_object_name_if_list(), self.__to_object_name_java_style() + 's')
-                fetch_function += function_space(2) + 'for (long handler: handlers) {\n'
-                fetch_function += function_space(3) + '{0}.add(new {1}(handler));\n'\
-                    .format(self.__to_object_name_java_style() + 's', self.__rename_object_name_if_list())
-                fetch_function += function_space(2) + '}\n\n'
-                fetch_function += function_space(2) + 'return {0};\n'\
+                fetch_function += indent(8) + 'List<{0}> {1} = new ArrayList<>();\n'\
+                    .format(self.__java_object_name(), self.__to_object_name_java_style() + 's')
+                fetch_function += indent(8) + 'for (long handler: handlers) {\n'
+                fetch_function += indent(12) + '{0}.add(new {1}(handler));\n'\
+                    .format(self.__to_object_name_java_style() + 's', self.__java_object_name())
+                fetch_function += indent(8) + '}\n\n'
+                fetch_function += indent(8) + 'return {0};\n'\
                     .format(self.__to_object_name_java_style() + 's')
-                fetch_function += function_space(1) + '}' + _JAVA_BR
+                fetch_function += indent(4) + '}' + _JAVA_BR
         return fetch_function
 
-    def generate_fetch_native(self):
+    def generate_fetch_native_v2(self):
+        """Gets fetch method JNI part implementation code. Paris with <generate_fetch_v2>.
+
+        Returns:
+            Implementation of JNI part of fetch methods.
+        """
         fetch_function = ''
-        for fetch_command in self.fetch_commands:
+        for fetch_command in self.__fetch_commands:
             by_list = []
             if fetch_command.where != '':
                 by_list = re.split(',', fetch_command.where)
@@ -118,99 +228,147 @@ class JavaManager:
             if fetch_command.alias != '':
                 fetch_fun_name_native = fetch_command.alias
             elif not fetch_command.is_plural:
-                fetch_fun_name_native = 'Fetch{0}FromCache'.format(self.object_name)
+                fetch_fun_name_native = 'Fetch{0}FromCache'.format(self.__object_name)
             else:
-                fetch_fun_name_native = 'Fetch{0}FromCache'.format(self.plural_object_name)
+                fetch_fun_name_native = 'Fetch{0}FromCache'.format(self.__plural_object_name)
 
             if not fetch_command.is_plural:
                 if len(by_list) == 0:
                     skr_log_warning('Singular often comes with at least one by parameter')
-                fetch_function += function_space(1) + 'private native long native' + fetch_fun_name_native
+                fetch_function += indent(4) + 'private native @Nullable {0} native'.format(self.__object_name)
+                fetch_function += fetch_fun_name_native
                 fetch_function += self.__convert_bys_to_string(by_list, True, False) + ';' + _JAVA_BR
             else:
-                fetch_function += function_space(1) + 'private native long[] native' + fetch_fun_name_native
+                fetch_function += indent(4) + 'private native {0}[] native'.format(self.__object_name)
+                fetch_function += fetch_fun_name_native
                 fetch_function += self.__convert_bys_to_string(by_list, True, False) + ';' + _JAVA_BR
         return fetch_function
 
-    def generate_http_variable(self):
+    def generate_fetch_native(self):
+        """Gets fetch method JNI part implementation code. Paris with <generate_fetch>.
+
+        Returns:
+            Implementation of JNI part of fetch methods.
+        """
+        fetch_function = ''
+        for fetch_command in self.__fetch_commands:
+            by_list = []
+            if fetch_command.where != '':
+                by_list = re.split(',', fetch_command.where)
+
+            if fetch_command.alias != '':
+                fetch_fun_name_native = fetch_command.alias
+            elif not fetch_command.is_plural:
+                fetch_fun_name_native = 'Fetch{0}FromCache'.format(self.__object_name)
+            else:
+                fetch_fun_name_native = 'Fetch{0}FromCache'.format(self.__plural_object_name)
+
+            if not fetch_command.is_plural:
+                if len(by_list) == 0:
+                    skr_log_warning('Singular often comes with at least one by parameter')
+                fetch_function += indent(4) + 'private native long native' + fetch_fun_name_native
+                fetch_function += self.__convert_bys_to_string(by_list, True, False) + ';' + _JAVA_BR
+            else:
+                fetch_function += indent(4) + 'private native long[] native' + fetch_fun_name_native
+                fetch_function += self.__convert_bys_to_string(by_list, True, False) + ';' + _JAVA_BR
+        return fetch_function
+
+    def generate_http_variables(self):
+        """Gets HTTP response fields implementation.
+
+        Returns:
+            A string that describes HTTP response fields. For example:
+
+            private WebApiWithListResponse mGetTasksAssignedToMeResponse;
+        """
         api_response_variable = ''
-        for api in self.apis:
+        for api in self.__apis:
             variable_name = 'm{0}Response'.format(api.function_name)
             variable_type = self.__variable_type_from_var_list(api.output_var_list)
-            api_response_variable += function_space(1) + 'private ' + variable_type + variable_name + ';\n'
+            api_response_variable += indent(4) + 'private ' + variable_type + variable_name + ';\n'
         return api_response_variable
 
     def generate_http_function(self):
+        """Gets HTTP request and response implementation code.
+
+        Returns:
+            HTTP request and response implementation code.
+        """
         http_function = ''
-        for api in self.apis:
+        for api in self.__apis:
             http_function += self.__http_function(api) + '\n\n' + self.__http_function_response(api) + '\n\n'
         return http_function
 
+    def generate_http_function_native(self):
+        """Gets HTTP request native code.
+
+        Returns:
+            HTTP request native code.
+        """
+        http_native_function = ''
+        for api in self.__apis:
+            http_native_function += indent(4) + 'private native void native{0}(long handler{1});\n\n' \
+                .format(api.function_name, self.__input_variable_declarations_native(api.input_var_list))
+        return http_native_function
+
     def __http_function(self, api):
-        http_function = function_space(1) + 'public void ' + string_utils.first_char_to_lower(api.function_name)
+        http_function = indent(4) + 'public void ' + string_utils.first_char_to_lower(api.function_name)
         input_variable = self.__input_variable_declarations(api.input_var_list)
         http_function += '({0}{1}response){{\n'\
             .format(input_variable, self.__variable_type_from_var_list(api.output_var_list))
-        http_function += function_space(2) + 'm{0}Response'.format(api.function_name) + ' = response;\n'
+        http_function += indent(8) + 'm{0}Response'.format(api.function_name) + ' = response;\n'
         for variable in api.input_var_list:
             if variable.var_type == VarType.cpp_enum:
-                http_function += function_space(2) + 'int {0} = {1}.getValue();\n'\
+                http_function += indent(8) + 'int {0} = {1}.getValue();\n'\
                     .format(variable.name_str + "_int", variable.name_str)
             if variable.var_type == VarType.cpp_object:
-                http_function += function_space(2) + 'long {0} = {1}.getNativeHandler();\n'\
+                http_function += indent(8) + 'long {0} = {1}.getNativeHandler();\n'\
                     .format(variable.name_str + '_handler', variable.name_str)
             if variable.var_type == VarType.cpp_object_array:
-                http_function += function_space(2) + 'long[] {0} = new long[{1}.size()];\n'\
+                http_function += indent(8) + 'long[] {0} = new long[{1}.size()];\n'\
                     .format(variable.name_str + '_handler', variable.name_str)
-                http_function += function_space(2) + 'for (int i = 0; i < {0}.size(); i++){{\n'.format(variable.name_str)
-                http_function += function_space(3) + '{0}[i] = {1}.get(i).getNativeHandler();\n'\
+                http_function += indent(8) + 'for (int i = 0; i < {0}.size(); i++){{\n'.format(variable.name_str)
+                http_function += indent(12) + '{0}[i] = {1}.get(i).getNativeHandler();\n'\
                     .format(variable.name_str + '_handler', variable.name_str)
-                http_function += function_space(2) + '}'
+                http_function += indent(8) + '}'
         input_variable_call = self.__input_variable_call(api.input_var_list)
-        http_function += function_space(2) + 'native{0}(mNativeHandler{1});\n'\
+        http_function += indent(8) + 'native{0}(mNativeHandler{1});\n'\
             .format(api.function_name, input_variable_call)
-        http_function += function_space(1) + "}"
+        http_function += indent(4) + "}"
         return http_function
 
     def __http_function_response(self, api):
-        http_function_response = function_space(1) + 'public void on{0}(boolean success, String error{1}){{\n'\
+        http_function_response = indent(4) + 'public void on{0}(boolean success, String error{1}){{\n'\
             .format(api.function_name, self.__output_variable_declaration(api.output_var_list))
-        http_function_response += function_space(2) + 'if (m{0}Response == null){{\n'.format(api.function_name)
-        http_function_response += function_space(3) + 'return;\n'
-        http_function_response += function_space(2) + '}\n'
-        http_function_response += function_space(2) + 'if (success){\n'
+        http_function_response += indent(8) + 'if (m{0}Response == null){{\n'.format(api.function_name)
+        http_function_response += indent(12) + 'return;\n'
+        http_function_response += indent(8) + '}\n'
+        http_function_response += indent(8) + 'if (success){\n'
         for variable in api.output_var_list:
             if variable.var_type == VarType.cpp_enum:
-                http_function_response += function_space(3) + '{0}.{1} {2} = {0}.{1}.get{1}ByValue({3});\n'\
-                    .format(self.object_name, variable.var_type.to_java_getter_setter_string(), variable.name_str,
+                http_function_response += indent(12) + '{0}.{1} {2} = {0}.{1}.get{1}ByValue({3});\n'\
+                    .format(self.__object_name, variable.var_type.to_java_getter_setter_string(), variable.name_str,
                             variable.name_str + '_int')
             if variable.var_type == VarType.cpp_object:
-                http_function_response += function_space(3) + '{0} {1} = new {0}({1}_handler);\n'\
+                http_function_response += indent(12) + '{0} {1} = new {0}({1}_handler);\n'\
                     .format(variable.var_type.to_java_getter_setter_string(), variable.name_str)
             if variable.var_type == VarType.cpp_object_array:
-                http_function_response += function_space(3) + 'ArrayList<CoreObject> {0} = new ArrayList<>();\n'\
+                http_function_response += indent(12) + 'ArrayList<CoreObject> {0} = new ArrayList<>();\n'\
                     .format(variable.name_str)
-                http_function_response += function_space(3) + 'for (long handler : {0}_handler){{\n'\
+                http_function_response += indent(12) + 'for (long handler : {0}_handler){{\n'\
                     .format(variable.name_str)
-                http_function_response += function_space(4) + '{0}.add(new {1}(handler));\n'\
+                http_function_response += indent(16) + '{0}.add(new {1}(handler));\n'\
                     .format(variable.name_str, variable.var_type.object_class_name)
-                http_function_response += function_space(3) + '}\n'
+                http_function_response += indent(12) + '}\n'
 
-        http_function_response += function_space(3) + 'm{0}Response.onSuccess({1});\n'\
+        http_function_response += indent(12) + 'm{0}Response.onSuccess({1});\n'\
             .format(api.function_name, self.__output_variable_call(api.output_var_list))
-        http_function_response += function_space(2) + '} else {\n'
-        http_function_response += function_space(3) + 'm{0}Response.onFailure(error);\n'.format(api.function_name)
-        http_function_response += function_space(2) + '}\n'
-        http_function_response += function_space(1) + '}'
+        http_function_response += indent(8) + '} else {\n'
+        http_function_response += indent(12) + 'm{0}Response.onFailure(error);\n'.format(api.function_name)
+        http_function_response += indent(8) + '}\n'
+        http_function_response += indent(4) + '}'
 
         return http_function_response
-
-    def generate_http_function_native(self):
-        http_native_function = ''
-        for api in self.apis:
-            http_native_function += function_space(1) + 'private native void native{0}(long handler{1});\n\n'\
-                .format(api.function_name, self.__input_variable_declarations_native(api.input_var_list))
-        return http_native_function
 
     def __variable_type_from_var_list(self, var_list):
         if len(var_list) == 0:
@@ -281,8 +439,35 @@ class JavaManager:
                 vars_declarations += ', ' + var.var_type.to_java_getter_setter_string() + ' ' + var.name_str
         return vars_declarations
 
-    # returns "ById(String id)" or "(String id, String username)" or "()"
+    def __convert_bys_to_input_parameters(self, by_list):
+        """Returns (taskId, username, displayName).
+
+        Args:
+            by_list: Where bys.
+
+        Returns:
+            A string which is like (taskId, username, displayName).
+        """
+        list = []
+        list.append('mNativeHandler')
+        for by in by_list:
+            by = string_utils.to_objc_property_name(by)
+            list.append(by)
+        parameters = ', '.join(list)
+        parameters = '({0})'.format(parameters)
+        return parameters
+
     def __convert_bys_to_string(self, by_string_list, is_native_declaration, is_native_call):
+        """Returns "ById(String id)" or "(String id, String username)" or "()".
+
+        Args:
+            by_string_list: List of string represents where components.
+            is_native_declaration: A bool value indicates it is used in JNI.
+            is_native_call: A bool value indicates it is used in JNI.
+
+        Returns:
+            "ById(String id)" or "(String id, String username)" or "()"
+        """
         if len(by_string_list) == 0:  # ()
             if is_native_declaration:
                 return '(long handler)'
@@ -358,7 +543,7 @@ class JavaManager:
 
     # returns None if not found
     def __java_var_by_name(self, name_string):
-        for java_var in self.java_variable_list:
+        for java_var in self.__java_variable_list:
             if java_var.name_str == self.__by_string_to_java_field_style(name_string):
                 return java_var
         return None
@@ -373,15 +558,28 @@ class JavaManager:
                 var_name_str += name_splits[index - 1].capitalize()
         return var_name_str
 
-    def __rename_object_name_if_list(self):
+    def __java_object_name(self):
+        """Since List is a built-in type in Java, use full name instead.
+
+        Returns:
+            A string represents Java object name.
+        """
         new_object_name = ''
-        if self.object_name == 'List':
+        if self.__object_name == 'List':
             new_object_name = 'com.lesschat.core.task.List'
         else:
-            new_object_name = self.object_name
+            new_object_name = self.__object_name
         return new_object_name
 
     def __to_object_name_java_style(self):
         new_object_name = ''
-        new_object_name = self.object_name[0].lower() + self.object_name[1:]
+        new_object_name = self.__object_name[0].lower() + self.__object_name[1:]
         return new_object_name
+
+    @property
+    def manager_name(self):
+        return self.__manager_name
+
+    @property
+    def apis(self):
+        return self.__apis

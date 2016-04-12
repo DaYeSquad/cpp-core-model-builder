@@ -109,10 +109,10 @@ class JavaClass:
         output_java.write(java_class_start + _JAVA_BR)
 
         output_java.write(self.__constructors())
-        output_java.write(indent(1) + '@Override\n')
-        output_java.write(indent(1) + 'public void dispose() {\n')
+        output_java.write(indent(4) + '@Override\n')
+        output_java.write(indent(4) + 'public void dispose() {\n')
         output_java.write(indent(2) + 'nativeRelease{0}(mNativeHandler);\n'.format(self.__class_name))
-        output_java.write(indent(1) + '}' + _JAVA_BR)
+        output_java.write(indent(4) + '}' + _JAVA_BR)
 
         for java_enum in self.__java_enum_list:
             output_java.write(java_enum.generate_java_enum(_JAVA_SPACE) + '\n')
@@ -122,7 +122,7 @@ class JavaClass:
 
         output_java.write(_JAVA_BR)
         output_java.write(self.__native_constructors())
-        output_java.write(indent(1) + 'private native void nativeRelease{0}(long handler);'.format(self.__class_name) + _JAVA_BR)
+        output_java.write(indent(4) + 'private native void nativeRelease{0}(long handler);'.format(self.__class_name) + _JAVA_BR)
 
         for java_var in self.__java_var_list:
             output_java.write(java_var.native_getter() + _JAVA_BR)
@@ -140,11 +140,11 @@ class JavaClass:
                 mNativeHandler = nativeHandler;
             }
         """
-        constructor = indent(1) + 'public {0}() {{ \n        mNativeHandler = nativeCreate{0}(); \n    }}'\
+        constructor = indent(4) + 'public {0}() {{ \n        mNativeHandler = nativeCreate{0}(); \n    }}'\
             .format(self.__class_name) + _JAVA_BR
-        constructor += indent(1) + 'public {0}(long nativeHandler) {{\n'.format(self.__class_name)
+        constructor += indent(4) + 'public {0}(long nativeHandler) {{\n'.format(self.__class_name)
         constructor += indent(2) + 'mNativeHandler = nativeHandler;\n'
-        constructor += indent(1) + '}\n\n'
+        constructor += indent(4) + '}\n\n'
         return constructor
 
     def __constructors_v2(self):
@@ -192,8 +192,8 @@ class JavaClass:
         return constructor
 
     def __constructor_with_variable(self):
-        constructor = indent(1) + 'public {0}('.format(self.__class_name)
-        space = len(indent(1) + 'public {0}('.format(self.__class_name))
+        constructor = indent(4) + 'public {0}('.format(self.__class_name)
+        space = len(indent(4) + 'public {0}('.format(self.__class_name))
         space_str = ''
         for space_index in range(0, space):
             space_str += ' '
@@ -224,18 +224,18 @@ class JavaClass:
                 constructor += java_var.name_str + ', '
         constructor = constructor[:-2]
         constructor += ');\n'
-        constructor += indent(1) + '}' + _JAVA_BR
+        constructor += indent(4) + '}' + _JAVA_BR
         return constructor
 
     def __native_constructors(self):
-        native_constructor = indent(1) + 'private native long nativeCreate{0}();'.format(self.__class_name) + _JAVA_BR
+        native_constructor = indent(4) + 'private native long nativeCreate{0}();'.format(self.__class_name) + _JAVA_BR
         # native_constructor += self.__native_constructor_with_variable()
         return native_constructor
 
     def __native_constructor_with_variable(self):
         space_str = ''
-        native_constructor = indent(1) + 'private native long nativeCreate{0}('.format(self.__class_name)
-        for space_index in range(0, len(indent(1) + 'private native long nativeCreate{0}('.format(self.__class_name))):
+        native_constructor = indent(4) + 'private native long nativeCreate{0}('.format(self.__class_name)
+        for space_index in range(0, len(indent(4) + 'private native long nativeCreate{0}('.format(self.__class_name))):
             space_str += ' '
         for index in range(0, len(self.__java_var_list)):
             java_var = self.__java_var_list[index]
@@ -259,30 +259,30 @@ class JavaClass:
         return native_constructor
 
     def __initwith(self):
-        initwith = indent(1) + 'public boolean initWithJson(String json) { return nativeInitWithJson(mNativeHandler, json); }'
+        initwith = indent(4) + 'public boolean initWithJson(String json) { return nativeInitWithJson(mNativeHandler, json); }'
         initwith += _JAVA_BR
         return initwith
 
     def __native_initwith(self):
-        native_initwith = indent(1) + 'private native boolean nativeInitWithJson(long handler, String json);'
+        native_initwith = indent(4) + 'private native boolean nativeInitWithJson(long handler, String json);'
         native_initwith += _JAVA_BR
         return native_initwith
 
     def __parcelable(self):
-        parcelable = indent(1) + 'public {0}(Parcel in) {{\n'.format(self.__class_name)
+        parcelable = indent(4) + 'public {0}(Parcel in) {{\n'.format(self.__class_name)
         parcelable += indent(2) + 'mNativeHandler = in.readLong();\n'
-        parcelable += indent(1) + '}' + _JAVA_BR
-        parcelable += indent(1) + 'public static final Parcelable.Creator<{0}> CREATOR = new Parcelable.Creator<{0}>() {{\n\n'\
+        parcelable += indent(4) + '}' + _JAVA_BR
+        parcelable += indent(4) + 'public static final Parcelable.Creator<{0}> CREATOR = new Parcelable.Creator<{0}>() {{\n\n'\
             .format(self.__class_name)
         parcelable += indent(2) + 'public {0} createFromParcel(Parcel in) {{ return new {0}(in); }}\n\n'\
             .format(self.__class_name)
         parcelable += indent(2) + 'public {0}[] newArray(int size) {{ return new {0}[size]; }}\n'\
             .format(self.__class_name)
-        parcelable += indent(1) + '};' + _JAVA_BR
-        parcelable += indent(1) + '@Override\n'
-        parcelable += indent(1) + 'public int describeContents() { return 0; }' + _JAVA_BR
-        parcelable += indent(1) + '@Override\n'
-        parcelable += indent(1) + 'public void writeToParcel(Parcel parcel, int i) { parcel.writeLong(mNativeHandler); }\n'
+        parcelable += indent(4) + '};' + _JAVA_BR
+        parcelable += indent(4) + '@Override\n'
+        parcelable += indent(4) + 'public int describeContents() { return 0; }' + _JAVA_BR
+        parcelable += indent(4) + '@Override\n'
+        parcelable += indent(4) + 'public void writeToParcel(Parcel parcel, int i) { parcel.writeLong(mNativeHandler); }\n'
         parcelable += '\n'
         return parcelable
 
@@ -312,23 +312,23 @@ class JavaClass:
         java_class_start = 'public class ' + manager_name + ' extends CoreObject {' + _JAVA_BR
         java_class_end = '}'
 
-        java_manager_constructor = 'public static {0} getInstance() {{ return Director.getInstance().get{0}();}}'
+        java_manager_constructor = 'public static {0} getInstance() {{ return Director.getInstance().get{0}(); }}'
         java_override = '@Override\n'
         java_manager_dispose = 'public void dispose() { }' + _JAVA_BR
 
         output_java.write(java_import)
         output_java.write(java_class_start)
 
-        output_java.write(self.__java_manager_or_none.generate_http_variable())
+        output_java.write(self.__java_manager_or_none.generate_http_variables())
         output_java.write('\n')
 
-        output_java.write(indent(1) + java_manager_constructor.format(manager_name) + _JAVA_BR)
-        output_java.write(indent(1) + java_override)
-        output_java.write(indent(1) + java_manager_dispose)
+        output_java.write(indent(4) + java_manager_constructor.format(manager_name) + _JAVA_BR)
+        output_java.write(indent(4) + java_override)
+        output_java.write(indent(4) + java_manager_dispose)
 
-        output_java.write(self.__java_manager_or_none.generate_fetch())
+        output_java.write(self.__java_manager_or_none.generate_fetch_v2())
         output_java.write(self.__java_manager_or_none.generate_http_function())
-        output_java.write(self.__java_manager_or_none.generate_fetch_native())
+        output_java.write(self.__java_manager_or_none.generate_fetch_native_v2())
         output_java.write(self.__java_manager_or_none.generate_http_function_native())
 
         output_java.write(java_class_end)
