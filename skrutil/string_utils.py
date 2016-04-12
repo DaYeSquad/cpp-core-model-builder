@@ -1,9 +1,18 @@
+#!/usr/bin/env python
+
 import re
 import string
 
 
-# "UserGroup" to "userGroup"
 def first_char_to_lower(string):
+    """ "UserGroup" to "userGroup"
+
+    Args:
+        string: A string.
+
+    Returns:
+        A string whose first letter is lower case.
+    """
     if len(string) == 0:
         return string
     else:
