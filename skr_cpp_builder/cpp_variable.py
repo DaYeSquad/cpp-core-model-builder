@@ -8,8 +8,7 @@ from skrutil import string_utils
 
 
 class VarType:
-    """
-    Describes C++ field in model xml file.
+    """Describes C++ field in model xml file.
     """
     cpp_bool = 1
     cpp_int = 2

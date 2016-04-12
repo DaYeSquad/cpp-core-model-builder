@@ -62,8 +62,7 @@ class JavaClass:
             output_java.write(java_enum.generate_android_enum(_JAVA_SPACE) + '\n')
 
         for java_var in self.java_var_list:
-            output_java.write(java_var.getter() + _JAVA_BR)
-            # output_java.write(java_var.setter() + _JAVA_BR)
+            output_java.write(java_var.getter_v2() + _JAVA_BR)
 
         output_java.write(_JAVA_BR)
         output_java.write(self.__native_constructors())
@@ -72,7 +71,6 @@ class JavaClass:
 
         for java_var in self.java_var_list:
             output_java.write(java_var.native_getter() + _JAVA_BR)
-            # output_java.write(java_var.native_setter() + _JAVA_BR)
 
         output_java.write(self.__parcelable())
 
