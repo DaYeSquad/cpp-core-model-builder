@@ -88,6 +88,11 @@ class JniModelXmlParser:
                     # parse all <fetch/>
                     for fetch_node in manager_or_none.findall('fetch'):
                         is_plural = False
+
+                        is_plural_attr = fetch_node.get('plural')
+                        if is_plural_attr == 'true':
+                            is_plural = True
+
                         by = fetch_node.get('by')
                         alias = fetch_node.get('alias')
                         fetch_command = JniManagerFetchCommand(is_plural, by, alias)

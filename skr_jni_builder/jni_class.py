@@ -151,8 +151,11 @@ class JniClass:
         output_header.write(self.__end_def_cpp + '\n')
         output_header.write(end_def_guard + '\n')
 
-    def generate_manager_implementation(self):
-        """Gets JNI object manager implementation which is used before 4.0.
+    def generate_manager_implementation(self, version=5.0):
+        """Gets JNI object manager implementation.
+
+        Args:
+            version: A float version number of <JniModelXmlParser>.
 
         Returns:
             A string which is JNI object manager implementation.
@@ -178,7 +181,7 @@ class JniClass:
         output_header.write(self.__def_cpp)
         output_header.write(_JNI_BR)
 
-        output_header.write(jni_manager.generate_fetch_implementations())
+        output_header.write(jni_manager.generate_fetch_implementations(version))
         output_header.write(jni_manager.generate_http_function_implementations())
 
         output_header.write(self.__end_def_cpp + '\n')
