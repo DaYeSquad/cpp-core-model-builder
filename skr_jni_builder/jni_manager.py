@@ -400,25 +400,4 @@ class JniManager:
 
     # return signature, for example: J/Z/V
     def __convert_output_var_to_signature(self, var_type):
-        if var_type.value == 1:
-            return 'Z'
-        elif var_type.value == 2:
-            return 'I'
-        elif var_type.value == 3:
-            return 'Ljava/lang/String;'
-        elif var_type.value == 4:
-            return 'I'
-        elif var_type.value == 5:
-            return '[Ljava/lang/String;'
-        elif var_type.value == 6:
-            return 'J'
-        elif var_type.value == 7:
-            return '[J'
-        elif var_type.value == 8:
-            return 'J'
-        else:
-            print 'Unsupported value'
-
-
-
-
+        return var_type.to_jni_signature()

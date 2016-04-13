@@ -14,13 +14,21 @@ from skr_jni_builder.jni_manager import JniApiDescription
 from jni_class import JniClass
 
 
-class JniModelXmlParse:
+class JniModelXmlParser:
     """Parse XML file and generates related JNI files. Pairs with <JavaModelXmlParser>.
     """
     def __init__(self, version):
         self.__version = version
 
     def parse(self, directory):
+        """Parses module XML file and gets code for JNI implementation.
+
+        Args:
+            directory: The directory which is full path of XML file.
+
+        Returns:
+            A string which is JNI implementation.
+        """
         # create core folder if not exists and remove last build
         jni_dir_path = 'build/jni'
         io_utils.make_directory_if_not_exists(jni_dir_path)
@@ -124,15 +132,22 @@ class JniModelXmlParse:
                         api = JniApiDescription(function_name, input_var_list, output_var_list)
                         jni_manager.add_api_description(api)
 
-                # write jni wrapper header
                 jni_wrapper = JniClass(group_name, class_name, jni_var_list, jni_manager)
-                jni_wrapper.generate_header()
+                if self.__version < 5.0:
+                    # write jni wrapper header
+                    jni_wrapper.generate_header()
 
-                # write jni wrapper implementation
-                jni_wrapper.generate_implementation()
+                    # write jni wrapper implementation
+                    jni_wrapper.generate_implementation()
 
-                # write jni wrapper manager header
-                jni_wrapper.generate_manager_header()
+                    # write jni wrapper manager header
+                    jni_wrapper.generate_manager_header()
 
-                # write jni wrapper manager implementation
-                jni_wrapper.generate_manager_implementation()
+                    # write jni wrapper manager implementation
+                    jni_wrapper.generate_manager_implementation()
+                else:
+                    # write jni helper implementation
+                    jni_wrapper.generate_jni_helper_implementation()
+
+                    # write jni wrapper manager implementation
+                    jni_wrapper.generate_manager_implementation()

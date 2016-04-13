@@ -349,6 +349,26 @@ class VarType:
         else:
             print 'Unsupported value'
 
+    def to_jni_signature(self):
+        if self.value == 1:
+            return 'Z'
+        elif self.value == 2:
+            return 'I'
+        elif self.value == 3:
+            return 'Ljava/lang/String;'
+        elif self.value == 4:
+            return 'I'
+        elif self.value == 5:
+            return '[Ljava/lang/String;'
+        elif self.value == 6:
+            return 'J'
+        elif self.value == 7:
+            return '[J'
+        elif self.value == 8:
+            return 'J'
+        else:
+            skr_log_warning('Unsupported value')
+
 
 class CppVariable:
 

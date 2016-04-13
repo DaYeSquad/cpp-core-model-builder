@@ -1,166 +1,244 @@
+#!/usr/bin/env python
+
 from skr_cpp_builder.cpp_class import CppClass
 from skrutil import string_utils
+from skrutil.string_utils import indent
 
 _JNI_BR = '\n\n'
 _JNI_SPACE = '  '
 
 
 class JniClass:
+    """JNI part generator, responsible for generating JNI source code for Object and ObjectManager.
+    """
+
     def __init__(self, group_name, class_name, jni_variable_list, jni_manager_or_none):
-        self.group_name = group_name
-        self.class_name = class_name
-        self.jni_var_list = jni_variable_list
-        self.jni_manager_or_none = jni_manager_or_none
+        """Init JniClass with necessary parameters.
 
-        if self.jni_manager_or_none is not None:
-            self.jni_manager_or_none.set_object_name(class_name, class_name + 's')
-            self.jni_manager_or_none.set_jni_variable_list(jni_variable_list)
-            self.jni_manager_or_none.set_group_name(group_name)
+        Args:
+            group_name: A string which is the C++ folder name.
+            class_name: A string which is the C++ class name.
+            jni_variable_list: List of <JniVariable>.
+            jni_manager_or_none: <JniManager>.
+        """
+        self.__group_name = group_name
+        self.__class_name = class_name
+        self.__jni_var_list = jni_variable_list
+        self.__jni_manager_or_none = jni_manager_or_none
 
-        self.def_cpp = '#ifdef __cplusplus\nextern "C" {\n#endif'
-        self.end_def_cpp = '#ifdef __cplusplus\n}\n#endif'
+        if self.__jni_manager_or_none is not None:
+            self.__jni_manager_or_none.set_object_name(class_name, class_name + 's')
+            self.__jni_manager_or_none.set_jni_variable_list(jni_variable_list)
+            self.__jni_manager_or_none.set_group_name(group_name)
+
+        self.__def_cpp = '#ifdef __cplusplus\nextern "C" {\n#endif'
+        self.__end_def_cpp = '#ifdef __cplusplus\n}\n#endif'
 
     def generate_header(self):
-        file_name = 'com_lesschat_core_{0}_{1}.h'.format(self.group_name, self.class_name)
+        """Gets JNI object header. It is not required, so since 5.0, we don't use this method anymore.
+
+        Returns:
+            A string which is the declaration of JNI object header.
+        """
+        file_name = 'com_lesschat_core_{0}_{1}.h'.format(self.__group_name, self.__class_name)
         file_path = 'build/jni/' + file_name
         output_header = open(file_path, 'w')
 
         def_guard = '#ifndef _Included_com_lesschat_core_{0}_{1}\n#define _Included_com_lesschat_core_{0}_{1}'.format(
-                self.group_name, self.class_name)
+                self.__group_name, self.__class_name)
 
         end_def_guard = '#endif'
 
         output_header.write('#include <jni.h>')
         output_header.write(_JNI_BR)
         output_header.write(def_guard + '\n')
-        output_header.write(self.def_cpp + _JNI_BR)
-
-        # create method
-        # output_header.write(self.create())
-        # output_header.write(_JNI_BR)
+        output_header.write(self.__def_cpp + _JNI_BR)
 
         # release method
-        output_header.write(self.release())
+        output_header.write(self.__release())
         output_header.write(_JNI_BR)
 
-        for jni_var in self.jni_var_list:
+        for jni_var in self.__jni_var_list:
             output_header.write(jni_var.getter())
             output_header.write(_JNI_BR)
 
         output_header.write(_JNI_BR)
-        output_header.write(self.end_def_cpp + '\n')
+        output_header.write(self.__end_def_cpp + '\n')
         output_header.write(end_def_guard + '\n')
 
     def generate_implementation(self):
-        file_name = 'com_lesschat_core_{0}_{1}.cc'.format(self.group_name, self.class_name)
+        """Gets JNI implementation which is used before 4.0.
+
+        Returns:
+            A string which is JNI object implementation.
+        """
+        file_name = 'com_lesschat_core_{0}_{1}.cc'.format(self.__group_name, self.__class_name)
         file_path = 'build/jni/' + file_name
         output_header = open(file_path, 'w')
 
-        style_class_name = string_utils.cpp_class_name_to_cpp_file_name(self.class_name)
-        header_name = 'com_lesschat_core_{0}_{1}.h'.format(self.group_name, self.class_name)
-        cpp_name = '{0}/{1}.h'.format(self.group_name, style_class_name)
+        style_class_name = string_utils.cpp_class_name_to_cpp_file_name(self.__class_name)
+        header_name = 'com_lesschat_core_{0}_{1}.h'.format(self.__group_name, self.__class_name)
+        cpp_name = '{0}/{1}.h'.format(self.__group_name, style_class_name)
         output_header.write('#include "{0}"'.format(header_name) + '\n')
         output_header.write('#include "{0}"'.format(cpp_name) + '\n')
         output_header.write('#include "utils/android/jni_helper.h"')
 
         output_header.write(_JNI_BR)
-        output_header.write(self.def_cpp + _JNI_BR)
-
-        # create method
-        # output_header.write(self.create_impl())
-        # output_header.write(_JNI_BR)
+        output_header.write(self.__def_cpp + _JNI_BR)
 
         # release method
-        output_header.write(self.release_impl())
+        output_header.write(self.__release_impl())
         output_header.write(_JNI_BR)
 
-        for jni_var in self.jni_var_list:
+        for jni_var in self.__jni_var_list:
             output_header.write(jni_var.getter_impl())
             output_header.write(_JNI_BR)
 
-        output_header.write(self.end_def_cpp)
+        output_header.write(self.__end_def_cpp)
+
+    def generate_jni_helper_implementation(self):
+        """Gets JNI helper object converting method implementation & declaration.
+
+        Returns:
+            A string which is JNI helper object converting method implementation & declaration.
+        """
+        file_name = 'jni_helper_{0}.cc'.format(self.__class_name)
+        file_path = 'build/jni/' + file_name
+        output_cc = open(file_path, 'w')
+
+        impl = '// Copy belows to core/utils/android/jni_helper.h\n\n\n'
+
+        impl += 'static jobject GetJ{0}ByCore{0}(const {0}& {1});\n\n\n'.format(
+            self.__class_name, string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
+
+        impl += '// Copy belows to core/utils/android/jni_helper.cc\n\n\n'
+
+        impl += 'jobject JniHelper::GetJ{0}ByCore{0}(const lesschat::{0}& {1}) {{\n'.format(
+            self.__class_name, string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
+        impl += indent(2) + 'JNIEnv* env = GetJniEnv();\n'
+        impl += indent(2) + 'if (!env) {\n'
+        impl += indent(4) + 'sakura::log_error("Failed to get JNIEnv");\n'
+        impl += indent(4) + 'return nullptr;\n'
+        impl += indent(2) + '}\n\n'
+        impl += indent(2) + 'jclass {0}Jclass = JniReferenceCache::SharedCache()->{1}_jclass();\n'.format(
+            string_utils.first_char_to_lower(self.__class_name),
+            string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
+        impl += indent(2) + 'jmethodID {0}ConstructorMethodID = env->GetMethodID({0}Jclass, "<init>", "('.format(
+            string_utils.first_char_to_lower(self.__class_name))
+        for jni_var in self.__jni_var_list:
+            impl += jni_var.var_type.to_jni_signature()
+        impl += ')V");\n\n'
+
+        for jni_var in self.__jni_var_list:
+            impl += indent(2) + jni_var.jni_var_assignment_by_cpp_variable() + '\n'
+
+        impl += '\n'
+
+        constructor_fst_line = indent(2) + 'jobject j{0}Object = env->NewObject('.format(self.__class_name)
+        num_constructor_indent = len(constructor_fst_line)
+
+        impl += constructor_fst_line
+
+        parameters = []
+        jclass_instance_name = '{0}Jclass'.format(string_utils.first_char_to_lower(self.__class_name))
+        constructor_method_id = '{0}ConstructorMethodID'.format(string_utils.first_char_to_lower(self.__class_name))
+        parameters.append(constructor_method_id)
+        for jni_var in self.__jni_var_list:
+            parameters.append('j{0}'.format(string_utils.first_char_to_upper(jni_var.name)))
+
+        impl += jclass_instance_name + ',\n'
+        for parameter in parameters:
+            impl += indent(num_constructor_indent) + parameter + ',\n'
+        impl = impl[:-2]
+        impl += ');'
+        impl += '\n'
+
+        for jni_var in self.__jni_var_list:
+            delete_method = jni_var.jni_delete_local_ref()
+            if delete_method != '':
+                impl += indent(2) + delete_method + '\n'
+        impl += '\n'
+
+        impl += indent(2) + 'return j{0}Object;'.format(self.__class_name)
+        impl += '\n'
+        impl += '}\n'
+        impl += '\n'
+
+        output_cc.write(impl)
 
     def generate_manager_header(self):
+        """Gets JNI object manager header. It is not required, so since 5.0, we don't use this method anymore.
 
-        if self.jni_manager_or_none is None:
+        Returns:
+            A string which is the declaration of JNI object manager header.
+        """
+        if self.__jni_manager_or_none is None:
             return
 
-        jni_manager = self.jni_manager_or_none
+        jni_manager = self.__jni_manager_or_none
 
-        file_name = 'com_lesschat_core_{0}_{1}Manager.h'.format(self.group_name, self.class_name)
+        file_name = 'com_lesschat_core_{0}_{1}Manager.h'.format(self.__group_name, self.__class_name)
         file_path = 'build/jni/' + file_name
         output_header = open(file_path, 'w')
 
         def_header = '#ifndef _Included_com_lesschat_core_{0}_{1}Manager\n' \
                      '#define _Included_com_lesschat_core_{0}_{1}Manager'
-        def_guard = def_header.format(self.group_name, self.class_name)
+        def_guard = def_header.format(self.__group_name, self.__class_name)
         end_def_guard = '#endif'
 
         output_header.write('#include <jni.h>' + _JNI_BR)
         output_header.write(def_guard + '\n')
-        output_header.write(self.def_cpp + _JNI_BR)
+        output_header.write(self.__def_cpp + _JNI_BR)
 
         output_header.write(jni_manager.generate_fetch_declarations())
         output_header.write(jni_manager.generate_http_function_declarations())
 
-        output_header.write(self.end_def_cpp + '\n')
+        output_header.write(self.__end_def_cpp + '\n')
         output_header.write(end_def_guard + '\n')
 
     def generate_manager_implementation(self):
-        if self.jni_manager_or_none is None:
+        """Gets JNI object manager implementation which is used before 4.0.
+
+        Returns:
+            A string which is JNI object manager implementation.
+        """
+        if self.__jni_manager_or_none is None:
             return
 
-        jni_manager = self.jni_manager_or_none
+        jni_manager = self.__jni_manager_or_none
 
-        file_name = 'com_lesschat_core_{0}_{1}Manager.cc'.format(self.group_name, self.class_name)
+        file_name = 'com_lesschat_core_{0}_{1}Manager.cc'.format(self.__group_name, self.__class_name)
         file_path = 'build/jni/' + file_name
         output_header = open(file_path, 'w')
 
-        header_name = '#include "com_lesschat_core_{0}_{1}Manager.h"\n'.format(self.group_name, self.class_name)
+        header_name = '#include "com_lesschat_core_{0}_{1}Manager.h"\n'.format(self.__group_name, self.__class_name)
         cpp_name = '#include "{0}/{1}_manager.h"\n'\
-            .format(self.group_name, CppClass.convert_class_name_to_file_name(self.class_name))
+            .format(self.__group_name, CppClass.convert_class_name_to_file_name(self.__class_name))
 
         output_header.write(header_name)
         output_header.write(cpp_name)
         output_header.write('#include "utils/android/jni_helper.h"')
         output_header.write(_JNI_BR)
 
-        output_header.write(self.def_cpp)
+        output_header.write(self.__def_cpp)
         output_header.write(_JNI_BR)
 
         output_header.write(jni_manager.generate_fetch_implementations())
         output_header.write(jni_manager.generate_http_function_implementations())
 
-        output_header.write(self.end_def_cpp + '\n')
+        output_header.write(self.__end_def_cpp + '\n')
 
-    def release(self):
-        return self.release_method_name() + '\n' + '  (JNIEnv *, jobject, jlong);'
+    def __release(self):
+        return self.__release_method_name() + '\n' + '  (JNIEnv *, jobject, jlong);'
 
-    def release_method_name(self):
+    def __release_method_name(self):
         return 'JNIEXPORT void JNICALL Java_com_lesschat_core_{0}_{1}_nativeRelease{1}'.\
-            format(self.group_name, self.class_name)
+            format(self.__group_name, self.__class_name)
 
-    # def create(self):
-    #     return self.create_method_name() + '\n' + '  (JNIEnv *, jobject);'
-    #
-    # def create_method_name(self):
-    #     return 'JNIEXPORT jlong JNICALL Java_com_lesschat_core_{0}_{1}_nativeCreate{1}'.\
-    #         format(self.group_name, self.class_name)
-    #
-    # def create_impl(self):
-    #     method_name = self.create_method_name()
-    #     para_name = '  (JNIEnv *env, jobject thiz)'
-    #     step_1 = 'lesschat::{0}* {1} = new lesschat::{0}();'\
-    #         .format(self.class_name, string_utils.first_char_to_lower(self.class_name))
-    #     step_2 = 'return reinterpret_cast<jlong>({0});'.format(string_utils.first_char_to_lower(self.class_name))
-    #     return method_name + '\n' + para_name + '{{\n  {0}\n  {1}\n}}'.format(step_1, step_2)
-
-    def release_impl(self):
-        method_name = self.release_method_name()
+    def __release_impl(self):
+        method_name = self.__release_method_name()
         para_name = '  (JNIEnv *env, jobject thiz, jlong handler)'
         step_1 = 'lesschat::{0}* {1} = reinterpret_cast<lesschat::{0}*>(handler);'\
-            .format(self.class_name, string_utils.first_char_to_lower(self.class_name))
-        step_2 = 'LCC_SAFE_DELETE({0});'.format(string_utils.first_char_to_lower(self.class_name))
+            .format(self.__class_name, string_utils.first_char_to_lower(self.__class_name))
+        step_2 = 'LCC_SAFE_DELETE({0});'.format(string_utils.first_char_to_lower(self.__class_name))
         return method_name + '\n' + para_name + '{{\n  {0}\n  {1}\n}}'.format(step_1, step_2)
-
-
