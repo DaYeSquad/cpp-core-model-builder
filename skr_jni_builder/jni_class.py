@@ -108,60 +108,15 @@ class JniClass:
 
         impl = '// Copy belows to core/utils/android/jni_helper.h\n\n\n'
 
-        impl += 'static jobject GetJ{0}ByCore{0}(const {0}& {1});\n\n\n'.format(
-            self.__class_name, string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
+        impl += '{0}\n\n'.format(self.__jni_get_jobject_by_core_object_declaration())
+        impl += self.__jni_get_jobjects_array_by_core_objects_declaration() + '\n'
+        impl += '\n\n\n'
 
         impl += '// Copy belows to core/utils/android/jni_helper.cc\n\n\n'
+        impl += self.__jni_get_jobject_by_core_object_implementation()
 
-        impl += 'jobject JniHelper::GetJ{0}ByCore{0}(const lesschat::{0}& {1}) {{\n'.format(
-            self.__class_name, string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
-        impl += indent(2) + 'JNIEnv* env = GetJniEnv();\n'
-        impl += indent(2) + 'if (!env) {\n'
-        impl += indent(4) + 'sakura::log_error("Failed to get JNIEnv");\n'
-        impl += indent(4) + 'return nullptr;\n'
-        impl += indent(2) + '}\n\n'
-        impl += indent(2) + 'jclass {0}Jclass = JniReferenceCache::SharedCache()->{1}_jclass();\n'.format(
-            string_utils.first_char_to_lower(self.__class_name),
-            string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
-        impl += indent(2) + 'jmethodID {0}ConstructorMethodID = env->GetMethodID({0}Jclass, "<init>", "('.format(
-            string_utils.first_char_to_lower(self.__class_name))
-        for jni_var in self.__jni_var_list:
-            impl += jni_var.var_type.to_jni_signature()
-        impl += ')V");\n\n'
-
-        for jni_var in self.__jni_var_list:
-            impl += indent(2) + jni_var.jni_var_assignment_by_cpp_variable() + '\n'
-
-        impl += '\n'
-
-        constructor_fst_line = indent(2) + 'jobject j{0}Object = env->NewObject('.format(self.__class_name)
-        num_constructor_indent = len(constructor_fst_line)
-
-        impl += constructor_fst_line
-
-        parameters = []
-        jclass_instance_name = '{0}Jclass'.format(string_utils.first_char_to_lower(self.__class_name))
-        constructor_method_id = '{0}ConstructorMethodID'.format(string_utils.first_char_to_lower(self.__class_name))
-        parameters.append(constructor_method_id)
-        for jni_var in self.__jni_var_list:
-            parameters.append('j{0}'.format(string_utils.first_char_to_upper(jni_var.name)))
-
-        impl += jclass_instance_name + ',\n'
-        for parameter in parameters:
-            impl += indent(num_constructor_indent) + parameter + ',\n'
-        impl = impl[:-2]
-        impl += ');'
-        impl += '\n'
-
-        for jni_var in self.__jni_var_list:
-            delete_method = jni_var.jni_delete_local_ref()
-            if delete_method != '':
-                impl += indent(2) + delete_method + '\n'
-        impl += '\n'
-
-        impl += indent(2) + 'return j{0}Object;'.format(self.__class_name)
-        impl += '\n'
-        impl += '}\n'
+        impl += '\n\n'
+        impl += self.__jni_get_jobjects_array_by_core_objects_implementation()
         impl += '\n'
 
         output_cc.write(impl)
@@ -242,3 +197,95 @@ class JniClass:
             .format(self.__class_name, string_utils.first_char_to_lower(self.__class_name))
         step_2 = 'LCC_SAFE_DELETE({0});'.format(string_utils.first_char_to_lower(self.__class_name))
         return method_name + '\n' + para_name + '{{\n  {0}\n  {1}\n}}'.format(step_1, step_2)
+
+    def __jni_get_jobject_by_core_object_declaration(self):
+        return 'static jobject GetJ{0}ByCore{0}(const {0}& {1});'.format(
+            self.__class_name, string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
+
+    def __jni_get_jobject_by_core_object_implementation(self):
+        impl = 'jobject JniHelper::GetJ{0}ByCore{0}(const lesschat::{0}& {1}) {{\n'.format(
+            self.__class_name, string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
+        impl += indent(2) + 'JNIEnv* env = GetJniEnv();\n'
+        impl += indent(2) + 'if (!env) {\n'
+        impl += indent(4) + 'sakura::log_error("Failed to get JNIEnv");\n'
+        impl += indent(4) + 'return nullptr;\n'
+        impl += indent(2) + '}\n\n'
+        impl += indent(2) + 'jclass {0}Jclass = JniReferenceCache::SharedCache()->{1}_jclass();\n'.format(
+            string_utils.first_char_to_lower(self.__class_name),
+            string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
+        impl += indent(2) + 'jmethodID {0}ConstructorMethodID = env->GetMethodID({0}Jclass, "<init>", "('.format(
+            string_utils.first_char_to_lower(self.__class_name))
+        for jni_var in self.__jni_var_list:
+            impl += jni_var.var_type.to_jni_signature()
+        impl += ')V");\n\n'
+
+        for jni_var in self.__jni_var_list:
+            impl += indent(2) + jni_var.jni_var_assignment_by_cpp_variable() + '\n'
+
+        impl += '\n'
+
+        constructor_fst_line = indent(2) + 'jobject j{0}Object = env->NewObject('.format(self.__class_name)
+        num_constructor_indent = len(constructor_fst_line)
+
+        impl += constructor_fst_line
+
+        parameters = []
+        jclass_instance_name = '{0}Jclass'.format(string_utils.first_char_to_lower(self.__class_name))
+        constructor_method_id = '{0}ConstructorMethodID'.format(string_utils.first_char_to_lower(self.__class_name))
+        parameters.append(constructor_method_id)
+        for jni_var in self.__jni_var_list:
+            parameters.append('j{0}'.format(string_utils.first_char_to_upper(jni_var.name)))
+
+        impl += jclass_instance_name + ',\n'
+        for parameter in parameters:
+            impl += indent(num_constructor_indent) + parameter + ',\n'
+        impl = impl[:-2]
+        impl += ');'
+        impl += '\n'
+
+        for jni_var in self.__jni_var_list:
+            delete_method = jni_var.jni_delete_local_ref()
+            if delete_method != '':
+                impl += indent(2) + delete_method + '\n'
+        impl += '\n'
+
+        impl += indent(2) + 'return j{0}Object;'.format(self.__class_name)
+        impl += '\n'
+        impl += '}\n'
+        impl += '\n'
+        return impl
+
+    def __jni_get_jobjects_array_by_core_objects_declaration(self):
+        return 'static jobjectArray GetJ{0}sArrayByCore{0}s(const std::vector<std::unique_ptr<{0}>>& {1}s);'.format(
+            self.__class_name, string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
+
+    def __jni_get_jobjects_array_by_core_objects_implementation(self):
+        object_name = string_utils.cpp_class_name_to_cpp_file_name(self.__class_name)
+
+        impl = 'jobjectArray JniHelper::GetJ{0}sArrayByCore{0}s(const std::vector<std::unique_ptr<{0}>>& {1}s) {{'.format(
+            self.__class_name, object_name)
+
+        impl += '\n'
+        impl += indent(2) + 'jclass {0}Jclass = JniReferenceCache::SharedCache()->{1}_jclass();\n'.format(
+            string_utils.first_char_to_lower(self.__class_name),
+            object_name)
+
+        impl += indent(2) + 'JNIEnv* env = GetJniEnv();\n'
+        impl += indent(2) + 'if (!env) {\n'
+        impl += indent(4) + 'return env->NewObjectArray(0, {0}Jclass, NULL);\n'.format(
+            string_utils.first_char_to_lower(self.__class_name))
+        impl += indent(2) + '}\n\n'
+        impl += indent(2) + 'jobjectArray jobjs = env->NewObjectArray({0}s.size(), {1}Jclass, NULL);\n\n'.format(
+            object_name,
+            string_utils.first_char_to_lower(self.__class_name))
+
+        impl += indent(2) + 'jsize i = 0;\n'
+        impl += indent(2) + 'for (auto it = {0}s.begin(); it != {0}s.end(); ++it) {{\n'.format(object_name)
+        impl += indent(4) + 'jobject j{0} = GetJ{0}ByCore{0}(**it);\n'.format(self.__class_name)
+        impl += indent(4) + 'env->SetObjectArrayElement(jobjs, i, j{0});\n'.format(self.__class_name)
+        impl += indent(4) + 'env->DeleteLocalRef(j{0});\n'.format(self.__class_name)
+        impl += indent(4) + '++i;\n'
+        impl += indent(2) + '}\n'
+        impl += indent(2) + 'return jobjs;\n'
+        impl += '}'
+        return impl
