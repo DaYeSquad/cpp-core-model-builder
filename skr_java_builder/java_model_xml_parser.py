@@ -24,7 +24,7 @@ class JavaModelXmlParser:
     def __init__(self, version):
         """Init parser and generator with version number.
         Args:
-            version: An int that describes version number of module builder, it does not have other usage now.
+            version: A float that describes version number of module builder, it does not have other usage now.
         """
         self.__version = version
 
@@ -144,6 +144,12 @@ class JavaModelXmlParser:
                         java_manager.add_api_description(api)
 
                 java_class = JavaClass(group_name, class_name, java_var_list, java_enum_list, java_manager)
-                java_class.generate_java_v2()
 
-                java_class.generate_manager()
+                if self.__version < 5.0:
+                    # Inherit from CoreObject
+                    java_class.generate_java()
+                    java_class.generate_manager(self.__version)
+                else:
+                    # Inherit from LessChatObject
+                    java_class.generate_java_v2()
+                    java_class.generate_manager()

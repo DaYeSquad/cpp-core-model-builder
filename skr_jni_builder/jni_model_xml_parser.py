@@ -1,6 +1,8 @@
+#!/usr/bin/env python
+
 import xml.etree.ElementTree
+
 from skrutil import io_utils
-from skrutil import string_utils
 
 from jni_variable import JniVariable
 from jni_manager import JniManager
@@ -13,9 +15,10 @@ from jni_class import JniClass
 
 
 class JniModelXmlParse:
-
+    """Parse XML file and generates related JNI files. Pairs with <JavaModelXmlParser>.
+    """
     def __init__(self, version):
-        self.version = version
+        self.__version = version
 
     def parse(self, directory):
         # create core folder if not exists and remove last build

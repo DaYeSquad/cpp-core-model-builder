@@ -130,6 +130,67 @@ class JavaClass:
         output_java.write(self.__parcelable())
         output_java.write(java_class_end)
 
+    def generate_manager(self, version=5.0):
+        """Generates Java manager implementation code.
+
+        Args:
+            version: A float for compact usage.
+
+        Returns:
+            A string which is Java manager implementation code.
+        """
+        if self.__java_manager_or_none is None:
+            return
+        manager_name = self.__java_manager_or_none.manager_name
+        file_name = self.__java_manager_or_none.manager_name + '.java'
+        file_path = 'build/com/lesschat/core/' + self.__group_name + '/' + file_name
+        output_java = open(file_path, 'w')
+
+        java_package = 'package com.lesschat.core.' + self.__group_name + ';'
+
+        output_java.write(java_package + _JAVA_BR)
+
+        java_import = ''
+        if len(self.__java_manager_or_none.apis) != 0:
+            java_import += 'import com.lesschat.core.api.*;\n'
+
+        java_import += 'import com.lesschat.core.{0}.{1}.*;\n'.format(self.__group_name, self.__class_name)
+        java_import += 'import com.lesschat.core.jni.CoreObject;\n'
+        java_import += 'import com.lesschat.core.director.Director;\n'
+        java_import += 'import com.lesschat.core.jni.JniHelper;\n\n'
+        java_import += 'import java.util.ArrayList;\n'
+        java_import += 'import java.util.List;' + _JAVA_BR
+
+        java_class_start = 'public class ' + manager_name + ' extends CoreObject {' + _JAVA_BR
+        java_class_end = '}'
+
+        java_manager_constructor = 'public static {0} getInstance() {{ return Director.getInstance().get{0}(); }}'
+        java_override = '@Override\n'
+        java_manager_dispose = 'public void dispose() { }' + _JAVA_BR
+
+        output_java.write(java_import)
+        output_java.write(java_class_start)
+
+        output_java.write(self.__java_manager_or_none.generate_http_variables())
+        output_java.write('\n')
+
+        output_java.write(indent(4) + java_manager_constructor.format(manager_name) + _JAVA_BR)
+        output_java.write(indent(4) + java_override)
+        output_java.write(indent(4) + java_manager_dispose)
+
+        if version < 5.0:
+            output_java.write(self.__java_manager_or_none.generate_fetch())
+            output_java.write(self.__java_manager_or_none.generate_http_function())
+            output_java.write(self.__java_manager_or_none.generate_fetch_native())
+            output_java.write(self.__java_manager_or_none.generate_http_function_native())
+        else:
+            output_java.write(self.__java_manager_or_none.generate_fetch_v2())
+            output_java.write(self.__java_manager_or_none.generate_http_function())
+            output_java.write(self.__java_manager_or_none.generate_fetch_native_v2())
+            output_java.write(self.__java_manager_or_none.generate_http_function_native())
+
+        output_java.write(java_class_end)
+
     def __constructors(self):
         """Java class constructor with native handler as parameter.
 
@@ -285,50 +346,3 @@ class JavaClass:
         parcelable += indent(4) + 'public void writeToParcel(Parcel parcel, int i) { parcel.writeLong(mNativeHandler); }\n'
         parcelable += '\n'
         return parcelable
-
-    def generate_manager(self):
-        if self.__java_manager_or_none is None:
-            return
-        manager_name = self.__java_manager_or_none.manager_name
-        file_name = self.__java_manager_or_none.manager_name + '.java'
-        file_path = 'build/com/lesschat/core/' + self.__group_name + '/' + file_name
-        output_java = open(file_path, 'w')
-
-        java_package = 'package com.lesschat.core.' + self.__group_name + ';'
-
-        output_java.write(java_package + _JAVA_BR)
-
-        java_import = ''
-        if len(self.__java_manager_or_none.apis) != 0:
-            java_import += 'import com.lesschat.core.api.*;\n'
-
-        java_import += 'import com.lesschat.core.{0}.{1}.*;\n'.format(self.__group_name, self.__class_name)
-        java_import += 'import com.lesschat.core.jni.CoreObject;\n'
-        java_import += 'import com.lesschat.core.director.Director;\n'
-        java_import += 'import com.lesschat.core.jni.JniHelper;\n\n'
-        java_import += 'import java.util.ArrayList;\n'
-        java_import += 'import java.util.List;' + _JAVA_BR
-
-        java_class_start = 'public class ' + manager_name + ' extends CoreObject {' + _JAVA_BR
-        java_class_end = '}'
-
-        java_manager_constructor = 'public static {0} getInstance() {{ return Director.getInstance().get{0}(); }}'
-        java_override = '@Override\n'
-        java_manager_dispose = 'public void dispose() { }' + _JAVA_BR
-
-        output_java.write(java_import)
-        output_java.write(java_class_start)
-
-        output_java.write(self.__java_manager_or_none.generate_http_variables())
-        output_java.write('\n')
-
-        output_java.write(indent(4) + java_manager_constructor.format(manager_name) + _JAVA_BR)
-        output_java.write(indent(4) + java_override)
-        output_java.write(indent(4) + java_manager_dispose)
-
-        output_java.write(self.__java_manager_or_none.generate_fetch_v2())
-        output_java.write(self.__java_manager_or_none.generate_http_function())
-        output_java.write(self.__java_manager_or_none.generate_fetch_native_v2())
-        output_java.write(self.__java_manager_or_none.generate_http_function_native())
-
-        output_java.write(java_class_end)
