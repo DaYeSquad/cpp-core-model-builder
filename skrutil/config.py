@@ -25,13 +25,15 @@ class Config:
         self.__cpp_ns_end = ''
         self.__module_name = ''
 
+        self.__java_package_name = ''
+
         self.__parse()
 
     def __parse(self):
         e = xml.etree.ElementTree.parse(self.__config_path)
         root = e.getroot()
 
-        # parse necessary parameters
+        # parse C++ necessary parameters
         cpp_node = root.find('cpp')
         if cpp_node is not None:
             self.__cpp_namespace = cpp_node.find('namespace').text
@@ -50,6 +52,14 @@ class Config:
             skr_log_warning('Invalid config file. Reason : <cpp> not found.')
             return
 
+        # parse Java necessary parameters
+        java_node = root.find('java')
+        if java_node is not None:
+            self.__java_package_name = java_node.find('package').text
+        else:
+            skr_log_warning('Invalid config file. Reason : <java> not found.')
+            return
+
     @property
     def cpp_namespace(self):
         return self.__cpp_namespace
@@ -65,3 +75,11 @@ class Config:
     @property
     def cpp_module_name(self):
         return self.__module_name
+
+    @property
+    def java_package_name(self):
+        return self.__java_package_name
+
+    @property
+    def java_package_path(self):
+        return self.__java_package_name.replace('.', '/')

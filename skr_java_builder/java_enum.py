@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
 
 from skrutil.string_utils import indent
 from skrutil.skr_logger import skr_log_warning

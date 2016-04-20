@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
 
 from java_variable import VarType
 from skrutil.string_utils import indent
@@ -31,12 +34,17 @@ class JavaClass:
             self.__java_manager_or_none.set_object_name(class_name, class_name + 's')
             self.__java_manager_or_none.set_java_variable_list(java_variable_list)
 
-    def generate_java_v2(self):
+    def generate_java_v2(self, config):
+        """Generates java object implementation.
+
+        Args:
+            config: A config that enables some user-defined name.
+        """
         file_name = self.__class_name + '.java'
-        file_path = 'build/com/lesschat/core/' + self.__group_name + '/' + file_name
+        file_path = 'build/{0}/'.format(config.java_package_path) + self.__group_name + '/' + file_name
         output_java = open(file_path, 'w')
 
-        java_package = 'package com.lesschat.core.' + self.__group_name + ';'
+        java_package = 'package {0}.'.format(config.java_package_name) + self.__group_name + ';'
 
         output_java.write(java_package + _JAVA_BR)
 
@@ -44,8 +52,8 @@ class JavaClass:
         java_import += 'import java.lang.annotation.Retention;\n'
         java_import += 'import java.lang.annotation.RetentionPolicy;' + _JAVA_BR
 
-        java_import += 'import com.lesschat.core.base.LessChatObject;\n'
-        java_import += 'import com.lesschat.core.jni.CoreObject;\n'
+        java_import += 'import {0}.base.LessChatObject;\n'.format(config.java_package_name)
+        java_import += 'import {0}.jni.CoreObject;\n'.format(config.java_package_name)
         java_import += 'import java.util.ArrayList;\n'
         java_import += 'import java.util.Arrays;\n'
         if self.__class_name != 'List':
@@ -130,11 +138,12 @@ class JavaClass:
         output_java.write(self.__parcelable())
         output_java.write(java_class_end)
 
-    def generate_manager(self, version=5.0):
+    def generate_manager(self, version, config):
         """Generates Java manager implementation code.
 
         Args:
             version: A float for compact usage.
+            config: A <Config> object describes some user-defined names.
 
         Returns:
             A string which is Java manager implementation code.
@@ -143,21 +152,21 @@ class JavaClass:
             return
         manager_name = self.__java_manager_or_none.manager_name
         file_name = self.__java_manager_or_none.manager_name + '.java'
-        file_path = 'build/com/lesschat/core/' + self.__group_name + '/' + file_name
+        file_path = 'build/{0}/'.format(config.java_package_path) + self.__group_name + '/' + file_name
         output_java = open(file_path, 'w')
 
-        java_package = 'package com.lesschat.core.' + self.__group_name + ';'
+        java_package = 'package {0}.'.format(config.java_package_name) + self.__group_name + ';'
 
         output_java.write(java_package + _JAVA_BR)
 
         java_import = ''
         if len(self.__java_manager_or_none.apis) != 0:
-            java_import += 'import com.lesschat.core.api.*;\n'
+            java_import += 'import {0}.api.*;\n'.format(config.java_package_name)
 
-        java_import += 'import com.lesschat.core.{0}.{1}.*;\n'.format(self.__group_name, self.__class_name)
-        java_import += 'import com.lesschat.core.jni.CoreObject;\n'
-        java_import += 'import com.lesschat.core.director.Director;\n'
-        java_import += 'import com.lesschat.core.jni.JniHelper;\n\n'
+        java_import += 'import {2}.{0}.{1}.*;\n'.format(self.__group_name, self.__class_name, config.java_package_name)
+        java_import += 'import {0}.jni.CoreObject;\n'.format(config.java_package_name)
+        java_import += 'import {0}.director.Director;\n'.format(config.java_package_name)
+        java_import += 'import {0}.jni.JniHelper;\n\n'.format(config.java_package_name)
         java_import += 'import java.util.ArrayList;\n'
         java_import += 'import java.util.List;' + _JAVA_BR
 

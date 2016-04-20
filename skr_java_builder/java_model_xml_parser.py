@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
 
 import xml.etree.ElementTree
 import os
@@ -28,14 +31,15 @@ class JavaModelXmlParser:
         """
         self.__version = version
 
-    def parse(self, directory):
+    def parse(self, directory, config):
         """Parse the module XML file and generates the result.
 
         Args:
             directory: A string represents the absolute path of the directory.
         """
         # create core folder if not exists and remove last build
-        core_dir_path = 'build/com/lesschat/core/'
+        core_dir_path = 'build/{0}'.format(config.java_package_path)
+        print core_dir_path
         if os.path.exists(core_dir_path):
             shutil.rmtree(core_dir_path)
             os.makedirs(core_dir_path)
@@ -49,7 +53,7 @@ class JavaModelXmlParser:
         # search directories
         for folder_node in root.findall('group'):
             group_name = folder_node.get('name')
-            group_path = 'build/com/lesschat/core/' + group_name
+            group_path = 'build/{0}/'.format(config.java_package_path) + group_name
             if os.path.exists(group_path):
                 shutil.rmtree(group_path)
                 os.makedirs(group_path)
@@ -151,5 +155,5 @@ class JavaModelXmlParser:
                     java_class.generate_manager(self.__version)
                 else:
                     # Inherit from LessChatObject
-                    java_class.generate_java_v2()
-                    java_class.generate_manager()
+                    java_class.generate_java_v2(config)
+                    java_class.generate_manager(6.0, config)

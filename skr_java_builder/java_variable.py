@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
 
 from skr_cpp_builder.cpp_variable import VarType
 from skrutil.string_utils import indent

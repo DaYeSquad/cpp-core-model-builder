@@ -10,4 +10,8 @@
     <ns_end>NS_WTC_END</ns_end>
     <module_name>WORKTILECORE</module_name>
   </cpp>
+
+  <java>
+    <package>com.worktile.core</package>
+  </java>
 </config>
