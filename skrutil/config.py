@@ -83,3 +83,7 @@ class Config:
     @property
     def java_package_path(self):
         return self.__java_package_name.replace('.', '/')
+
+    @property
+    def jni_package_path(self):
+        return self.__java_package_name.replace('.', '_')

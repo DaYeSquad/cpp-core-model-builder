@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!-- Version 6.0, code generator config file.
+  - Designed by Frank Lin ©2016
+ -->
+
+<config>
+  <cpp>
+    <namespace>lesschat</namespace>
+    <ns_begin>NS_LCC_BEGIN</ns_begin>
+    <ns_end>NS_LCC_END</ns_end>
+    <module_name>LESSCHATCORE</module_name>
+  </cpp>
+
+  <java>
+    <package>com.lesschat.core</package>
+  </java>
+</config>

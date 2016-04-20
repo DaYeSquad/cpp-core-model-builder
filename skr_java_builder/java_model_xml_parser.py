@@ -156,4 +156,4 @@ class JavaModelXmlParser:
                 else:
                     # Inherit from LessChatObject
                     java_class.generate_java_v2(config)
-                    java_class.generate_manager(6.0, config)
+                    java_class.generate_manager(self.__version, config)

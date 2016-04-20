@@ -33,7 +33,7 @@ if __name__ == "__main__":
     print('输入的文件路径为:{0}, 文件名为:{1}'.format(dir_path, file_name))
     print('开始解析据...')
 
-    config = Config('config/lesschat.precfg.xml')
+    config = Config('config/worktile.precfg.xml')
 
     parser = CppModelXmlParser(6.0)
     parser.parse(input_file_path, config)
@@ -44,8 +44,8 @@ if __name__ == "__main__":
     java_parser = JavaModelXmlParser(6.0)
     java_parser.parse(input_file_path, config)
 
-    jni_parse = JniModelXmlParser(5.0)
-    jni_parse.parse(input_file_path)
+    jni_parse = JniModelXmlParser(6.0)
+    jni_parse.parse(input_file_path, config)
 
     print('写入完成, 请查看 {0} 下的 build 文件夹'.format(dir_path))
     print('!!! 记得更新 options.h 中的 DATABASE_VERSION')

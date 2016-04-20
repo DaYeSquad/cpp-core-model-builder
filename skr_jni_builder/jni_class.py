@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
 
 from skrutil import string_utils
 from skrutil.string_utils import indent
@@ -95,7 +98,7 @@ class JniClass:
 
         output_header.write(self.__end_def_cpp)
 
-    def generate_jni_helper_implementation(self):
+    def generate_jni_helper_implementation(self, config):
         """Gets JNI helper object converting method implementation & declaration.
 
         Returns:
@@ -112,7 +115,7 @@ class JniClass:
         impl += '\n\n\n'
 
         impl += '// Copy belows to core/utils/android/jni_helper.cc\n\n\n'
-        impl += self.__jni_get_jobject_by_core_object_implementation()
+        impl += self.__jni_get_jobject_by_core_object_implementation(config)
 
         impl += '\n\n'
         impl += self.__jni_get_jobjects_array_by_core_objects_implementation()
@@ -150,11 +153,12 @@ class JniClass:
         output_header.write(self.__end_def_cpp + '\n')
         output_header.write(end_def_guard + '\n')
 
-    def generate_manager_implementation(self, version=5.0):
+    def generate_manager_implementation(self, version, config):
         """Gets JNI object manager implementation.
 
         Args:
             version: A float version number of <JniModelXmlParser>.
+            config: A <Config> object describes user-defined names.
 
         Returns:
             A string which is JNI object manager implementation.
@@ -164,11 +168,13 @@ class JniClass:
 
         jni_manager = self.__jni_manager_or_none
 
-        file_name = 'com_lesschat_core_{0}_{1}Manager.cc'.format(self.__group_name, self.__class_name)
+        file_name = '{2}_{0}_{1}Manager.cc'.format(self.__group_name, self.__class_name, config.jni_package_path)
         file_path = 'build/jni/' + file_name
         output_header = open(file_path, 'w')
 
-        header_name = '#include "com_lesschat_core_{0}_{1}Manager.h"\n'.format(self.__group_name, self.__class_name)
+        header_name = '#include "{2}_{0}_{1}Manager.h"\n'.format(self.__group_name,
+                                                                 self.__class_name,
+                                                                 config.jni_package_path)
         cpp_name = '#include "{0}/{1}_manager.h"\n'\
             .format(self.__group_name, string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
 
@@ -180,7 +186,7 @@ class JniClass:
         output_header.write(self.__def_cpp)
         output_header.write(_JNI_BR)
 
-        output_header.write(jni_manager.generate_fetch_implementations(version))
+        output_header.write(jni_manager.generate_fetch_implementations(version, config))
         output_header.write(jni_manager.generate_http_function_implementations())
 
         output_header.write(self.__end_def_cpp + '\n')
@@ -204,7 +210,7 @@ class JniClass:
         return 'static jobject GetJ{0}ByCore{0}(const {0}& {1});'.format(
             self.__class_name, string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
 
-    def __jni_get_jobject_by_core_object_implementation(self):
+    def __jni_get_jobject_by_core_object_implementation(self, config):
         impl = 'jobject JniHelper::GetJ{0}ByCore{0}(const lesschat::{0}& {1}) {{\n'.format(
             self.__class_name, string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
         impl += indent(2) + 'JNIEnv* env = GetJniEnv();\n'
@@ -222,7 +228,7 @@ class JniClass:
         impl += ')V");\n\n'
 
         for jni_var in self.__jni_var_list:
-            impl += indent(2) + jni_var.jni_var_assignment_by_cpp_variable() + '\n'
+            impl += indent(2) + jni_var.jni_var_assignment_by_cpp_variable(config) + '\n'
 
         impl += '\n'
 

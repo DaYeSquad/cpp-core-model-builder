@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
+
 from skr_cpp_builder.cpp_variable import VarType
 from skrutil import string_utils
 from skrutil import skr_logger
@@ -51,7 +56,7 @@ class JniVariable:
         step_2 = 'return {0};'.format(self.jni_variable_from_cpp_variable(cpp_return))
         return method_name + '\n' + para_name + '{{\n  {0}\n  {1}\n}}'.format(step_1, step_2)
 
-    def jni_var_assignment_by_cpp_variable(self):
+    def jni_var_assignment_by_cpp_variable(self, config):
         """Returns a method which is a JNI filed converted from C++.
 
         Returns:
@@ -61,7 +66,7 @@ class JniVariable:
         """
         jtype = self.__var_type.to_jni_getter_string()
         jname = 'j{0}'.format(string_utils.to_title_style_name(self.__name))
-        return '{0} {1} = {2};'.format(jtype, jname, self.__jni_variable_from_cpp_class())
+        return '{0} {1} = {2};'.format(jtype, jname, self.__jni_variable_from_cpp_class(config))
 
     def jni_delete_local_ref(self):
         """Gets JNI delete local ref method.
@@ -115,17 +120,21 @@ class JniVariable:
         else:
             print 'Unsupported value'
 
-    def cpp_variable_from_jni_variable(self, return_variable):
+    def cpp_variable_from_jni_variable(self, return_variable, config=None):
+        namespace = 'lesschat'
+        if config is not None:
+            namespace = config.cpp_namespace
+
         if self.__var_type == VarType.cpp_bool:
             return 'static_cast<bool>({0})'.format(return_variable)
         elif self.__var_type == VarType.cpp_enum:
-            return 'static_cast<lesschat::{0}>({1})'.format(self.__var_type.to_getter_string(), return_variable)
+            return 'static_cast<{2}::{0}>({1})'.format(self.__var_type.to_getter_string(), return_variable, namespace)
         elif self.__var_type == VarType.cpp_int:
             return return_variable
         elif self.__var_type == VarType.cpp_string:
-            return 'lesschat::JniHelper::StringFromJstring({0})'.format(return_variable)
+            return '{1}::JniHelper::StringFromJstring({0})'.format(return_variable, namespace)
         elif self.__var_type == VarType.cpp_string_array:
-            return 'lesschat::JniHelper::StringVectorFromJobjectArray({0})'.format(return_variable)
+            return '{1}::JniHelper::StringVectorFromJobjectArray({0})'.format(return_variable, namespace)
         elif self.__var_type == VarType.cpp_time:
             return 'static_cast<time_t>({0} / 1000)'.format(return_variable)
 
@@ -160,7 +169,7 @@ class JniVariable:
                 format(self.__var_type.to_jni_getter_string(), self.__group_name, self.__class_name, title_style_name)
             return method_name
 
-    def __jni_variable_from_cpp_class(self):
+    def __jni_variable_from_cpp_class(self, config):
         instance_name = string_utils.cpp_class_name_to_cpp_file_name(self.__class_name)
         if self.__var_type == VarType.cpp_bool:
             return 'static_cast<jboolean>({0}.is_{1}())'.format(instance_name, self.__name)
@@ -171,7 +180,9 @@ class JniVariable:
         elif self.__var_type == VarType.cpp_string:
             return 'env->NewStringUTF({0}.{1}().c_str())'.format(instance_name, self.__name)
         elif self.__var_type == VarType.cpp_string_array:
-            return 'lesschat::JniHelper::JobjectArrayFromStringVector({0}.{1}())'.format(instance_name, self.__name)
+            return '{2}::JniHelper::JobjectArrayFromStringVector({0}.{1}())'.format(instance_name,
+                                                                                    self.__name,
+                                                                                    config.cpp_namespace)
         elif self.__var_type == VarType.cpp_time:
             return 'static_cast<jlong>({0}.{1}()) * 1000'.format(instance_name, self.__name)
         elif self.__var_type == VarType.cpp_object:

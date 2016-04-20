@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
+
 import re
 
 from skrutil.skr_logger import skr_log_warning
@@ -135,11 +140,12 @@ class JniManager:
                 declaration += fetch_fun_name + bys
         return declaration
 
-    def generate_fetch_implementations(self, version=5.0):
+    def generate_fetch_implementations(self, version, config):
         """Gets fetch implementation of JNI manager code.
 
         Args:
             version: A float version number of <JniModelXmlParser>.
+            config: A <Config> object describes user-defined names.
 
         Returns:
             A string which is fetch implementation of JNI manager code.
@@ -149,11 +155,11 @@ class JniManager:
             if version < 5.0:
                 impl += self.__fetch_implementation(fetch_command)
             else:
-                impl += self.__fetch_implementation_v2(fetch_command)
+                impl += self.__fetch_implementation_v2(fetch_command, config)
             impl += _JNI_BR
         return impl
 
-    def __fetch_implementation_v2(self, fetch_command):
+    def __fetch_implementation_v2(self, fetch_command, config):
         by_list = []
         impl = ''
         if fetch_command.where != '':
@@ -171,11 +177,11 @@ class JniManager:
         if not fetch_command.is_plural:
             if len(by_list) == 0:
                 skr_log_warning('Singular often comes with at least one by parameter')
-            impl += 'JNIEXPORT jlong JNICALL Java_com_lesschat_core_{0}_{1}_native' \
-                .format(self.group_name, self.manager_name)
+            impl += 'JNIEXPORT jlong JNICALL Java_{2}_{0}_{1}_native' \
+                .format(self.group_name, self.manager_name, config.jni_package_path)
             impl += fetch_fun_name + bys
-            impl += _JNI_SPACE + 'const lesschat::{0}* core_manager = reinterpret_cast<lesschat::{0}*>(handler);' \
-                .format(self.manager_name)
+            impl += _JNI_SPACE + 'const {1}::{0}* core_manager = reinterpret_cast<{1}::{0}*>(handler);' \
+                .format(self.manager_name, config.cpp_namespace)
             impl += _JNI_BR
 
             cpp_method_param = ''
@@ -183,7 +189,7 @@ class JniManager:
                 jni_var = self.__jni_var_by_name(by_string)
                 if jni_var is not None:
                     impl += _JNI_SPACE + jni_var.var_type.to_getter_string() + " cpp_" + jni_var.to_param_style_name()
-                    impl += ' = ' + jni_var.cpp_variable_from_jni_variable(jni_var.to_param_style_name()) + ';'
+                    impl += ' = ' + jni_var.cpp_variable_from_jni_variable(jni_var.to_param_style_name(), config) + ';'
                     cpp_method_param += 'cpp_' + jni_var.to_param_style_name() + ', '
             impl += _JNI_BR
             if len(by_list) == 1:
@@ -193,17 +199,18 @@ class JniManager:
 
             cpp_method_name = fetch_fun_name + cpp_method_by
             cpp_method_param = cpp_method_param[:-2]
-            impl += _JNI_SPACE + 'std::unique_ptr<lesschat::{0}> coreObject = core_manager->{1}({2});\n\n' \
-                .format(self.object_name, cpp_method_name, cpp_method_param)
+            impl += _JNI_SPACE + 'std::unique_ptr<{3}::{0}> coreObject = core_manager->{1}({2});\n\n' \
+                .format(self.object_name, cpp_method_name, cpp_method_param, config.cpp_namespace)
             impl += _JNI_SPACE + 'if(core_object == nullptr){\n    return NULL;\n  }\n'
-            impl += _JNI_SPACE + 'return lesschat::JniHelper::GetJ{0}ByCore{0}(*coreObject);\n}}'.format(self.object_name)
+            impl += _JNI_SPACE + 'return {1}::JniHelper::GetJ{0}ByCore{0}(*coreObject);\n}}'.format(self.object_name,
+                                                                                                    config.cpp_namespace)
 
         else:
-            impl += 'JNIEXPORT jlongArray JNICALL Java_com_lesschat_core_{0}_{1}_native' \
-                .format(self.group_name, self.manager_name)
+            impl += 'JNIEXPORT jlongArray JNICALL Java_{2}_{0}_{1}_native' \
+                .format(self.group_name, self.manager_name, config.jni_package_path)
             impl += fetch_fun_name + bys
-            impl += _JNI_SPACE + 'const lesschat::{0}* core_manager = reinterpret_cast<lesschat::{0}*>(handler);' \
-                .format(self.manager_name)
+            impl += _JNI_SPACE + 'const {1}::{0}* core_manager = reinterpret_cast<{1}::{0}*>(handler);' \
+                .format(self.manager_name, config.cpp_namespace)
             impl += _JNI_BR
 
             cpp_method_param = ''
@@ -211,7 +218,7 @@ class JniManager:
                 jni_var = self.__jni_var_by_name(by_string)
                 if jni_var is not None:
                     impl += _JNI_SPACE + jni_var.to_getter_string() + " cpp_" + jni_var.to_param_style_name()
-                    impl += ' = ' + jni_var.cpp_variable_from_jni_variable(jni_var.to_param_style_name()) + ';\n'
+                    impl += ' = ' + jni_var.cpp_variable_from_jni_variable(jni_var.to_param_style_name(), config) + ';\n'
                     cpp_method_param += 'cpp_' + jni_var.to_param_style_name() + ', '
             if len(by_list) == 1:
                 cpp_method_by = 'By' + jni_var.to_title_style_name()
@@ -221,10 +228,10 @@ class JniManager:
             cpp_method_name = fetch_fun_name + cpp_method_by
             cpp_method_param = cpp_method_param[:-2]
             impl += _JNI_SPACE
-            impl += 'std::vector<std::unique_ptr<lesschat::{0}>> coreObjects = core_manager->{1}({2});\n\n' \
-                .format(self.object_name, cpp_method_name, cpp_method_param)
-            impl += _JNI_SPACE + 'return lesschat::JniHelper::GetJ{0}sArrayByCore{0}s(coreObjects);\n}}'.format(
-                self.object_name)
+            impl += 'std::vector<std::unique_ptr<{3}::{0}>> coreObjects = core_manager->{1}({2});\n\n' \
+                .format(self.object_name, cpp_method_name, cpp_method_param, config.cpp_namespace)
+            impl += _JNI_SPACE + 'return {1}::JniHelper::GetJ{0}sArrayByCore{0}s(coreObjects);\n}}'.format(
+                self.object_name, config.cpp_namespace)
         return impl
 
     def __fetch_implementation(self, fetch_command):

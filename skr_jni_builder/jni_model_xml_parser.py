@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
 
 import xml.etree.ElementTree
 
@@ -20,11 +23,12 @@ class JniModelXmlParser:
     def __init__(self, version):
         self.__version = version
 
-    def parse(self, directory):
+    def parse(self, directory, config):
         """Parses module XML file and gets code for JNI implementation.
 
         Args:
             directory: The directory which is full path of XML file.
+            config: A <Config> object describes user-defined names.
 
         Returns:
             A string which is JNI implementation.
@@ -152,7 +156,7 @@ class JniModelXmlParser:
                     jni_wrapper.generate_manager_implementation()
                 else:
                     # write jni helper implementation
-                    jni_wrapper.generate_jni_helper_implementation()
+                    jni_wrapper.generate_jni_helper_implementation(config)
 
                     # write jni wrapper manager implementation
-                    jni_wrapper.generate_manager_implementation()
+                    jni_wrapper.generate_manager_implementation(self.__version, config)
