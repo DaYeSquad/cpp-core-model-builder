@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# cpp_enum.py
 #
 # Copyright (c) 2016 - Frank Lin
 

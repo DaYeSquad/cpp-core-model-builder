@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# cpp_manager.py
 #
 # Copyright (c) 2016 - Frank Lin
-
-"""
-Parse and store lesschat/worktile C++ object manager info.
-"""
 
 import re
 import copy

@@ -65,10 +65,14 @@ class CppClass:
         file_path = io_utils.cpp_object_header_path(self.__group_name, self.__class_name)
         output_header = open(file_path, 'w')
 
-        def_guard = '#ifndef LESSCHATCORE_{0}_{1}_H_\n#define LESSCHATCORE_{0}_{1}_H_'.format(
-                self.__group_name.upper().replace('/', '_'), cpp_class_name_to_cpp_file_name(self.__class_name).upper())
-        end_def_guard = '#endif /* defined(LESSCHATCORE_{0}_{1}_H_) */'.format(
-                self.__group_name.upper().replace('/', '_'), cpp_class_name_to_cpp_file_name(self.__class_name).upper())
+        def_guard = '#ifndef {2}_{0}_{1}_H_\n#define {2}_{0}_{1}_H_'.format(
+                self.__group_name.upper().replace('/', '_'),
+                cpp_class_name_to_cpp_file_name(self.__class_name).upper(),
+                self.__config.cpp_module_name)
+        end_def_guard = '#endif /* defined({2}_{0}_{1}_H_) */'.format(
+                self.__group_name.upper().replace('/', '_'),
+                cpp_class_name_to_cpp_file_name(self.__class_name).upper(),
+                self.__config.cpp_module_name)
         cpp_include = '#include <string>\n#include <memory>\n#include <vector>\n\n#include "base/base.h"'
         cpp_class_begin = 'class LCC_DLL {0} : public CodingInterface {{'.format(self.__class_name)
         cpp_class_end = '};'
@@ -158,10 +162,14 @@ class CppClass:
         file_path = io_utils.cpp_object_header_path(self.__group_name, cpp_manager.class_name())
         output_header = open(file_path, 'w')
 
-        def_guard = '#ifndef LESSCHATCORE_{0}_{1}_H_\n#define LESSCHATCORE_{0}_{1}_H_'.format(
-                self.__group_name.upper().replace('/', '_'), cpp_class_name_to_cpp_file_name(cpp_manager.class_name()).upper())
-        end_def_guard = '#endif /* defined(LESSCHATCORE_{0}_{1}_H_) */'.format(
-                self.__group_name.upper().replace('/', '_'), cpp_class_name_to_cpp_file_name(cpp_manager.class_name()).upper())
+        def_guard = '#ifndef {2}_{0}_{1}_H_\n#define {2}_{0}_{1}_H_'.format(
+                self.__group_name.upper().replace('/', '_'),
+                cpp_class_name_to_cpp_file_name(cpp_manager.class_name()).upper(),
+                self.__config.cpp_module_name)
+        end_def_guard = '#endif /* defined({2}_{0}_{1}_H_) */'.format(
+                self.__group_name.upper().replace('/', '_'),
+                cpp_class_name_to_cpp_file_name(cpp_manager.class_name()).upper(),
+                self.__config.cpp_module_name)
         cpp_include = '#include <string>\n' \
                       '#include <memory>\n' \
                       '#include <vector>\n' \
