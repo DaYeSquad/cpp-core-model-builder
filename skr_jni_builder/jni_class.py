@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from skr_cpp_builder.cpp_class import CppClass
 from skrutil import string_utils
 from skrutil.string_utils import indent
 
@@ -171,7 +170,7 @@ class JniClass:
 
         header_name = '#include "com_lesschat_core_{0}_{1}Manager.h"\n'.format(self.__group_name, self.__class_name)
         cpp_name = '#include "{0}/{1}_manager.h"\n'\
-            .format(self.__group_name, CppClass.convert_class_name_to_file_name(self.__class_name))
+            .format(self.__group_name, string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
 
         output_header.write(header_name)
         output_header.write(cpp_name)

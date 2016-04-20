@@ -1,5 +1,6 @@
 from skr_cpp_builder.cpp_class import CppClass
 from skrutil import string_utils
+from skrutil.string_utils import cpp_class_name_to_cpp_file_name
 
 
 _OBJC_BR = '\n\n'
@@ -24,7 +25,7 @@ class ObjcClass:
         file_path = _OBJC_BUILD_PATH + string_utils.cpp_group_name_to_objc_group_name(self.group_name) + '/' + file_name
         output_header = open(file_path, 'w')
 
-        output_header.write('#include "{0}.h"'.format(CppClass.convert_class_name_to_file_name(self.class_name)))
+        output_header.write('#include "{0}.h"'.format(cpp_class_name_to_cpp_file_name(self.class_name)))
         output_header.write(_OBJC_BR)
         output_header.write('@interface LCC{0} () {{'.format(self.class_name))
         output_header.write('\n')

@@ -14,6 +14,7 @@ from skr_java_builder.java_model_xml_parser import JavaModelXmlParser
 from skr_jni_builder.jni_model_xml_parser import JniModelXmlParser
 from skr_objc_builder.objc_model_xml_parser import ObjcModelXmlParser
 from skrutil import io_utils
+from skrutil.config import Config
 
 
 if __name__ == "__main__":
@@ -32,8 +33,10 @@ if __name__ == "__main__":
     print('输入的文件路径为:{0}, 文件名为:{1}'.format(dir_path, file_name))
     print('开始解析据...')
 
-    parser = CppModelXmlParser(5.0)
-    parser.parse(input_file_path)
+    config = Config('config/lesschat.precfg.xml')
+
+    parser = CppModelXmlParser(6.0)
+    parser.parse(input_file_path, config)
 
     objc_parser = ObjcModelXmlParser(4.0)
     objc_parser.parse(input_file_path)

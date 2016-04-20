@@ -21,7 +21,7 @@ class CppModelXmlParser:
     def __init__(self, version):
         self.version = version
 
-    def parse(self, directory):
+    def parse(self, directory, config):
         """Parse module description xml file and translate them into Cpp objects.
 
         Args:
@@ -167,7 +167,9 @@ class CppModelXmlParser:
                     cpp_manager.set_table_name_list(table_name_list)
 
                 # write object header
-                cpp_class = CppClass(group_name, class_name, cpp_var_list, cpp_enum_list, cpp_manager, replacement_list, class_comment)
+                cpp_class = CppClass(group_name, class_name, cpp_var_list, cpp_enum_list, cpp_manager, replacement_list,
+                                     class_comment)
+                cpp_class.set_config(config)
                 cpp_class.generate_header()
 
                 # write object implementation

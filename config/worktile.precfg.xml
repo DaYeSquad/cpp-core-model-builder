@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!-- Version 6.0, code generator config file.
+  - Designed by Frank Lin ©2016
+ -->
+
+<config>
+  <cpp>
+    <namespace>worktile</namespace>
+    <ns_begin>NS_WTC_BEGIN</ns_begin>
+    <ns_end>NS_WTC_END</ns_end>
+    <module_name>WORKTILECORE</module_name>
+  </cpp>
+</config>
