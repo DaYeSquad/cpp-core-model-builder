@@ -121,6 +121,15 @@ class JniVariable:
             print 'Unsupported value'
 
     def cpp_variable_from_jni_variable(self, return_variable, config=None):
+        """Returns JNI source code casting C++ type to JNI type.
+
+        Args:
+            return_variable: A string that describes variable name.
+            config: A <Config> object that describes user-defined namespace or None for compact with older version.
+
+        Returns:
+            JNI source code casting C++ type to JNI type.
+        """
         namespace = 'lesschat'
         if config is not None:
             namespace = config.cpp_namespace
