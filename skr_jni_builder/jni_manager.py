@@ -6,6 +6,7 @@
 import re
 
 from skrutil.skr_logger import skr_log_warning
+from skrutil import string_utils
 
 _JNI_BR = '\n\n'
 _JNI_SPACE = '  '
@@ -55,6 +56,9 @@ class JniApiDescription:
 
 
 class JniManager:
+    """Object manager in JNI part.
+    """
+
     def __init__(self, manager_name):
         self.manager_name = manager_name
         self.save_commands = []
@@ -177,10 +181,10 @@ class JniManager:
         if not fetch_command.is_plural:
             if len(by_list) == 0:
                 skr_log_warning('Singular often comes with at least one by parameter')
-            impl += 'JNIEXPORT jlong JNICALL Java_{2}_{0}_{1}_native' \
+            impl += 'JNIEXPORT jobject JNICALL Java_{2}_{0}_{1}_native' \
                 .format(self.group_name, self.manager_name, config.jni_package_path)
             impl += fetch_fun_name + bys
-            impl += _JNI_SPACE + 'const {1}::{0}* core_manager = reinterpret_cast<{1}::{0}*>(handler);' \
+            impl += _JNI_SPACE + 'const {1}::{0}* coreManager = reinterpret_cast<{1}::{0}*>(handler);' \
                 .format(self.manager_name, config.cpp_namespace)
             impl += _JNI_BR
 
@@ -188,9 +192,9 @@ class JniManager:
             for by_string in by_list:
                 jni_var = self.__jni_var_by_name(by_string)
                 if jni_var is not None:
-                    impl += _JNI_SPACE + jni_var.var_type.to_getter_string() + " cpp_" + jni_var.to_param_style_name()
+                    impl += _JNI_SPACE + jni_var.var_type.to_getter_string() + " cpp" + jni_var.to_param_style_name()
                     impl += ' = ' + jni_var.cpp_variable_from_jni_variable(jni_var.to_param_style_name(), config) + ';'
-                    cpp_method_param += 'cpp_' + jni_var.to_param_style_name() + ', '
+                    cpp_method_param += 'cpp' + jni_var.to_param_style_name() + ', '
             impl += _JNI_BR
             if len(by_list) == 1:
                 cpp_method_by = 'By' + jni_var.to_title_style_name()
@@ -199,17 +203,17 @@ class JniManager:
 
             cpp_method_name = fetch_fun_name + cpp_method_by
             cpp_method_param = cpp_method_param[:-2]
-            impl += _JNI_SPACE + 'std::unique_ptr<{3}::{0}> coreObject = core_manager->{1}({2});\n\n' \
+            impl += _JNI_SPACE + 'std::unique_ptr<{3}::{0}> coreObject = coreManager->{1}({2});\n\n' \
                 .format(self.object_name, cpp_method_name, cpp_method_param, config.cpp_namespace)
-            impl += _JNI_SPACE + 'if(core_object == nullptr){\n    return NULL;\n  }\n'
+            impl += _JNI_SPACE + 'if(coreObject == nullptr){\n    return NULL;\n  }\n'
             impl += _JNI_SPACE + 'return {1}::JniHelper::GetJ{0}ByCore{0}(*coreObject);\n}}'.format(self.object_name,
                                                                                                     config.cpp_namespace)
 
         else:
-            impl += 'JNIEXPORT jlongArray JNICALL Java_{2}_{0}_{1}_native' \
+            impl += 'JNIEXPORT jobjectArray JNICALL Java_{2}_{0}_{1}_native' \
                 .format(self.group_name, self.manager_name, config.jni_package_path)
             impl += fetch_fun_name + bys
-            impl += _JNI_SPACE + 'const {1}::{0}* core_manager = reinterpret_cast<{1}::{0}*>(handler);' \
+            impl += _JNI_SPACE + 'const {1}::{0}* coreManager = reinterpret_cast<{1}::{0}*>(handler);' \
                 .format(self.manager_name, config.cpp_namespace)
             impl += _JNI_BR
 
@@ -217,9 +221,9 @@ class JniManager:
             for by_string in by_list:
                 jni_var = self.__jni_var_by_name(by_string)
                 if jni_var is not None:
-                    impl += _JNI_SPACE + jni_var.to_getter_string() + " cpp_" + jni_var.to_param_style_name()
+                    impl += _JNI_SPACE + jni_var.to_getter_string() + " cpp" + jni_var.to_param_style_name()
                     impl += ' = ' + jni_var.cpp_variable_from_jni_variable(jni_var.to_param_style_name(), config) + ';\n'
-                    cpp_method_param += 'cpp_' + jni_var.to_param_style_name() + ', '
+                    cpp_method_param += 'cpp' + jni_var.to_param_style_name() + ', '
             if len(by_list) == 1:
                 cpp_method_by = 'By' + jni_var.to_title_style_name()
             else:
@@ -416,8 +420,9 @@ class JniManager:
             implementation += '}\n\n'
         return implementation
 
-    # returns "ById" or ""
     def __convert_bys_to_string(self, by_string_list, has_sign):
+        """Returns "ById" or "".
+        """
         if len(by_string_list) == 0:  # empty string
             if has_sign:
                 return '__J\n  (JNIEnv *, jobject, jlong);\n\n'
@@ -483,8 +488,9 @@ class JniManager:
                 sign_ = '__' + sign
             return bys_string.format(sign_)
 
-    # returns None if not found
     def __jni_var_by_name(self, name_string):
+        """Returns <JniVariable> object or None if not found.
+        """
         for jni_var in self.jni_variable_list:
             if jni_var.name == name_string:
                 return jni_var
