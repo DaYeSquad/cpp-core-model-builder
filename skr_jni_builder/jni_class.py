@@ -242,7 +242,7 @@ class JniClass:
         constructor_method_id = '{0}ConstructorMethodID'.format(string_utils.first_char_to_lower(self.__class_name))
         parameters.append(constructor_method_id)
         for jni_var in self.__jni_var_list:
-            parameters.append('j{0}'.format(string_utils.first_char_to_upper(jni_var.name)))
+            parameters.append('j{0}'.format(string_utils.to_title_style_name(jni_var.name)))
 
         impl += jclass_instance_name + ',\n'
         for parameter in parameters:

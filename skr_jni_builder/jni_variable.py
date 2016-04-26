@@ -75,7 +75,7 @@ class JniVariable:
             A string which is JNI delete local ref method.
         """
         if self.__var_type == VarType.cpp_string or self.__var_type == VarType.cpp_string_array:
-            return 'env->DeleteLocalRef(j{0});'.format(string_utils.first_char_to_upper(self.__name))
+            return 'env->DeleteLocalRef(j{0});'.format(string_utils.to_title_style_name(self.__name))
         elif self.__var_type == VarType.cpp_object or self.__var_type == VarType.cpp_object_array:
             skr_logger.skr_log_warning('JniVariable.jni_delete_local_ref() : Not supported type')
             return 'env->DeleteLocalRef(j{0});'.format(string_utils.first_char_to_upper(self.__name))
