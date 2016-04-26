@@ -187,7 +187,7 @@ class JniClass:
         output_header.write(_JNI_BR)
 
         output_header.write(jni_manager.generate_fetch_implementations(version, config))
-        output_header.write(jni_manager.generate_http_function_implementations())
+        output_header.write(jni_manager.generate_http_function_implementations(config))
 
         output_header.write(self.__end_def_cpp + '\n')
 

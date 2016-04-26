@@ -82,7 +82,7 @@ class JniVariable:
         else:
             return ''
 
-    def jni_variable_from_cpp_variable(self, return_variable):
+    def jni_variable_from_cpp_variable(self, return_variable, namespace='lesschat'):
         if self.__var_type == VarType.cpp_bool:
             return return_variable
         elif self.__var_type == VarType.cpp_enum:
@@ -92,15 +92,23 @@ class JniVariable:
         elif self.__var_type == VarType.cpp_string:
             return 'env->NewStringUTF({0}.c_str())'.format(return_variable)
         elif self.__var_type == VarType.cpp_string_array:
-            return 'lesschat::JniHelper::JobjectArrayFromStringVector({0})'.format(return_variable)
+            return '{1}::JniHelper::JobjectArrayFromStringVector({0})'.format(return_variable, namespace)
         elif self.__var_type == VarType.cpp_time:
             return 'static_cast<jlong>({0}) * 1000'.format(return_variable)
         elif self.__var_type == VarType.cpp_object:
             return 'reinterpret_cast<jlong>({0}.release())'.format(return_variable)
         elif self.__var_type == VarType.cpp_object_array:
-            return 'lesschat::JniHelper::JlongArrayFromNativeArray(std::move({0}))'.format(return_variable)
+            return '{1}::JniHelper::JlongArrayFromNativeArray(std::move({0}))'.format(return_variable, namespace)
 
-    def to_getter_string(self):
+    def to_getter_string(self, namespace='lesschat'):
+        """Returns a string which is like 'std::vector<std::unique_ptr<namespace::Task>>'
+
+        Args:
+            namespace: A string defines C++ namespace, default is 'lesschat'.
+
+        Returns:
+            A string which is like 'std::vector<std::unique_ptr<namespace::Task>>'
+        """
         if self.__var_type.value == 1:
             return 'bool'
         elif self.__var_type.value == 2:
@@ -114,9 +122,9 @@ class JniVariable:
         elif self.__var_type.value == 6:
             return 'time_t'
         elif self.__var_type.value == 7:
-            return 'std::vector<std::unique_ptr<lesschat::{0}>>'.format(self.__var_type.object_class_name)
+            return 'std::vector<std::unique_ptr<{1}::{0}>>'.format(self.__var_type.object_class_name, namespace)
         elif self.__var_type.value == 8:
-            return 'std::unique_ptr<lesschat::{0}>'.format(self.__var_type.object_class_name)
+            return 'std::unique_ptr<{1}::{0}>'.format(self.__var_type.object_class_name, namespace)
         else:
             print 'Unsupported value'
 

@@ -48,6 +48,9 @@ class JniManagerDeleteCommand:
 
 
 class JniApiDescription:
+    """Represents manager's API description (<api/>).
+    """
+
     def __init__(self, function_name, input_var_list, output_var_list):
         self.function_name = function_name
         self.input_var_list = input_var_list
@@ -330,23 +333,26 @@ class JniManager:
             declaration += ');\n\n'
         return declaration
 
-    def generate_http_function_implementations(self):
+    def generate_http_function_implementations(self, config):
+        namespace = config.cpp_namespace
         implementation = ''
         for api in self.apis:
-            implementation += 'JNIEXPORT void JNICALL Java_com_lesschat_core_{0}_{1}_native{2}\n'\
-                .format(self.group_name, self.manager_name, api.function_name)
+            implementation += 'JNIEXPORT void JNICALL Java_{3}_{0}_{1}_native{2}\n'\
+                .format(self.group_name, self.manager_name, api.function_name, config.jni_package_path)
             implementation += '  (JNIEnv* env, jobject thiz, jlong handler'
             for input_var in api.input_var_list:
                 implementation += ', {0} {1}'.format(input_var.var_type.to_jni_getter_string(),
                                                      input_var.to_param_style_name())
             implementation += ') {\n'
-            implementation += function_space(1) + 'const lesschat::{0}* core_manager = reinterpret_cast<lesschat::{0}*>(handler);\n\n' \
-                .format(self.manager_name)
+            implementation += function_space(1) + 'const {1}::{0}* core_manager = ' \
+                                                  'reinterpret_cast<{1}::{0}*>(handler);\n\n' \
+                .format(self.manager_name, namespace)
             implementation += function_space(1) + 'jobject global_thiz = env->NewGlobalRef(thiz);\n'
             implementation += function_space(1) + 'jobject global_null = env->NewGlobalRef(NULL);\n\n'
             for input_var in api.input_var_list:
                 implementation += _JNI_SPACE + input_var.to_getter_string() + " cpp_" + input_var.to_param_style_name()
-                implementation += ' = ' + input_var.cpp_variable_from_jni_variable(input_var.to_param_style_name()) + ';\n'
+                implementation += ' = ' + input_var.cpp_variable_from_jni_variable(input_var.to_param_style_name())
+                implementation += ';\n'
             implementation += '\n'
 
             implementation += function_space(1) + 'core_manager->{0}('.format(api.function_name)
@@ -373,11 +379,11 @@ class JniManager:
             implementation += space + 'const std::string& error'
             for i in range(len(api.output_var_list)):
                 implementation += ',\n{0}{1} {2}'.format(space,
-                                                         api.output_var_list[i].to_getter_string(),
+                                                         api.output_var_list[i].to_getter_string(namespace),
                                                          api.output_var_list[i].name)
             implementation += '){\n'
 
-            implementation += function_space(2) + 'JNIEnv *jni_env = lesschat::JniHelper::GetJniEnv();\n'
+            implementation += function_space(2) + 'JNIEnv *jni_env = {0}::JniHelper::GetJniEnv();\n'.format(namespace)
             implementation += function_space(2) + 'jclass jclazz = jni_env->GetObjectClass(global_thiz);\n\n'
             implementation += function_space(2) + 'if(jclazz == NULL) {\n'
             implementation += function_space(3) + 'return;\n'
@@ -401,7 +407,8 @@ class JniManager:
                 for i in range(space_length):
                     space += " "
                 for output_var in api.output_var_list:
-                    implementation += ',\n' + space + output_var.jni_variable_from_cpp_variable(output_var.name)
+                    implementation += ',\n' + space + output_var.jni_variable_from_cpp_variable(output_var.name,
+                                                                                                namespace)
                 implementation += ');\n'
 
                 implementation += function_space(2) + '} else {\n'
