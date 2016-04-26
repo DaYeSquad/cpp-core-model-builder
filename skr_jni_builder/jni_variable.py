@@ -82,7 +82,30 @@ class JniVariable:
         else:
             return ''
 
+    def jni_variable_from_cpp_variable_v2(self, return_variable, namespace='lesschat'):
+        """Returns a string like 'namespace::JniHelper::GetJTasksArrayByCoreTasks(return_variable)'.
+        """
+        if self.__var_type == VarType.cpp_bool:
+            return return_variable
+        elif self.__var_type == VarType.cpp_enum:
+            return 'static_cast<jint>({0})'.format(return_variable)
+        elif self.__var_type == VarType.cpp_int:
+            return 'static_cast<jint>({0})'.format(return_variable)
+        elif self.__var_type == VarType.cpp_string:
+            return 'env->NewStringUTF({0}.c_str())'.format(return_variable)
+        elif self.__var_type == VarType.cpp_string_array:
+            return '{1}::JniHelper::JobjectArrayFromStringVector({0})'.format(return_variable, namespace)
+        elif self.__var_type == VarType.cpp_time:
+            return 'static_cast<jlong>({0}) * 1000'.format(return_variable)
+        elif self.__var_type == VarType.cpp_object:
+            return 'reinterpret_cast<jlong>({0}.release())'.format(return_variable)
+        elif self.__var_type == VarType.cpp_object_array:
+            return '{0}::JniHelper::GetJ{1}sArrayByCore{1}s({2})'\
+                .format(namespace, self.__var_type.object_class_name, return_variable)
+
     def jni_variable_from_cpp_variable(self, return_variable, namespace='lesschat'):
+        """Returns a string like 'namespace::JniHelper::JlongArrayFromNativeArray(return_variable)'.
+        """
         if self.__var_type == VarType.cpp_bool:
             return return_variable
         elif self.__var_type == VarType.cpp_enum:
@@ -161,14 +184,6 @@ class JniVariable:
         else:
             return self.__name
 
-    # from 'display_name' to 'DisplayName'
-    def to_title_style_name(self):
-        return string_utils.to_title_style_name(self.__name)
-
-    # from 'display_name' to 'displayName'
-    def to_param_style_name(self):
-        return string_utils.to_objc_property_name(self.__name)
-
     def jni_variable_name(self):
         return self.__var_type.to_jni_getter_string()
 
@@ -211,6 +226,16 @@ class JniVariable:
             return ''
         else:
             skr_logger.skr_log_warning('JniVariable.__jni_variable_from_cpp_class() : Not supported type')
+
+    def to_title_style_name(self):
+        """From 'display_name' to 'DisplayName'.
+        """
+        return string_utils.to_title_style_name(self.__name)
+
+    def to_param_style_name(self):
+        """From 'display_name' to 'displayName'.
+        """
+        return string_utils.to_objc_property_name(self.__name)
 
     @property
     def var_type(self):

@@ -334,6 +334,14 @@ class JniManager:
         return declaration
 
     def generate_http_function_implementations(self, config):
+        """Generates HTTP - Cache methods.
+
+        Args:
+            config: A <Config> object represents user-defined config including namespace and package path.
+
+        Returns:
+            A string that is JNI http methods.
+        """
         namespace = config.cpp_namespace
         implementation = ''
         for api in self.apis:
@@ -376,7 +384,7 @@ class JniManager:
             for i in range(space_length):
                 space += " "
             implementation += 'bool success,\n'
-            implementation += space + 'const std::string& error'
+            implementation += space + '{0} error'.format(config.cpp_error_type)
             for i in range(len(api.output_var_list)):
                 implementation += ',\n{0}{1} {2}'.format(space,
                                                          api.output_var_list[i].to_getter_string(namespace),
@@ -391,24 +399,31 @@ class JniManager:
             java_callback_function_name_str = 'on{0}'.format(api.function_name)
             java_callback_function_sign_str = 'ZLjava/lang/String;'
             for output_var in api.output_var_list:
-                java_callback_function_sign_str += output_var.var_type.to_jni_signature()
+                java_callback_function_sign_str += output_var.var_type.to_jni_signature_v2()
             implementation += function_space(2) + 'jmethodID method_id = jni_env->GetMethodID(jclazz, "{0}", "({1})V");\n'\
                 .format(java_callback_function_name_str, java_callback_function_sign_str)
             implementation += function_space(2) + 'if(method_id == NULL) {\n'
             implementation += function_space(3) + 'return;\n'
             implementation += function_space(2) + '}\n'
-            implementation += function_space(2) + 'jstring error_jstr = jni_env->NewStringUTF(error.c_str());\n\n'
+
+            # TODO(lin.xiaoe.f@gmail.com): We should improve it in future.
+            if config.cpp_error_type == 'const std::string&':
+                implementation += function_space(2) + 'jstring jerror = jni_env->NewStringUTF(error.c_str());\n\n'
+            elif config.cpp_error_type == 'WebApi::Error':
+                implementation += function_space(2) + 'jstring jerror = jni_env->NewStringUTF(error.description.c_str());\n\n'
+            else:
+                skr_log_warning('This is a tmp ugly implementation, you should support your own type here.')
 
             if len(api.output_var_list) != 0:
                 implementation += function_space(2) + 'if (success){\n'
-                implementation += function_space(3) + 'jni_env->CallVoidMethod(global_thiz, method_id, success, error_jstr'
+                implementation += function_space(3) + 'jni_env->CallVoidMethod(global_thiz, method_id, success, jerror'
                 space_length = len(function_space(3) + 'jni_env->CallVoidMethod(')
                 space = ''
                 for i in range(space_length):
                     space += " "
                 for output_var in api.output_var_list:
-                    implementation += ',\n' + space + output_var.jni_variable_from_cpp_variable(output_var.name,
-                                                                                                namespace)
+                    implementation += ',\n' + space + output_var.jni_variable_from_cpp_variable_v2(output_var.name,
+                                                                                                   namespace)
                 implementation += ');\n'
 
                 implementation += function_space(2) + '} else {\n'

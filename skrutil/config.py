@@ -24,6 +24,7 @@ class Config:
         self.__cpp_ns_begin = ''
         self.__cpp_ns_end = ''
         self.__module_name = ''
+        self.__cpp_error_type = 'const std::string&'
 
         self.__java_package_name = ''
         self.__java_base_object = ''
@@ -41,6 +42,7 @@ class Config:
             self.__cpp_ns_begin = cpp_node.find('ns_begin').text
             self.__cpp_ns_end = cpp_node.find('ns_end').text
             self.__module_name = cpp_node.find('module_name').text
+            self.__cpp_error_type = cpp_node.find('api_error_type').text
 
             # validate
             if self.__cpp_namespace == '' \
@@ -77,6 +79,10 @@ class Config:
     @property
     def cpp_module_name(self):
         return self.__module_name
+
+    @property
+    def cpp_error_type(self):
+        return self.__cpp_error_type
 
     @property
     def java_package_name(self):
