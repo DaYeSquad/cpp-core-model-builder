@@ -13,5 +13,6 @@
 
   <java>
     <package>com.worktile.core</package>
+    <base_object>WorktileObject</base_object>
   </java>
 </config>

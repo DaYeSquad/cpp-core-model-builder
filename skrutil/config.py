@@ -26,6 +26,7 @@ class Config:
         self.__module_name = ''
 
         self.__java_package_name = ''
+        self.__java_base_object = ''
 
         self.__parse()
 
@@ -56,6 +57,7 @@ class Config:
         java_node = root.find('java')
         if java_node is not None:
             self.__java_package_name = java_node.find('package').text
+            self.__java_base_object = java_node.find('base_object').text
         else:
             skr_log_warning('Invalid config file. Reason : <java> not found.')
             return
@@ -83,6 +85,10 @@ class Config:
     @property
     def java_package_path(self):
         return self.__java_package_name.replace('.', '/')
+
+    @property
+    def java_base_object(self):
+        return self.__java_base_object
 
     @property
     def jni_package_path(self):

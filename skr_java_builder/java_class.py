@@ -52,14 +52,14 @@ class JavaClass:
         java_import += 'import java.lang.annotation.Retention;\n'
         java_import += 'import java.lang.annotation.RetentionPolicy;' + _JAVA_BR
 
-        java_import += 'import {0}.base.LessChatObject;\n'.format(config.java_package_name)
+        java_import += 'import {0}.base.{1};\n'.format(config.java_package_name, config.java_base_object)
         java_import += 'import {0}.jni.CoreObject;\n'.format(config.java_package_name)
         java_import += 'import java.util.ArrayList;\n'
         java_import += 'import java.util.Arrays;\n'
         if self.__class_name != 'List':
             java_import += 'import java.util.List;'
 
-        java_class_start = 'public final class ' + self.__class_name + ' extends LessChatObject {'
+        java_class_start = 'public final class ' + self.__class_name + ' extends {0} {{'.format(config.java_base_object)
         java_class_end = '}'
 
         output_java.write(java_import + _JAVA_BR)

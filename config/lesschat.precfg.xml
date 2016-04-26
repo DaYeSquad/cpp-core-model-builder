@@ -13,5 +13,6 @@
 
   <java>
     <package>com.lesschat.core</package>
+    <base_object>LessChatObject</base_object>
   </java>
 </config>
