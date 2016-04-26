@@ -211,7 +211,7 @@ class JniClass:
             self.__class_name, string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
 
     def __jni_get_jobject_by_core_object_implementation(self, config):
-        impl = 'jobject JniHelper::GetJ{0}ByCore{0}(const lesschat::{0}& {1}) {{\n'.format(
+        impl = 'jobject JniHelper::GetJ{0}ByCore{0}(const {0}& {1}) {{\n'.format(
             self.__class_name, string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
         impl += indent(2) + 'JNIEnv* env = GetJniEnv();\n'
         impl += indent(2) + 'if (!env) {\n'
