@@ -6,7 +6,6 @@
 import re
 
 from skrutil.skr_logger import skr_log_warning
-from skrutil import string_utils
 
 _JNI_BR = '\n\n'
 _JNI_SPACE = '  '
