@@ -291,15 +291,21 @@ class JavaManager:
             api_response_variable += indent(4) + 'private ' + variable_type + variable_name + ';\n'
         return api_response_variable
 
-    def generate_http_function(self):
+    def generate_http_function(self, version):
         """Gets HTTP request and response implementation code.
+
+        Args:
+            version: An int represents java builder version number.
 
         Returns:
             HTTP request and response implementation code.
         """
         http_function = ''
         for api in self.__apis:
-            http_function += self.__http_function(api) + '\n\n' + self.__http_function_response(api) + '\n\n'
+            if version < 6.0:
+                http_function += self.__http_function(api) + '\n\n' + self.__http_function_response(api) + '\n\n'
+            else:
+                http_function += self.__http_function(api) + '\n\n' + self.__http_function_response_v2(api) + '\n\n'
         return http_function
 
     def generate_http_function_native(self):
@@ -340,6 +346,21 @@ class JavaManager:
         http_function += indent(4) + "}"
         return http_function
 
+    def __http_function_response_v2(self, api):
+        http_function_response = indent(4) + 'public void on{0}(boolean success, String error{1}){{\n' \
+            .format(api.function_name, self.__output_variable_declaration_v2(api.output_var_list))
+        http_function_response += indent(8) + 'if (m{0}Response == null){{\n'.format(api.function_name)
+        http_function_response += indent(12) + 'return;\n'
+        http_function_response += indent(8) + '}\n'
+        http_function_response += indent(8) + 'if (success){\n'
+        http_function_response += indent(12) + 'm{0}Response.onSuccess({1});\n' \
+            .format(api.function_name, self.__output_variable_call(api.output_var_list))
+        http_function_response += indent(8) + '} else {\n'
+        http_function_response += indent(12) + 'm{0}Response.onFailure(error);\n'.format(api.function_name)
+        http_function_response += indent(8) + '}\n'
+        http_function_response += indent(4) + '}'
+        return http_function_response
+
     def __http_function_response(self, api):
         http_function_response = indent(4) + 'public void on{0}(boolean success, String error{1}){{\n'\
             .format(api.function_name, self.__output_variable_declaration(api.output_var_list))
@@ -370,7 +391,6 @@ class JavaManager:
         http_function_response += indent(12) + 'm{0}Response.onFailure(error);\n'.format(api.function_name)
         http_function_response += indent(8) + '}\n'
         http_function_response += indent(4) + '}'
-
         return http_function_response
 
     def __variable_type_from_var_list(self, var_list):
@@ -408,6 +428,19 @@ class JavaManager:
                                      + ' ' + var.name_str + ', '
             else:
                 vars_declarations += var.var_type.to_java_getter_setter_string() + ' ' + var.name_str + ', '
+        return vars_declarations
+
+    def __output_variable_declaration_v2(self, var_list):
+        vars_declarations = ''
+        for var in var_list:
+            if var.var_type == VarType.cpp_enum:
+                vars_declarations += ', int ' + var.name_str + '_int'
+            elif var.var_type == VarType.cpp_object:
+                vars_declarations += ', Object ' + var.name_str
+            elif var.var_type == VarType.cpp_object_array:
+                vars_declarations += ', Object[] ' + var.name_str
+            else:
+                vars_declarations += ', ' + var.var_type + ' ' + var.name_str
         return vars_declarations
 
     def __output_variable_declaration(self, var_list):

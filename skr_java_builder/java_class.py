@@ -194,7 +194,7 @@ class JavaClass:
             output_java.write(self.__java_manager_or_none.generate_http_function_native())
         else:
             output_java.write(self.__java_manager_or_none.generate_fetch_v2())
-            output_java.write(self.__java_manager_or_none.generate_http_function())
+            output_java.write(self.__java_manager_or_none.generate_http_function(version))
             output_java.write(self.__java_manager_or_none.generate_fetch_native_v2())
             output_java.write(self.__java_manager_or_none.generate_http_function_native())
 
