@@ -98,7 +98,8 @@ class JniVariable:
         elif self.__var_type == VarType.cpp_time:
             return 'static_cast<jlong>({0}) * 1000'.format(return_variable)
         elif self.__var_type == VarType.cpp_object:
-            return 'reinterpret_cast<jlong>({0}.release())'.format(return_variable)
+            return '{0}::JniHelper::GetJ{1}ByCore{1}({2})'\
+                .format(namespace, self.__var_type.object_class_name, return_variable)
         elif self.__var_type == VarType.cpp_object_array:
             return '{0}::JniHelper::GetJ{1}sArrayByCore{1}s({2})'\
                 .format(namespace, self.__var_type.object_class_name, return_variable)
