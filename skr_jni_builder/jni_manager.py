@@ -359,7 +359,7 @@ class JniManager:
             implementation += function_space(1) + 'jobject global_null = env->NewGlobalRef(NULL);\n\n'
             for input_var in api.input_var_list:
                 implementation += _JNI_SPACE + input_var.to_getter_string() + " cpp_" + input_var.to_param_style_name()
-                implementation += ' = ' + input_var.cpp_variable_from_jni_variable(input_var.to_param_style_name())
+                implementation += ' = ' + input_var.cpp_variable_from_jni_variable(input_var.to_param_style_name(), config)
                 implementation += ';\n'
             implementation += '\n'
 
