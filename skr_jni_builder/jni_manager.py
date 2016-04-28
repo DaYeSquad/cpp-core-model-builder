@@ -210,7 +210,6 @@ class JniManager:
             impl += _JNI_SPACE + 'if(coreObject == nullptr){\n    return NULL;\n  }\n'
             impl += _JNI_SPACE + 'return {1}::JniHelper::GetJ{0}ByCore{0}(*coreObject);\n}}'.format(self.object_name,
                                                                                                     config.cpp_namespace)
-
         else:
             impl += 'JNIEXPORT jobjectArray JNICALL Java_{2}_{0}_{1}_native' \
                 .format(self.group_name, self.manager_name, config.jni_package_path)
@@ -234,7 +233,7 @@ class JniManager:
             cpp_method_name = fetch_fun_name + cpp_method_by
             cpp_method_param = cpp_method_param[:-2]
             impl += _JNI_SPACE
-            impl += 'std::vector<std::unique_ptr<{3}::{0}>> coreObjects = core_manager->{1}({2});\n\n' \
+            impl += 'std::vector<std::unique_ptr<{3}::{0}>> coreObjects = coreManager->{1}({2});\n\n' \
                 .format(self.object_name, cpp_method_name, cpp_method_param, config.cpp_namespace)
             impl += _JNI_SPACE + 'return {1}::JniHelper::GetJ{0}sArrayByCore{0}s(coreObjects);\n}}'.format(
                 self.object_name, config.cpp_namespace)
