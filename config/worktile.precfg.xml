@@ -9,7 +9,7 @@
     <ns_begin>NS_WTC_BEGIN</ns_begin>
     <ns_end>NS_WTC_END</ns_end>
     <module_name>WORKTILECORE</module_name>
-    <api_error_type>WebApi::Error</api_error_type>
+    <api_error_type>worktile::WebApi::Error</api_error_type>
   </cpp>
 
   <java>

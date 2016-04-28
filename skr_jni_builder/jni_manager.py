@@ -408,7 +408,7 @@ class JniManager:
             # TODO(lin.xiaoe.f@gmail.com): We should improve it in future.
             if config.cpp_error_type == 'const std::string&':
                 implementation += function_space(2) + 'jstring jerror = jni_env->NewStringUTF(error.c_str());\n\n'
-            elif config.cpp_error_type == 'WebApi::Error':
+            elif config.cpp_error_type == 'worktile::WebApi::Error':
                 implementation += function_space(2) + 'jstring jerror = jni_env->NewStringUTF(error.description.c_str());\n\n'
             else:
                 skr_log_warning('This is a tmp ugly implementation, you should support your own type here.')
