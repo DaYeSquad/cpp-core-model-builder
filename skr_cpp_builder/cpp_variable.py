@@ -368,9 +368,9 @@ class VarType:
         elif self.value == 6:
             return 'J'
         elif self.value == 7:  # cannot generate now
-            return '[java/lang/Object;'
+            return '[Ljava/lang/Object;'
         elif self.value == 8:  # cannot generate now
-            return 'java/lang/Object;'
+            return 'Ljava/lang/Object;'
         else:
             skr_log_warning('Unsupported value')
 
