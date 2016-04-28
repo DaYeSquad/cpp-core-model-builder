@@ -426,13 +426,13 @@ class JniManager:
                 implementation += ');\n'
 
                 implementation += function_space(2) + '} else {\n'
-                implementation += function_space(3) + 'jni_env->CallVoidMethod(global_thiz, method_id, success, error_jstr'
+                implementation += function_space(3) + 'jni_env->CallVoidMethod(global_thiz, method_id, success, jerror'
                 for output_var in api.output_var_list:
                     implementation += ', global_null'
                 implementation += ');\n'
                 implementation += function_space(2) + '}\n\n'
             else:
-                implementation += function_space(2) + 'jni_env->CallVoidMethod(global_thiz, method_id, success, error_jstr);\n\n'
+                implementation += function_space(2) + 'jni_env->CallVoidMethod(global_thiz, method_id, success, jerror);\n\n'
 
             implementation += function_space(2) + 'jni_env->DeleteGlobalRef(global_thiz);\n'
             implementation += function_space(2) + 'jni_env->DeleteGlobalRef(global_null);\n'
