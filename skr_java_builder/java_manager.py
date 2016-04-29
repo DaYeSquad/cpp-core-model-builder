@@ -139,7 +139,8 @@ class JavaManager:
             if not fetch_command.is_plural:  # singular implementation
                 if len(by_list) == 0:
                     skr_log_warning('Singular often comes with at least one by parameter')
-                fetch_function += indent(4) + 'public @Nullable {0} '.format(self.__java_object_name())
+                fetch_function += indent(4) + '@Nullable\n'
+                fetch_function += indent(4) + 'public {0} '.format(self.__java_object_name())
                 fetch_function += fetch_fun_name + self.__convert_bys_to_string(by_list, False, False) + '{\n'
 
                 parameters = self.__convert_bys_to_input_parameters(by_list)
@@ -395,16 +396,16 @@ class JavaManager:
 
     def __variable_type_from_var_list(self, var_list):
         if len(var_list) == 0:
-            variable_type = 'WebApiResponse '
+            variable_type = '@Nullable WebApiResponse '
         elif len(var_list) == 1:
             if var_list[0].var_type == VarType.cpp_object:
-                variable_type = 'WebApiWithCoreObjectResponse '
+                variable_type = '@Nullable WebApiWithCoreObjectResponse '
             elif var_list[0].var_type == VarType.cpp_object_array:
-                variable_type = 'WebApiWithListResponse '
+                variable_type = '@Nullable WebApiWithListResponse '
             else:
-                variable_type = '/*TODO .....*/WebApiResponse '
+                variable_type = '/*TODO .....*/@Nullable WebApiResponse '
         else:
-            variable_type = '/*TODO .....*/WebApiResponse '
+            variable_type = '/*TODO .....*/@Nullable WebApiResponse '
         return variable_type
 
     def __input_variable_call(self, var_list):
