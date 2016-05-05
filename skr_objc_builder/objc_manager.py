@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
+
 import re
 from skrutil.skr_logger import skr_log_warning
 from skrutil import string_utils
@@ -83,19 +88,35 @@ class ObjcManager:
             impl += _OBJC_BR
         return impl
 
-    def generate_web_api_declarations(self):
+    def generate_web_api_declarations(self, config):
+        """Generates Objective-C++ web api declarations.
+
+        Args:
+            config: A <Config> object represents user-defined info.
+
+        Returns:
+            A string which is Objective-C++ web api declarations.
+        """
         declaration = ''
         for api in self.apis:
-            declaration += self.__web_api_declaration(api)
+            declaration += self.__web_api_declaration(api, config)
             declaration += ';'
             declaration += _OBJC_BR
 
         return declaration
 
-    def generate_web_api_implementations(self):
+    def generate_web_api_implementations(self, config):
+        """Generates Objective-C++ web api implementations.
+
+        Args:
+            config: A <Config> object represents user-defined info.
+
+        Returns:
+            A string which is Objective-C++ web api implementations.
+        """
         impl = ''
         for api in self.apis:
-            impl += self.__web_api_declaration(api)
+            impl += self.__web_api_declaration(api, config)
             impl += ' {\n'
             impl += string_utils.indent(2)
             impl += '_coreManagerHandler->\n'
@@ -298,7 +319,7 @@ class ObjcManager:
             bys_string += ')'
             return bys_string
 
-    def __web_api_declaration(self, api):
+    def __web_api_declaration(self, api, config):
         declaration = ''
         declaration += '- (void){0}'.format(string_utils.first_char_to_lower(api.alias))
         if len(api.input_var_list) > 0:
@@ -310,13 +331,15 @@ class ObjcManager:
                     input_name = string_utils.to_objc_property_name(input_var.name)
                     if i == 0:
                         input_name = string_utils.first_char_to_upper(input_name)
-                    declaration += '{0}:({1}){2} '.format(input_name, input_var.var_type.to_objc_getter_string(), string_utils.first_char_to_lower(input_name))
+                    declaration += '{0}:({1}){2} '.format(input_name,
+                                                          input_var.var_type.to_objc_getter_string(config),
+                                                          string_utils.first_char_to_lower(input_name))
                 declaration += 'success:(void (^)('
         else:
             declaration += 'Success:(void (^)('
         if len(api.output_var_list) > 0:
             for i, output_var in enumerate(api.output_var_list):
-                declaration += output_var.var_type.to_objc_getter_string()
+                declaration += output_var.var_type.to_objc_getter_string(config)
                 declaration += string_utils.to_objc_property_name(output_var.name)
                 if i != len(api.output_var_list) - 1:
                     declaration += ', '

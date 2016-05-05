@@ -1,4 +1,8 @@
-from skr_cpp_builder.cpp_class import CppClass
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
+
 from skrutil import string_utils
 from skrutil.string_utils import cpp_class_name_to_cpp_file_name
 
@@ -66,7 +70,7 @@ class ObjcClass:
         output_header.write(_OBJC_BR)
 
         for objc_enum in self.objc_enum_list:
-            output_header.write(objc_enum.generate_objc_enum(self.class_name))
+            output_header.write(objc_enum.generate_objc_enum(self.class_name, config))
             output_header.write(_OBJC_BR)
 
         output_header.write('NS_ASSUME_NONNULL_BEGIN\n@interface {1}{0} : NSObject'.format(self.class_name,
@@ -74,7 +78,7 @@ class ObjcClass:
         output_header.write(_OBJC_BR)
 
         for objc_var in self.objc_var_list:
-            output_header.write(objc_var.property())
+            output_header.write(objc_var.property(config))
             output_header.write(_OBJC_BR)
 
         output_header.write('@end\nNS_ASSUME_NONNULL_END')
@@ -180,7 +184,7 @@ class ObjcClass:
         output_header.write('///-----------------------------------------\n')
         output_header.write('\n')
 
-        output_header.write(objc_manager.generate_web_api_declarations())
+        output_header.write(objc_manager.generate_web_api_declarations(config))
 
         output_header.write('///-----------------------------------------\n')
         output_header.write('/// @name Persistent store\n')
@@ -224,7 +228,7 @@ class ObjcClass:
         output_impl.write(_OBJC_BR)
         output_impl.write('#pragma mark - HTTP')
         output_impl.write(_OBJC_BR)
-        output_impl.write(objc_manager.generate_web_api_implementations())
+        output_impl.write(objc_manager.generate_web_api_implementations(config))
         output_impl.write('#pragma mark - Persistent store')
         output_impl.write(_OBJC_BR)
         output_impl.write(objc_manager.generate_fetch_implementations(config))

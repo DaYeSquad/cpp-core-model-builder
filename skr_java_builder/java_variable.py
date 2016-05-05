@@ -182,3 +182,7 @@ class JavaVariable:
     @property
     def get_set_name_str(self):
         return self.__title_style_name
+
+    @property
+    def java_enum(self):
+        return self.__java_enum

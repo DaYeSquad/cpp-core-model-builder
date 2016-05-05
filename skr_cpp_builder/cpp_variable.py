@@ -95,7 +95,19 @@ class VarType:
         else:
             print 'Unsupported value'
 
-    def to_objc_getter_string(self):
+    def to_objc_getter_string(self, config=None):
+        """Returns Objective-C++ getter type.
+
+        Args:
+            config: A <Config> object represents user-defined info.
+
+        Returns:
+            A string which is Objective-C++ getter type.
+        """
+        objc_prefix = 'LCC'
+        if config is not None:
+            objc_prefix = config.objc_prefix
+
         if self.value == 1:
             return 'BOOL'
         elif self.value == 2:
@@ -103,15 +115,15 @@ class VarType:
         elif self.value == 3:
             return 'NSString *'
         elif self.value == 4:
-            return self.objc_enum_type_string()
+            return self.objc_enum_type_string(objc_prefix)
         elif self.value == 5:
             return 'NSArray<NSString *> *'
         elif self.value == 6:
             return 'NSTimeInterval'
         elif self.value == 7:
-            return 'NSArray<LCC{0} *> *'.format(self.object_class_name)
+            return 'NSArray<{1}{0} *> *'.format(self.object_class_name, objc_prefix)
         elif self.value == 8:
-            return 'LCC{0} *'.format(self.object_class_name)
+            return '{1}{0} *'.format(self.object_class_name, objc_prefix)
         else:
             print 'Unsupported value'
 
@@ -246,12 +258,12 @@ class VarType:
         cpp_enum = cpp_enum[:-2]  # remove last 2 chars
         return cpp_enum
 
-    def objc_enum_type_string(self):
+    def objc_enum_type_string(self, objc_prefix_string):
         if self.value != 4 and self.enum_class_name is None or self.enum_class_name == '':
             return ''
 
         enum_paths = re.split('\.', self.enum_class_name)
-        objc_enum = 'LCC'
+        objc_enum = objc_prefix_string
         for enum_path in enum_paths:
             objc_enum += enum_path
         return objc_enum

@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
+
 from skr_cpp_builder.cpp_variable import VarType
 from skrutil import string_utils
 
@@ -7,6 +12,8 @@ _OBJC_SPACE = '  '
 
 
 class ObjcVariable:
+    """Represents Objective-C++ property by parsing <variable/>.
+    """
 
     def __init__(self, name, var_type_string):
         self.name = name
@@ -18,13 +25,24 @@ class ObjcVariable:
     def __objc_name(self):
         return string_utils.to_objc_property_name(self.name)
 
-    def property(self):
+    def property(self, config):
+        """Returns Objective-C++ property declaration.
+
+        Args:
+            config: A <Config> object user-defined
+
+        Returns:
+
+        """
         if self.var_type == VarType.cpp_bool:
-            return '@property (nonatomic, getter=is{1}) BOOL {0};'.format(self.__objc_name(), string_utils.first_char_to_upper(self.__objc_name()))
+            return '@property (nonatomic, getter=is{1}) BOOL {0};'\
+                .format(self.__objc_name(), string_utils.first_char_to_upper(self.__objc_name()))
         elif self.var_type == VarType.cpp_string or self.var_type == VarType.cpp_string_array:
-            return '@property (nonatomic, copy) {0}{1};'.format(self.var_type.to_objc_getter_string(), self.__objc_name())
+            return '@property (nonatomic, copy) {0}{1};'.format(self.var_type.to_objc_getter_string(config),
+                                                                self.__objc_name())
         else:
-            return '@property (nonatomic) {0} {1};'.format(self.var_type.to_objc_getter_string(), self.__objc_name())
+            return '@property (nonatomic) {0} {1};'.format(self.var_type.to_objc_getter_string(config),
+                                                           self.__objc_name())
 
     def getter_impl(self):
         if self.var_type == VarType.cpp_bool:
@@ -54,7 +72,8 @@ class ObjcVariable:
 
     def setter_impl(self):
         if self.var_type == VarType.cpp_string:
-            impl = '-(void)set{0}:(NSString *){1} {{\n'.format(string_utils.first_char_to_upper(self.__objc_name()), self.__objc_name())
+            impl = '-(void)set{0}:(NSString *){1} {{\n'.format(string_utils.first_char_to_upper(self.__objc_name()),
+                                                               self.__objc_name())
             impl += _OBJC_SPACE
             impl += '_coreHandle->set_{0}([{1} UTF8String]);\n'.format(self.name, self.__objc_name())
             impl += '}'
