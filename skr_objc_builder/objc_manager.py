@@ -43,7 +43,15 @@ class ObjcManager:
     def class_name(self):
         return self.manager_name
 
-    def generate_fetch_declarations(self):
+    def generate_fetch_declarations(self, config):
+        """Generates Objective-C++ fetch declarations.
+
+        Args:
+            config: A <Config> object represents user-defined info.
+
+        Returns:
+            A string which is Objective-C++ fetch declarations.
+        """
         declaration = ''
         for fetch_command in self.fetch_commands:
             by_list = []
@@ -53,17 +61,25 @@ class ObjcManager:
             if not fetch_command.is_plural:
                 if len(by_list) == 0:
                     skr_log_warning('Singular often comes with at least one by parameter')
-                declaration += '- (nullable LCC{0} *)fetch{0}FromCache{1};\n\n'\
-                    .format(self.object_name, self.__convert_bys_to_string(by_list))
+                declaration += '- (nullable {2}{0} *)fetch{0}FromCache{1};\n\n'\
+                    .format(self.object_name, self.__convert_bys_to_string(by_list), config.objc_prefix)
             else:
                 declaration += '- (NSArray<LCC{0} *> *)fetch{1}FromCache{2};\n\n'\
                     .format(self.object_name, self.plural_object_name, self.__convert_bys_to_string(by_list))
         return declaration
 
-    def generate_fetch_implementations(self):
+    def generate_fetch_implementations(self, config):
+        """Generates Objective-C++ fetch implementations.
+
+        Args:
+            config: A <Config> object represents user-defined info.
+
+        Returns:
+            Objective-C++ fetch implementations.
+        """
         impl = ''
         for fetch_command in self.fetch_commands:
-            impl += self.__fetch_implementation(fetch_command)
+            impl += self.__fetch_implementation(fetch_command, config)
             impl += _OBJC_BR
         return impl
 
@@ -75,7 +91,6 @@ class ObjcManager:
             declaration += _OBJC_BR
 
         return declaration
-
 
     def generate_web_api_implementations(self):
         impl = ''
@@ -121,12 +136,21 @@ class ObjcManager:
             impl += _OBJC_BR
         return impl
 
-    def generate_constructor_implementation(self):
+    def generate_constructor_implementation(self, config):
+        """Generates Objective-C++ init method.
+
+        Args:
+            config: A <Config> object represents user-defined info.
+
+        Returns:
+            Objective-C++ init method.
+        """
         impl = '- (instancetype)init {\n'
         impl += string_utils.indent(2)
         impl += 'if (self = [super init]) {\n'
         impl += string_utils.indent(4)
-        impl += '_coreManagerHandler = lesschat::{0}Manager::DefaultManager();\n'.format(self.object_name)
+        impl += '_coreManagerHandler = {1}::{0}Manager::DefaultManager();\n'.format(self.object_name,
+                                                                                    config.cpp_namespace)
         impl += string_utils.indent(2)
         impl += '}\n'
         impl += string_utils.indent(2)
@@ -134,10 +158,19 @@ class ObjcManager:
         impl += '}'
         return impl
 
-    def generate_default_manager_implementation(self):
+    def generate_default_manager_implementation(self, config):
+        """Generates Objective-C++ default manager method.
+
+        Args:
+            config: A <Config> object represents user-defined info.
+
+        Returns:
+            Objective-C++ default manager method.
+        """
         impl = '+ (instancetype)defaultManager {\n'
         impl += _OBJC_SPACE
-        impl += 'return [LCCDirector defaultDirector].{0}Manager;\n'.format(string_utils.first_char_to_lower(self.object_name))
+        impl += 'return [{1}Director defaultDirector].{0}Manager;\n'.format(
+            string_utils.first_char_to_lower(self.object_name), config.objc_prefix)
         impl += '}'
         return impl
 
@@ -169,20 +202,31 @@ class ObjcManager:
                 return objc_var
         return None
 
-    def __fetch_implementation(self, fetch_command):
+    def __fetch_implementation(self, fetch_command, config):
+        """Generates Objective-C++ fetch implementation.
+
+        Args:
+            fetch_command: A <FetchCommand> object represents necessary info for generating fetch implementation.
+            config: A <Config> object represents user-defined info.
+
+        Returns:
+            A string which is Objective-C++ fetch implementation.
+        """
         by_list = []
         if fetch_command.where != '':
             by_list = re.split(',', fetch_command.where)
 
         if not fetch_command.is_plural:
-            impl = '- (nullable LCC{0} *)fetch{0}FromCache{1} {{\n'\
-                    .format(self.object_name, self.__convert_bys_to_string(by_list))
+            impl = '- (nullable {2}{0} *)fetch{0}FromCache{1} {{\n'\
+                    .format(self.object_name, self.__convert_bys_to_string(by_list), config.objc_prefix)
             impl += string_utils.indent(2)
-            impl += 'std::unique_ptr<lesschat::{0}> core{0} = _coreManagerHandler->{1};\n'.format(self.object_name, self.__cpp_fetch_method_name(fetch_command))
+            impl += 'std::unique_ptr<{2}::{0}> core{0} = _coreManagerHandler->{1};\n'\
+                .format(self.object_name, self.__cpp_fetch_method_name(fetch_command), config.cpp_namespace)
             impl += string_utils.indent(2)
             impl += 'if (core{0}) {{\n'.format(self.object_name)
             impl += string_utils.indent(4)
-            impl += 'return [LCC{0} {1}WithCore{0}:*core{0}];\n'.format(self.object_name, string_utils.first_char_to_lower(self.object_name))
+            impl += 'return [{2}{0} {1}WithCore{0}:*core{0}];\n'\
+                .format(self.object_name, string_utils.first_char_to_lower(self.object_name), config.objc_prefix)
             impl += string_utils.indent(2)
             impl += '}\n'
             impl += string_utils.indent(2)
@@ -195,11 +239,18 @@ class ObjcManager:
             impl += string_utils.indent(2)
             impl += 'NSMutableArray *{0} = [NSMutableArray array];\n'.format(string_utils.first_char_to_lower(self.plural_object_name))
             impl += string_utils.indent(2)
-            impl += 'std::vector<std::unique_ptr<lesschat::{0}>> core{1} = _coreManagerHandler->{2};\n'.format(self.object_name, self.plural_object_name, self.__cpp_fetch_method_name(fetch_command))
+            impl += 'std::vector<std::unique_ptr<{3}::{0}>> core{1} = _coreManagerHandler->{2};\n'\
+                .format(self.object_name,
+                        self.plural_object_name,
+                        self.__cpp_fetch_method_name(fetch_command),
+                        config.objc_prefix)
             impl += string_utils.indent(2)
             impl += 'for (auto it = core{0}.begin(); it != core{0}.end(); ++it) {{\n'.format(self.plural_object_name)
             impl += string_utils.indent(4)
-            impl += '[{0} addObject:[LCC{1} {2}WithCore{1}:(**it)]];\n'.format(string_utils.first_char_to_lower(self.plural_object_name), self.object_name, string_utils.first_char_to_lower(self.object_name))
+            impl += '[{0} addObject:[LCC{1} {2}WithCore{1}:(**it)]];\n'\
+                .format(string_utils.first_char_to_lower(self.plural_object_name),
+                        self.object_name,
+                        string_utils.first_char_to_lower(self.object_name))
             impl += string_utils.indent(2)
             impl += '}\n'
             impl += string_utils.indent(2)

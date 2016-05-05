@@ -36,6 +36,7 @@ class JavaModelXmlParser:
 
         Args:
             directory: A string represents the absolute path of the directory.
+            config: A <
         """
         # create core folder if not exists and remove last build
         core_dir_path = 'build/{0}'.format(config.java_package_path)

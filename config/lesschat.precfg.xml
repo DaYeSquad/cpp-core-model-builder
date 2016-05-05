@@ -16,4 +16,8 @@
     <package>com.lesschat.core</package>
     <base_object>LessChatObject</base_object>
   </java>
+
+  <apple>
+    <prefix>LCC</prefix>
+  </apple>
 </config>

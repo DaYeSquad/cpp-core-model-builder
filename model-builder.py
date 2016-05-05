@@ -38,8 +38,8 @@ if __name__ == "__main__":
     parser = CppModelXmlParser(6.0)
     parser.parse(input_file_path, config)
 
-    objc_parser = ObjcModelXmlParser(4.0)
-    objc_parser.parse(input_file_path)
+    objc_parser = ObjcModelXmlParser(6.0)
+    objc_parser.parse(input_file_path, config)
 
     java_parser = JavaModelXmlParser(6.0)
     java_parser.parse(input_file_path, config)

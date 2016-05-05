@@ -29,6 +29,8 @@ class Config:
         self.__java_package_name = ''
         self.__java_base_object = ''
 
+        self.__objc_prefix = 'LCC'
+
         self.__parse()
 
     def __parse(self):
@@ -49,7 +51,7 @@ class Config:
                     or self.__cpp_ns_begin == '' \
                     or self.__cpp_ns_end == '' \
                     or self.__module_name == '':
-                skr_log_warning('Invalid config file. Reason : necessary not found.')
+                skr_log_warning('Invalid config file. Reason : necessary tags not found.')
                 return
         else:
             skr_log_warning('Invalid config file. Reason : <cpp> not found.')
@@ -61,7 +63,15 @@ class Config:
             self.__java_package_name = java_node.find('package').text
             self.__java_base_object = java_node.find('base_object').text
         else:
-            skr_log_warning('Invalid config file. Reason : <java> not found.')
+            skr_log_warning('Invalid config file. Reason : <java/> not found.')
+            return
+
+        # parse Objective-C++ necessary parameters
+        apple_node = root.find('apple')
+        if apple_node is not None:
+            self.__objc_prefix = apple_node.find('prefix').text
+        else:
+            skr_log_warning('Invalid config file. Reason : <apple/> not found.')
             return
 
     @property
@@ -99,3 +109,7 @@ class Config:
     @property
     def jni_package_path(self):
         return self.__java_package_name.replace('.', '_')
+
+    @property
+    def objc_prefix(self):
+        return self.__objc_prefix
