@@ -105,9 +105,9 @@ class ObjcClass:
         output_impl.write(_OBJC_BR)
 
         for objc_var in self.objc_var_list:
-            output_impl.write(objc_var.getter_impl())
+            output_impl.write(objc_var.getter_impl(config))
             output_impl.write(_OBJC_BR)
-            output_impl.write(objc_var.setter_impl())
+            output_impl.write(objc_var.setter_impl(config))
             output_impl.write(_OBJC_BR)
 
         output_impl.write('#pragma mark - Core Addition')

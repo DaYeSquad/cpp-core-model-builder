@@ -127,12 +127,12 @@ class ObjcManager:
                 impl += ', '
             impl += '[successBlock, failureBlock](bool success, const std::string& errorUTF8String'
             for output_var in api.output_var_list:
-                impl += ', {0}'.format(output_var.objc_wrapper_from_cpp_parameter())
+                impl += ', {0}'.format(output_var.objc_wrapper_from_cpp_parameter(config))
             impl += ') {\n'
             impl += string_utils.indent(4)
             impl += 'if (success) {\n'
             for output_var in api.output_var_list:
-                impl += output_var.objc_form_cpp_parameter(6)
+                impl += output_var.objc_form_cpp_parameter(6, config)
                 impl += _OBJC_BR
 
             impl += string_utils.indent(6)
@@ -149,7 +149,7 @@ class ObjcManager:
             impl += string_utils.indent(6)
             impl += 'NSString *error = [NSString stringWithUTF8String:errorUTF8String.c_str()];\n'
             impl += string_utils.indent(6)
-            impl += 'failureBlock(LCCErrorWithNSString(error));\n'
+            impl += 'failureBlock({0}(error));\n'.format(config.objc_error_method)
             impl += string_utils.indent(4)
             impl += '}\n'
             impl += string_utils.indent(2)
@@ -195,8 +195,9 @@ class ObjcManager:
         impl += '}'
         return impl
 
-    # returns "ById:(NSString *)id name:(NSString *)name" or ""
     def __convert_bys_to_string(self, by_string_list):
+        """Returns "ById:(NSString *)id name:(NSString *)name" or ""
+        """
         if len(by_string_list) == 0:  # empty string
             return ''
         else:  # "(const std::string& id, const std::string& username)"
@@ -216,8 +217,9 @@ class ObjcManager:
             bys_string = bys_string[:-1]
             return bys_string
 
-    # returns None if not found
     def __objc_var_by_name(self, name_string):
+        """Returns None if not found.
+        """
         for objc_var in self.objc_variable_list:
             if objc_var.name == name_string:
                 return objc_var
@@ -294,8 +296,9 @@ class ObjcManager:
             return 'Fetch{0}FromCache{1}'\
                 .format(self.plural_object_name, self.__convert_bys_to_cpp_string(by_list))
 
-    # returns "ById([id UTF8String])" or "([id UTF8String], [username UTF8String])" or "()"
     def __convert_bys_to_cpp_string(self, by_string_list):
+        """Returns "ById([id UTF8String])" or "([id UTF8String], [username UTF8String])" or "()".
+        """
         if len(by_string_list) == 0:  # ()
             return '()'
         elif len(by_string_list) == 1:  # "ById(const std::string& id)"

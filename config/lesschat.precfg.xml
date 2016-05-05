@@ -19,5 +19,6 @@
 
   <apple>
     <prefix>LCC</prefix>
+    <error_method>LCCErrorWithNSString</error_method>
   </apple>
 </config>

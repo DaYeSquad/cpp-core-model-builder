@@ -30,6 +30,7 @@ class Config:
         self.__java_base_object = ''
 
         self.__objc_prefix = 'LCC'
+        self.__objc_error_method = ''
 
         self.__parse()
 
@@ -70,6 +71,7 @@ class Config:
         apple_node = root.find('apple')
         if apple_node is not None:
             self.__objc_prefix = apple_node.find('prefix').text
+            self.__objc_error_method = apple_node.find('error_method').text
         else:
             skr_log_warning('Invalid config file. Reason : <apple/> not found.')
             return
@@ -113,3 +115,7 @@ class Config:
     @property
     def objc_prefix(self):
         return self.__objc_prefix
+
+    @property
+    def objc_error_method(self):
+        return self.__objc_error_method

@@ -95,16 +95,16 @@ class VarType:
         else:
             print 'Unsupported value'
 
-    def to_objc_getter_string(self, config=None):
+    def to_objc_getter_string(self, config):
         """Returns Objective-C++ getter type.
 
         Args:
-            config: A <Config> object represents user-defined info.
+            config: A <Config> object represents user-defined info or None if no prefix is used.
 
         Returns:
             A string which is Objective-C++ getter type.
         """
-        objc_prefix = 'LCC'
+        objc_prefix = ''
         if config is not None:
             objc_prefix = config.objc_prefix
 

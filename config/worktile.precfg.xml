@@ -19,5 +19,6 @@
 
   <apple>
     <prefix>WTC</prefix>
+    <error_method>WTCErrorWithCoreError</error_method>
   </apple>
 </config>
