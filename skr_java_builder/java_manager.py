@@ -473,7 +473,7 @@ class JavaManager:
             elif var.var_type == VarType.cpp_object_array:
                 vars_declarations += ', long[] ' + var.name_str + '_handler'
             else:
-                vars_declarations += ', ' + var.var_type.to_java_getter_setter_string() + ' ' + var.name_str
+                vars_declarations += ', ' + var.var_type.to_java_getter_setter_string_v2() + ' ' + var.name_str
         return vars_declarations
 
     def __convert_bys_to_input_parameters(self, by_list):
