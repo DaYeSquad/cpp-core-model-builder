@@ -172,13 +172,9 @@ class JniClass:
         file_path = 'build/jni/' + file_name
         output_header = open(file_path, 'w')
 
-        header_name = '#include "{2}_{0}_{1}Manager.h"\n'.format(self.__group_name,
-                                                                 self.__class_name,
-                                                                 config.jni_package_path)
         cpp_name = '#include "{0}/{1}_manager.h"\n'\
             .format(self.__group_name, string_utils.cpp_class_name_to_cpp_file_name(self.__class_name))
 
-        output_header.write(header_name)
         output_header.write(cpp_name)
         output_header.write('#include "utils/android/jni_helper.h"')
         output_header.write(_JNI_BR)
