@@ -441,7 +441,7 @@ class JavaManager:
             elif var.var_type == VarType.cpp_object_array:
                 vars_declarations += ', Object[] ' + var.name_str
             else:
-                vars_declarations += ', ' + var.var_type + ' ' + var.name_str
+                vars_declarations += ', ' + var.var_type.to_java_getter_setter_string_v2() + ' ' + var.name_str
         return vars_declarations
 
     def __output_variable_declaration(self, var_list):
