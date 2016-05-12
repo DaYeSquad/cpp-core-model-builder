@@ -33,7 +33,7 @@ if __name__ == "__main__":
     print('输入的文件路径为:{0}, 文件名为:{1}'.format(dir_path, file_name))
     print('开始解析据...')
 
-    config = Config('config/worktile.precfg.xml')
+    config = Config('config/lesschat.precfg.xml')
 
     parser = CppModelXmlParser(6.0)
     parser.parse(input_file_path, config)

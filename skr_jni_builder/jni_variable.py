@@ -94,7 +94,7 @@ class JniVariable:
         elif self.__var_type == VarType.cpp_string:
             return 'env->NewStringUTF({0}.c_str())'.format(return_variable)
         elif self.__var_type == VarType.cpp_string_array:
-            return '{1}::JniHelper::JobjectArrayFromStringVector({0})'.format(return_variable, namespace)
+            return '{1}::JniHelper::JStringObjectArrayFromStringVector({0})'.format(return_variable, namespace)
         elif self.__var_type == VarType.cpp_time:
             return 'static_cast<jlong>({0}) * 1000'.format(return_variable)
         elif self.__var_type == VarType.cpp_object:
@@ -213,9 +213,9 @@ class JniVariable:
         elif self.__var_type == VarType.cpp_string:
             return 'env->NewStringUTF({0}.{1}().c_str())'.format(instance_name, self.__name)
         elif self.__var_type == VarType.cpp_string_array:
-            return '{2}::JniHelper::JobjectArrayFromStringVector({0}.{1}())'.format(instance_name,
-                                                                                    self.__name,
-                                                                                    config.cpp_namespace)
+            return '{2}::JniHelper::JStringObjectArrayFromStringVector({0}.{1}())'.format(instance_name,
+                                                                                          self.__name,
+                                                                                          config.cpp_namespace)
         elif self.__var_type == VarType.cpp_time:
             return 'static_cast<jlong>({0}.{1}()) * 1000'.format(instance_name, self.__name)
         elif self.__var_type == VarType.cpp_object:
