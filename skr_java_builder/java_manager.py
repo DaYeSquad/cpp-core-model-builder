@@ -149,7 +149,7 @@ class JavaManager:
     def __http_function(self, api):
         http_function = function_space(1) + 'public void ' + string_utils.first_char_to_lower(api.function_name)
         input_variable = self.__input_variable_declarations(api.input_var_list)
-        http_function += '({0} @NonNull{1}response){{\n'\
+        http_function += '({0} @NonNull {1}response){{\n'\
             .format(input_variable, self.__variable_type_from_var_list(api.output_var_list))
         http_function += function_space(2) + 'm{0}Response'.format(api.function_name) + ' = response;\n'
         for variable in api.input_var_list:
@@ -250,10 +250,10 @@ class JavaManager:
         vars_declarations = ''
         for var in var_list:
             if var.var_type == VarType.cpp_enum:
-                vars_declarations += '@NonNull' + var.java_enum \
+                vars_declarations += '@NonNull ' + var.java_enum \
                                      + ' ' + var.name_str + ', '
             else:
-                vars_declarations += '@NonNull' + var.var_type.to_java_getter_setter_string() \
+                vars_declarations += '@NonNull ' + var.var_type.to_java_getter_setter_string() \
                                      + ' ' + var.name_str + ', '
         return vars_declarations
 
