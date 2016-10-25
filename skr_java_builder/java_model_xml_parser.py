@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
+
 import xml.etree.ElementTree
 import os
 import shutil
@@ -6,19 +11,36 @@ from java_variable import JavaVariable
 from java_class import JavaClass
 from java_enum import JavaEnum
 
-
 from java_manager import JavaManager
 from java_manager import JavaManagerFetchCommand
 from java_manager import JavaApiDescription
 
 
 class JavaModelXmlParser:
-    def __init__(self, version):
-        self.version = version
+    """Java file and jni file parser and generator.
 
-    def parse(self, directory):
+    To use:
+    >>> java_parser = JavaModelXmlParser(5.0)
+    >>> java_parser.parse('directory_to_module_xml_file')
+    """
+
+    def __init__(self, version):
+        """Init parser and generator with version number.
+        Args:
+            version: A float that describes version number of module builder, it does not have other usage now.
+        """
+        self.__version = version
+
+    def parse(self, directory, config):
+        """Parse the module XML file and generates the result.
+
+        Args:
+            directory: A string represents the absolute path of the directory.
+            config: A <
+        """
         # create core folder if not exists and remove last build
-        core_dir_path = 'build/com/lesschat/core/'
+        core_dir_path = 'build/{0}'.format(config.java_package_path)
+        print core_dir_path
         if os.path.exists(core_dir_path):
             shutil.rmtree(core_dir_path)
             os.makedirs(core_dir_path)
@@ -32,7 +54,7 @@ class JavaModelXmlParser:
         # search directories
         for folder_node in root.findall('group'):
             group_name = folder_node.get('name')
-            group_path = 'build/com/lesschat/core/' + group_name
+            group_path = 'build/{0}/'.format(config.java_package_path) + group_name
             if os.path.exists(group_path):
                 shutil.rmtree(group_path)
                 os.makedirs(group_path)
@@ -73,30 +95,16 @@ class JavaModelXmlParser:
                 if manager_or_none is not None:
                     manager_name = manager_or_none.get('name')
                     java_manager = JavaManager(manager_name)
-                #
-                #     # parse all <save/>
-                #     for save_node in manager_or_none.findall('save'):
-                #         is_plural = False
-                #         plural_node = save_node.get('plural')
-                #         if plural_node is not None:
-                #             is_plural = True
-                #         save_command = JavaManagerSaveCommand(is_plural)
-                #         java_manager.add_save_command(save_command)
-                #
-                #     # parse all <delete/>
-                #     for delete_node in manager_or_none.findall('delete'):
-                #         is_plural = False
-                #         plural_node = delete_node.get('plural')
-                #         if plural_node is not None:
-                #             is_plural = True
-                #
-                #         by = delete_node.get('by')
-                #         delete_command = JavaManagerDeleteCommand(is_plural, by)
-                #         java_manager.add_delete_command(delete_command)
-                #
+
                     # parse all <fetch/>
                     for fetch_node in manager_or_none.findall('fetch'):
                         is_plural = False
+
+                        # compact with version before 4.0
+                        is_plural_attr = fetch_node.get('plural')
+                        if is_plural_attr and is_plural_attr == 'true':
+                            is_plural = True
+
                         by = fetch_node.get('by')
                         alias = fetch_node.get('alias')
                         fetch_command = JavaManagerFetchCommand(is_plural, by, alias)
@@ -140,20 +148,13 @@ class JavaModelXmlParser:
                         api = JavaApiDescription(function_name, input_var_list, output_var_list)
                         java_manager.add_api_description(api)
 
-                # write object header
-                # java_class = JavaClass(group_name, class_name, java_var_list, java_enum_list, java_manager)
-                # java_class.generate_header()
-                #
-                # # write object implementation
-                # java_class.generate_implementation()
-                #
-                # # write manager header
-                # java_class.generate_manager_header()
-                #
-                # # write manager implementation
-                # java_class.generate_manager_implementation()
-
                 java_class = JavaClass(group_name, class_name, java_var_list, java_enum_list, java_manager)
-                java_class.generate_java()
 
-                java_class.generate_manager()
+                if self.__version < 5.0:
+                    # Inherit from CoreObject
+                    java_class.generate_java()
+                    java_class.generate_manager(self.__version)
+                else:
+                    # Inherit from LessChatObject
+                    java_class.generate_java_v2(config)
+                    java_class.generate_manager(self.__version, config)

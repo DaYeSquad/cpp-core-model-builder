@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
+
 import xml.etree.ElementTree
 import re
 
@@ -15,18 +20,32 @@ from cpp_manager import CppApiDescription
 
 from cpp_replacement import CppReplacement
 
+from skrutil.config import Config
+
 
 class CppModelXmlParser:
+    """C++ model XML parser.
+    """
 
     def __init__(self, version):
-        self.version = version
+        """Init parser with version.
 
-    def parse(self, directory):
+        Args:
+            version: An int value represents current version number.
+        """
+        self.__version = version
+
+    def parse(self, directory, config):
         """Parse module description xml file and translate them into Cpp objects.
 
         Args:
             directory: Path of xml file including the file.
         """
+        # compact with older version
+        if self.__version < 6.0:
+            if config is None:
+                config = Config('config/lesschat.precfg.xml')
+
         # create core folder if not exists and remove last build
         core_dir_path = 'build/core'
         io_utils.make_directory_if_not_exists(core_dir_path)
@@ -167,7 +186,9 @@ class CppModelXmlParser:
                     cpp_manager.set_table_name_list(table_name_list)
 
                 # write object header
-                cpp_class = CppClass(group_name, class_name, cpp_var_list, cpp_enum_list, cpp_manager, replacement_list, class_comment)
+                cpp_class = CppClass(group_name, class_name, cpp_var_list, cpp_enum_list, cpp_manager, replacement_list,
+                                     class_comment)
+                cpp_class.set_config(config)
                 cpp_class.generate_header()
 
                 # write object implementation

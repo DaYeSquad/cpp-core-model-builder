@@ -1,6 +1,11 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
+
 import re
+
 from skrutil.skr_logger import skr_log_warning
-from skrutil import string_utils
 
 _JNI_BR = '\n\n'
 _JNI_SPACE = '  '
@@ -43,6 +48,9 @@ class JniManagerDeleteCommand:
 
 
 class JniApiDescription:
+    """Represents manager's API description (<api/>).
+    """
+
     def __init__(self, function_name, input_var_list, output_var_list):
         self.function_name = function_name
         self.input_var_list = input_var_list
@@ -50,6 +58,9 @@ class JniApiDescription:
 
 
 class JniManager:
+    """Object manager in JNI part.
+    """
+
     def __init__(self, manager_name):
         self.manager_name = manager_name
         self.save_commands = []
@@ -135,11 +146,97 @@ class JniManager:
                 declaration += fetch_fun_name + bys
         return declaration
 
-    def generate_fetch_implementations(self):
+    def generate_fetch_implementations(self, version, config):
+        """Gets fetch implementation of JNI manager code.
+
+        Args:
+            version: A float version number of <JniModelXmlParser>.
+            config: A <Config> object describes user-defined names.
+
+        Returns:
+            A string which is fetch implementation of JNI manager code.
+        """
         impl = ''
         for fetch_command in self.fetch_commands:
-            impl += self.__fetch_implementation(fetch_command)
+            if version < 5.0:
+                impl += self.__fetch_implementation(fetch_command)
+            else:
+                impl += self.__fetch_implementation_v2(fetch_command, config)
             impl += _JNI_BR
+        return impl
+
+    def __fetch_implementation_v2(self, fetch_command, config):
+        by_list = []
+        impl = ''
+        if fetch_command.where != '':
+            by_list = re.split(',', fetch_command.where)
+
+        bys = self.__convert_bys_to_string_impl(by_list, self.fetch_has_sign)
+
+        if fetch_command.alias != '':
+            fetch_fun_name = fetch_command.alias
+        elif not fetch_command.is_plural:
+            fetch_fun_name = 'Fetch{0}FromCache'.format(self.object_name)
+        else:
+            fetch_fun_name = 'Fetch{0}FromCache'.format(self.plural_object_name)
+
+        if not fetch_command.is_plural:
+            if len(by_list) == 0:
+                skr_log_warning('Singular often comes with at least one by parameter')
+            impl += 'JNIEXPORT jobject JNICALL Java_{2}_{0}_{1}_native' \
+                .format(self.group_name, self.manager_name, config.jni_package_path)
+            impl += fetch_fun_name + bys
+            impl += _JNI_SPACE + 'const {1}::{0}* coreManager = reinterpret_cast<{1}::{0}*>(handler);' \
+                .format(self.manager_name, config.cpp_namespace)
+            impl += _JNI_BR
+
+            cpp_method_param = ''
+            for by_string in by_list:
+                jni_var = self.__jni_var_by_name(by_string)
+                if jni_var is not None:
+                    impl += _JNI_SPACE + jni_var.var_type.to_getter_string() + " cpp" + jni_var.to_param_style_name()
+                    impl += ' = ' + jni_var.cpp_variable_from_jni_variable(jni_var.to_param_style_name(), config) + ';'
+                    cpp_method_param += 'cpp' + jni_var.to_param_style_name() + ', '
+            impl += _JNI_BR
+            if len(by_list) == 1:
+                cpp_method_by = 'By' + jni_var.to_title_style_name()
+            else:
+                cpp_method_by = ''
+
+            cpp_method_name = fetch_fun_name + cpp_method_by
+            cpp_method_param = cpp_method_param[:-2]
+            impl += _JNI_SPACE + 'std::unique_ptr<{3}::{0}> coreObject = coreManager->{1}({2});\n\n' \
+                .format(self.object_name, cpp_method_name, cpp_method_param, config.cpp_namespace)
+            impl += _JNI_SPACE + 'if(coreObject == nullptr){\n    return NULL;\n  }\n'
+            impl += _JNI_SPACE + 'return {1}::JniHelper::GetJ{0}ByCore{0}(*coreObject);\n}}'.format(self.object_name,
+                                                                                                    config.cpp_namespace)
+        else:
+            impl += 'JNIEXPORT jobjectArray JNICALL Java_{2}_{0}_{1}_native' \
+                .format(self.group_name, self.manager_name, config.jni_package_path)
+            impl += fetch_fun_name + bys
+            impl += _JNI_SPACE + 'const {1}::{0}* coreManager = reinterpret_cast<{1}::{0}*>(handler);' \
+                .format(self.manager_name, config.cpp_namespace)
+            impl += _JNI_BR
+
+            cpp_method_param = ''
+            for by_string in by_list:
+                jni_var = self.__jni_var_by_name(by_string)
+                if jni_var is not None:
+                    impl += _JNI_SPACE + jni_var.to_getter_string() + " cpp" + jni_var.to_param_style_name()
+                    impl += ' = ' + jni_var.cpp_variable_from_jni_variable(jni_var.to_param_style_name(), config) + ';\n'
+                    cpp_method_param += 'cpp' + jni_var.to_param_style_name() + ', '
+            if len(by_list) == 1:
+                cpp_method_by = 'By' + jni_var.to_title_style_name()
+            else:
+                cpp_method_by = ''
+
+            cpp_method_name = fetch_fun_name + cpp_method_by
+            cpp_method_param = cpp_method_param[:-2]
+            impl += _JNI_SPACE
+            impl += 'std::vector<std::unique_ptr<{3}::{0}>> coreObjects = coreManager->{1}({2});\n\n' \
+                .format(self.object_name, cpp_method_name, cpp_method_param, config.cpp_namespace)
+            impl += _JNI_SPACE + 'return {1}::JniHelper::GetJ{0}sArrayByCore{0}s(coreObjects);\n}}'.format(
+                self.object_name, config.cpp_namespace)
         return impl
 
     def __fetch_implementation(self, fetch_command):
@@ -235,23 +332,34 @@ class JniManager:
             declaration += ');\n\n'
         return declaration
 
-    def generate_http_function_implementations(self):
+    def generate_http_function_implementations(self, config):
+        """Generates HTTP - Cache methods.
+
+        Args:
+            config: A <Config> object represents user-defined config including namespace and package path.
+
+        Returns:
+            A string that is JNI http methods.
+        """
+        namespace = config.cpp_namespace
         implementation = ''
         for api in self.apis:
-            implementation += 'JNIEXPORT void JNICALL Java_com_lesschat_core_{0}_{1}_native{2}\n'\
-                .format(self.group_name, self.manager_name, api.function_name)
+            implementation += 'JNIEXPORT void JNICALL Java_{3}_{0}_{1}_native{2}\n'\
+                .format(self.group_name, self.manager_name, api.function_name, config.jni_package_path)
             implementation += '  (JNIEnv* env, jobject thiz, jlong handler'
             for input_var in api.input_var_list:
                 implementation += ', {0} {1}'.format(input_var.var_type.to_jni_getter_string(),
                                                      input_var.to_param_style_name())
             implementation += ') {\n'
-            implementation += function_space(1) + 'const lesschat::{0}* core_manager = reinterpret_cast<lesschat::{0}*>(handler);\n\n' \
-                .format(self.manager_name)
+            implementation += function_space(1) + 'const {1}::{0}* core_manager = ' \
+                                                  'reinterpret_cast<{1}::{0}*>(handler);\n\n' \
+                .format(self.manager_name, namespace)
             implementation += function_space(1) + 'jobject global_thiz = env->NewGlobalRef(thiz);\n'
             implementation += function_space(1) + 'jobject global_null = env->NewGlobalRef(NULL);\n\n'
             for input_var in api.input_var_list:
                 implementation += _JNI_SPACE + input_var.to_getter_string() + " cpp_" + input_var.to_param_style_name()
-                implementation += ' = ' + input_var.cpp_variable_from_jni_variable(input_var.to_param_style_name()) + ';\n'
+                implementation += ' = ' + input_var.cpp_variable_from_jni_variable(input_var.to_param_style_name(), config)
+                implementation += ';\n'
             implementation += '\n'
 
             implementation += function_space(1) + 'core_manager->{0}('.format(api.function_name)
@@ -275,14 +383,14 @@ class JniManager:
             for i in range(space_length):
                 space += " "
             implementation += 'bool success,\n'
-            implementation += space + 'const std::string& error'
+            implementation += space + '{0} error'.format(config.cpp_error_type)
             for i in range(len(api.output_var_list)):
                 implementation += ',\n{0}{1} {2}'.format(space,
-                                                         api.output_var_list[i].to_getter_string(),
+                                                         api.output_var_list[i].to_getter_string(namespace),
                                                          api.output_var_list[i].name)
             implementation += '){\n'
 
-            implementation += function_space(2) + 'JNIEnv *jni_env = lesschat::JniHelper::GetJniEnv();\n'
+            implementation += function_space(2) + 'JNIEnv *jni_env = {0}::JniHelper::GetJniEnv();\n'.format(namespace)
             implementation += function_space(2) + 'jclass jclazz = jni_env->GetObjectClass(global_thiz);\n\n'
             implementation += function_space(2) + 'if(jclazz == NULL) {\n'
             implementation += function_space(3) + 'return;\n'
@@ -290,33 +398,41 @@ class JniManager:
             java_callback_function_name_str = 'on{0}'.format(api.function_name)
             java_callback_function_sign_str = 'ZLjava/lang/String;'
             for output_var in api.output_var_list:
-                java_callback_function_sign_str += self.__convert_output_var_to_signature(output_var.var_type)
+                java_callback_function_sign_str += output_var.var_type.to_jni_signature_v2()
             implementation += function_space(2) + 'jmethodID method_id = jni_env->GetMethodID(jclazz, "{0}", "({1})V");\n'\
                 .format(java_callback_function_name_str, java_callback_function_sign_str)
             implementation += function_space(2) + 'if(method_id == NULL) {\n'
             implementation += function_space(3) + 'return;\n'
             implementation += function_space(2) + '}\n'
-            implementation += function_space(2) + 'jstring error_jstr = jni_env->NewStringUTF(error.c_str());\n\n'
+
+            # TODO(lin.xiaoe.f@gmail.com): We should improve it in future.
+            if config.cpp_error_type == 'const std::string&':
+                implementation += function_space(2) + 'jstring jerror = jni_env->NewStringUTF(error.c_str());\n\n'
+            elif config.cpp_error_type == 'worktile::WebApi::Error':
+                implementation += function_space(2) + 'jstring jerror = jni_env->NewStringUTF(error.description.c_str());\n\n'
+            else:
+                skr_log_warning('This is a tmp ugly implementation, you should support your own type here.')
 
             if len(api.output_var_list) != 0:
                 implementation += function_space(2) + 'if (success){\n'
-                implementation += function_space(3) + 'jni_env->CallVoidMethod(global_thiz, method_id, success, error_jstr'
+                implementation += function_space(3) + 'jni_env->CallVoidMethod(global_thiz, method_id, success, jerror'
                 space_length = len(function_space(3) + 'jni_env->CallVoidMethod(')
                 space = ''
                 for i in range(space_length):
                     space += " "
                 for output_var in api.output_var_list:
-                    implementation += ',\n' + space + output_var.jni_variable_from_cpp_variable(output_var.name)
+                    implementation += ',\n' + space + output_var.jni_variable_from_cpp_variable_v2(output_var.name,
+                                                                                                   namespace)
                 implementation += ');\n'
 
                 implementation += function_space(2) + '} else {\n'
-                implementation += function_space(3) + 'jni_env->CallVoidMethod(global_thiz, method_id, success, error_jstr'
+                implementation += function_space(3) + 'jni_env->CallVoidMethod(global_thiz, method_id, success, jerror'
                 for output_var in api.output_var_list:
                     implementation += ', global_null'
                 implementation += ');\n'
                 implementation += function_space(2) + '}\n\n'
             else:
-                implementation += function_space(2) + 'jni_env->CallVoidMethod(global_thiz, method_id, success, error_jstr);\n\n'
+                implementation += function_space(2) + 'jni_env->CallVoidMethod(global_thiz, method_id, success, jerror);\n\n'
 
             implementation += function_space(2) + 'jni_env->DeleteGlobalRef(global_thiz);\n'
             implementation += function_space(2) + 'jni_env->DeleteGlobalRef(global_null);\n'
@@ -324,8 +440,9 @@ class JniManager:
             implementation += '}\n\n'
         return implementation
 
-    # returns "ById" or ""
     def __convert_bys_to_string(self, by_string_list, has_sign):
+        """Returns "ById" or "".
+        """
         if len(by_string_list) == 0:  # empty string
             if has_sign:
                 return '__J\n  (JNIEnv *, jobject, jlong);\n\n'
@@ -391,34 +508,10 @@ class JniManager:
                 sign_ = '__' + sign
             return bys_string.format(sign_)
 
-    # returns None if not found
     def __jni_var_by_name(self, name_string):
+        """Returns <JniVariable> object or None if not found.
+        """
         for jni_var in self.jni_variable_list:
             if jni_var.name == name_string:
                 return jni_var
         return None
-
-    # return signature, for example: J/Z/V
-    def __convert_output_var_to_signature(self, var_type):
-        if var_type.value == 1:
-            return 'Z'
-        elif var_type.value == 2:
-            return 'I'
-        elif var_type.value == 3:
-            return 'Ljava/lang/String;'
-        elif var_type.value == 4:
-            return 'I'
-        elif var_type.value == 5:
-            return '[Ljava/lang/String;'
-        elif var_type.value == 6:
-            return 'J'
-        elif var_type.value == 7:
-            return '[J'
-        elif var_type.value == 8:
-            return 'J'
-        else:
-            print 'Unsupported value'
-
-
-
-

@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
+
 import xml.etree.ElementTree
 
 from skrutil import io_utils
@@ -15,11 +20,23 @@ from objc_manager import ObjcManager
 
 
 class ObjcModelXmlParser:
+    """Objective-C++ file parser and generator.
+
+    To use:
+    >>> objc_parser = ObjcModelXmlParser(6.0)
+    >>> objc_parser.parse('directory_to_module_xml_file')
+    """
 
     def __init__(self, version):
-        self.version = version
+        self.__version = version
 
-    def parse(self, directory):
+    def parse(self, directory, config):
+        """Parse the input file with user-defined config.
+
+        Args:
+            directory: A string represents module.xml file.
+            config: A <Config> object represents user-defined info, such as class prefix.
+        """
         # create core folder if not exists and remove last build
         objc_dir_path = 'build/ObjectiveCppWrapper'
         io_utils.make_directory_if_not_exists(objc_dir_path)
@@ -75,7 +92,8 @@ class ObjcModelXmlParser:
                         plural_node = save_node.get('plural')
                         if plural_node is not None:
                             is_plural = True
-                        save_command = CppManagerSaveCommand(is_plural)
+                        alias_attr = save_node.get('alias')
+                        save_command = CppManagerSaveCommand(is_plural, [], alias_attr)
                         objc_manager.add_save_command(save_command)
 
                     # parse all <delete/>
@@ -86,7 +104,8 @@ class ObjcModelXmlParser:
                             is_plural = True
 
                         by = delete_node.get('by')
-                        delete_command = CppManagerDeleteCommand(is_plural, by)
+                        alias_attr = delete_node.get('alias')
+                        delete_command = CppManagerDeleteCommand(is_plural, by, [], alias_attr)
                         objc_manager.add_delete_command(delete_command)
 
                     # parse all <fetch/>
@@ -104,8 +123,8 @@ class ObjcModelXmlParser:
                             if desc_desciption_or_none is not None:
                                 if desc_desciption_or_none == 'true':
                                     is_asc = False
-
-                        fetch_command = CppManagerFetchCommand(is_plural, by, sort_by_or_none, is_asc)
+                        alias_attr = fetch_node.get('alias')
+                        fetch_command = CppManagerFetchCommand(is_plural, by, sort_by_or_none, is_asc, [], alias_attr)
                         objc_manager.add_fetch_command(fetch_command)
 
                     # parse all <api/>
@@ -139,24 +158,25 @@ class ObjcModelXmlParser:
 
                             output_var_list.append(var)
 
-                        api = CppApiDescription(api_name, api_alias, api_method, api_uri, input_var_list, output_var_list, [])
+                        api = CppApiDescription(api_name, api_alias, api_method, api_uri, input_var_list,
+                                                output_var_list, [])
                         objc_manager.add_api_description(api)
 
                 # write objective-c++ wrapper core addition header
                 objc_wrapper = ObjcClass(group_name, class_name, objc_var_list, objc_enum_list, objc_manager)
-                objc_wrapper.generate_core_addition_header()
+                objc_wrapper.generate_core_addition_header(config)
 
                 # write objective-c++ wrapper header
-                objc_wrapper.generate_header()
+                objc_wrapper.generate_header(config)
 
                 # write objective-c++ wrapper implementation
-                objc_wrapper.generate_implementation()
+                objc_wrapper.generate_implementation(config)
 
                 # write objective-c++ wrapper manager category header
-                objc_wrapper.generate_manager_core_addition_header()
+                objc_wrapper.generate_manager_core_addition_header(config)
 
                 # write objective-c++ wrapper manager header
-                objc_wrapper.generate_manager_header()
+                objc_wrapper.generate_manager_header(config)
 
                 # write objective-c++ wrapper manager implementation
-                objc_wrapper.generate_manager_implementation()
+                objc_wrapper.generate_manager_implementation(config)

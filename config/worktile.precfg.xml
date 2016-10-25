@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!-- Version 6.0, code generator config file.
+  - Designed by Frank Lin ©2016
+ -->
+
+<config>
+  <cpp>
+    <namespace>worktile</namespace>
+    <ns_begin>NS_WTC_BEGIN</ns_begin>
+    <ns_end>NS_WTC_END</ns_end>
+    <module_name>WORKTILECORE</module_name>
+    <api_error_type>worktile::WebApi::Error</api_error_type>
+  </cpp>
+
+  <java>
+    <package>com.worktilecore.core</package>
+    <base_object>WorktileObject</base_object>
+  </java>
+
+  <apple>
+    <prefix>WTC</prefix>
+    <error_method>WTCErrorWithCoreError</error_method>
+  </apple>
+</config>

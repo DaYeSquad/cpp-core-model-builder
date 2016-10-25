@@ -1,6 +1,11 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
+
 import xml.etree.ElementTree
+
 from skrutil import io_utils
-from skrutil import string_utils
 
 from jni_variable import JniVariable
 from jni_manager import JniManager
@@ -12,12 +17,22 @@ from skr_jni_builder.jni_manager import JniApiDescription
 from jni_class import JniClass
 
 
-class JniModelXmlParse:
-
+class JniModelXmlParser:
+    """Parse XML file and generates related JNI files. Pairs with <JavaModelXmlParser>.
+    """
     def __init__(self, version):
-        self.version = version
+        self.__version = version
 
-    def parse(self, directory):
+    def parse(self, directory, config):
+        """Parses module XML file and gets code for JNI implementation.
+
+        Args:
+            directory: The directory which is full path of XML file.
+            config: A <Config> object describes user-defined names.
+
+        Returns:
+            A string which is JNI implementation.
+        """
         # create core folder if not exists and remove last build
         jni_dir_path = 'build/jni'
         io_utils.make_directory_if_not_exists(jni_dir_path)
@@ -77,6 +92,11 @@ class JniModelXmlParse:
                     # parse all <fetch/>
                     for fetch_node in manager_or_none.findall('fetch'):
                         is_plural = False
+
+                        is_plural_attr = fetch_node.get('plural')
+                        if is_plural_attr == 'true':
+                            is_plural = True
+
                         by = fetch_node.get('by')
                         alias = fetch_node.get('alias')
                         fetch_command = JniManagerFetchCommand(is_plural, by, alias)
@@ -121,15 +141,22 @@ class JniModelXmlParse:
                         api = JniApiDescription(function_name, input_var_list, output_var_list)
                         jni_manager.add_api_description(api)
 
-                # write jni wrapper header
                 jni_wrapper = JniClass(group_name, class_name, jni_var_list, jni_manager)
-                jni_wrapper.generate_header()
+                if self.__version < 5.0:
+                    # write jni wrapper header
+                    jni_wrapper.generate_header()
 
-                # write jni wrapper implementation
-                jni_wrapper.generate_implementation()
+                    # write jni wrapper implementation
+                    jni_wrapper.generate_implementation()
 
-                # write jni wrapper manager header
-                jni_wrapper.generate_manager_header()
+                    # write jni wrapper manager header
+                    jni_wrapper.generate_manager_header()
 
-                # write jni wrapper manager implementation
-                jni_wrapper.generate_manager_implementation()
+                    # write jni wrapper manager implementation
+                    jni_wrapper.generate_manager_implementation()
+                else:
+                    # write jni helper implementation
+                    jni_wrapper.generate_jni_helper_implementation(config)
+
+                    # write jni wrapper manager implementation
+                    jni_wrapper.generate_manager_implementation(self.__version, config)

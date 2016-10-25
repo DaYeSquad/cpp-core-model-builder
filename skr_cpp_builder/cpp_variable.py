@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
+
 from copy import copy
 import string
 import re
@@ -8,8 +13,9 @@ from skrutil import string_utils
 
 
 class VarType:
-    """
-    Describes C++ field in model xml file.
+    """Describes C++ type in model xml file. Supports following types:
+    bool, int, std::string, enum, std::vector<std::string>, time_t, std::vector<std::unique_ptr<Object>>,
+    std::unique_ptr<Object>.
     """
     cpp_bool = 1
     cpp_int = 2
@@ -89,7 +95,19 @@ class VarType:
         else:
             print 'Unsupported value'
 
-    def to_objc_getter_string(self):
+    def to_objc_getter_string(self, config):
+        """Returns Objective-C++ getter type.
+
+        Args:
+            config: A <Config> object represents user-defined info or None if no prefix is used.
+
+        Returns:
+            A string which is Objective-C++ getter type.
+        """
+        objc_prefix = ''
+        if config is not None:
+            objc_prefix = config.objc_prefix
+
         if self.value == 1:
             return 'BOOL'
         elif self.value == 2:
@@ -97,15 +115,15 @@ class VarType:
         elif self.value == 3:
             return 'NSString *'
         elif self.value == 4:
-            return self.objc_enum_type_string()
+            return self.objc_enum_type_string(objc_prefix)
         elif self.value == 5:
             return 'NSArray<NSString *> *'
         elif self.value == 6:
             return 'NSTimeInterval'
         elif self.value == 7:
-            return 'NSArray<LCC{0} *> *'.format(self.object_class_name)
+            return 'NSArray<{1}{0} *> *'.format(self.object_class_name, objc_prefix)
         elif self.value == 8:
-            return 'LCC{0} *'.format(self.object_class_name)
+            return '{1}{0} *'.format(self.object_class_name, objc_prefix)
         else:
             print 'Unsupported value'
 
@@ -156,6 +174,26 @@ class VarType:
             return 'long'
         elif self.value == 7:
             return 'List<{0}>'.format(self.object_class_name)
+        elif self.value == 8:
+            return self.object_class_name
+        else:
+            print 'Unsupported value'
+
+    def to_java_getter_setter_string_v2(self):
+        if self.value == 1:
+            return 'boolean'
+        elif self.value == 2:
+            return 'int'
+        elif self.value == 3:
+            return 'String'
+        elif self.value == 4:
+            return '@{0} int'.format(self.enum_class_name)
+        elif self.value == 5:
+            return 'String[]'
+        elif self.value == 6:
+            return 'long'
+        elif self.value == 7:
+            return '{0}[]'.format(self.object_class_name)
         elif self.value == 8:
             return self.object_class_name
         else:
@@ -220,12 +258,12 @@ class VarType:
         cpp_enum = cpp_enum[:-2]  # remove last 2 chars
         return cpp_enum
 
-    def objc_enum_type_string(self):
+    def objc_enum_type_string(self, objc_prefix_string):
         if self.value != 4 and self.enum_class_name is None or self.enum_class_name == '':
             return ''
 
         enum_paths = re.split('\.', self.enum_class_name)
-        objc_enum = 'LCC'
+        objc_enum = objc_prefix_string
         for enum_path in enum_paths:
             objc_enum += enum_path
         return objc_enum
@@ -327,6 +365,46 @@ class VarType:
             return 'nullptr'
         else:
             print 'Unsupported value'
+
+    def to_jni_signature_v2(self):
+        if self.value == 1:
+            return 'Z'
+        elif self.value == 2:
+            return 'I'
+        elif self.value == 3:
+            return 'Ljava/lang/String;'
+        elif self.value == 4:
+            return 'I'
+        elif self.value == 5:
+            return '[Ljava/lang/String;'
+        elif self.value == 6:
+            return 'J'
+        elif self.value == 7:  # cannot generate now
+            return '[Ljava/lang/Object;'
+        elif self.value == 8:  # cannot generate now
+            return 'Ljava/lang/Object;'
+        else:
+            skr_log_warning('Unsupported value')
+
+    def to_jni_signature(self):
+        if self.value == 1:
+            return 'Z'
+        elif self.value == 2:
+            return 'I'
+        elif self.value == 3:
+            return 'Ljava/lang/String;'
+        elif self.value == 4:
+            return 'I'
+        elif self.value == 5:
+            return '[Ljava/lang/String;'
+        elif self.value == 6:
+            return 'J'
+        elif self.value == 7:
+            return '[J'
+        elif self.value == 8:
+            return 'J'
+        else:
+            skr_log_warning('Unsupported value')
 
 
 class CppVariable:

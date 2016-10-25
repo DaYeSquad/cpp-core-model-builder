@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016 - Frank Lin
+
 import re
 from skrutil.skr_logger import skr_log_warning
 from skrutil import string_utils
@@ -43,7 +48,15 @@ class ObjcManager:
     def class_name(self):
         return self.manager_name
 
-    def generate_fetch_declarations(self):
+    def generate_fetch_declarations(self, config):
+        """Generates Objective-C++ fetch declarations.
+
+        Args:
+            config: A <Config> object represents user-defined info.
+
+        Returns:
+            A string which is Objective-C++ fetch declarations.
+        """
         declaration = ''
         for fetch_command in self.fetch_commands:
             by_list = []
@@ -53,34 +66,57 @@ class ObjcManager:
             if not fetch_command.is_plural:
                 if len(by_list) == 0:
                     skr_log_warning('Singular often comes with at least one by parameter')
-                declaration += '- (nullable LCC{0} *)fetch{0}FromCache{1};\n\n'\
-                    .format(self.object_name, self.__convert_bys_to_string(by_list))
+                declaration += '- (nullable {2}{0} *)fetch{0}FromCache{1};\n\n'\
+                    .format(self.object_name, self.__convert_bys_to_string(by_list), config.objc_prefix)
             else:
                 declaration += '- (NSArray<LCC{0} *> *)fetch{1}FromCache{2};\n\n'\
                     .format(self.object_name, self.plural_object_name, self.__convert_bys_to_string(by_list))
         return declaration
 
-    def generate_fetch_implementations(self):
+    def generate_fetch_implementations(self, config):
+        """Generates Objective-C++ fetch implementations.
+
+        Args:
+            config: A <Config> object represents user-defined info.
+
+        Returns:
+            Objective-C++ fetch implementations.
+        """
         impl = ''
         for fetch_command in self.fetch_commands:
-            impl += self.__fetch_implementation(fetch_command)
+            impl += self.__fetch_implementation(fetch_command, config)
             impl += _OBJC_BR
         return impl
 
-    def generate_web_api_declarations(self):
+    def generate_web_api_declarations(self, config):
+        """Generates Objective-C++ web api declarations.
+
+        Args:
+            config: A <Config> object represents user-defined info.
+
+        Returns:
+            A string which is Objective-C++ web api declarations.
+        """
         declaration = ''
         for api in self.apis:
-            declaration += self.__web_api_declaration(api)
+            declaration += self.__web_api_declaration(api, config)
             declaration += ';'
             declaration += _OBJC_BR
 
         return declaration
 
+    def generate_web_api_implementations(self, config):
+        """Generates Objective-C++ web api implementations.
 
-    def generate_web_api_implementations(self):
+        Args:
+            config: A <Config> object represents user-defined info.
+
+        Returns:
+            A string which is Objective-C++ web api implementations.
+        """
         impl = ''
         for api in self.apis:
-            impl += self.__web_api_declaration(api)
+            impl += self.__web_api_declaration(api, config)
             impl += ' {\n'
             impl += string_utils.indent(2)
             impl += '_coreManagerHandler->\n'
@@ -91,12 +127,12 @@ class ObjcManager:
                 impl += ', '
             impl += '[successBlock, failureBlock](bool success, const std::string& errorUTF8String'
             for output_var in api.output_var_list:
-                impl += ', {0}'.format(output_var.objc_wrapper_from_cpp_parameter())
+                impl += ', {0}'.format(output_var.objc_wrapper_from_cpp_parameter(config))
             impl += ') {\n'
             impl += string_utils.indent(4)
             impl += 'if (success) {\n'
             for output_var in api.output_var_list:
-                impl += output_var.objc_form_cpp_parameter(6)
+                impl += output_var.objc_form_cpp_parameter(6, config)
                 impl += _OBJC_BR
 
             impl += string_utils.indent(6)
@@ -113,7 +149,7 @@ class ObjcManager:
             impl += string_utils.indent(6)
             impl += 'NSString *error = [NSString stringWithUTF8String:errorUTF8String.c_str()];\n'
             impl += string_utils.indent(6)
-            impl += 'failureBlock(LCCErrorWithNSString(error));\n'
+            impl += 'failureBlock({0}(error));\n'.format(config.objc_error_method)
             impl += string_utils.indent(4)
             impl += '}\n'
             impl += string_utils.indent(2)
@@ -121,12 +157,21 @@ class ObjcManager:
             impl += _OBJC_BR
         return impl
 
-    def generate_constructor_implementation(self):
+    def generate_constructor_implementation(self, config):
+        """Generates Objective-C++ init method.
+
+        Args:
+            config: A <Config> object represents user-defined info.
+
+        Returns:
+            Objective-C++ init method.
+        """
         impl = '- (instancetype)init {\n'
         impl += string_utils.indent(2)
         impl += 'if (self = [super init]) {\n'
         impl += string_utils.indent(4)
-        impl += '_coreManagerHandler = lesschat::{0}Manager::DefaultManager();\n'.format(self.object_name)
+        impl += '_coreManagerHandler = {1}::{0}Manager::DefaultManager();\n'.format(self.object_name,
+                                                                                    config.cpp_namespace)
         impl += string_utils.indent(2)
         impl += '}\n'
         impl += string_utils.indent(2)
@@ -134,15 +179,25 @@ class ObjcManager:
         impl += '}'
         return impl
 
-    def generate_default_manager_implementation(self):
+    def generate_default_manager_implementation(self, config):
+        """Generates Objective-C++ default manager method.
+
+        Args:
+            config: A <Config> object represents user-defined info.
+
+        Returns:
+            Objective-C++ default manager method.
+        """
         impl = '+ (instancetype)defaultManager {\n'
         impl += _OBJC_SPACE
-        impl += 'return [LCCDirector defaultDirector].{0}Manager;\n'.format(string_utils.first_char_to_lower(self.object_name))
+        impl += 'return [{1}Director defaultDirector].{0}Manager;\n'.format(
+            string_utils.first_char_to_lower(self.object_name), config.objc_prefix)
         impl += '}'
         return impl
 
-    # returns "ById:(NSString *)id name:(NSString *)name" or ""
     def __convert_bys_to_string(self, by_string_list):
+        """Returns "ById:(NSString *)id name:(NSString *)name" or ""
+        """
         if len(by_string_list) == 0:  # empty string
             return ''
         else:  # "(const std::string& id, const std::string& username)"
@@ -162,27 +217,39 @@ class ObjcManager:
             bys_string = bys_string[:-1]
             return bys_string
 
-    # returns None if not found
     def __objc_var_by_name(self, name_string):
+        """Returns None if not found.
+        """
         for objc_var in self.objc_variable_list:
             if objc_var.name == name_string:
                 return objc_var
         return None
 
-    def __fetch_implementation(self, fetch_command):
+    def __fetch_implementation(self, fetch_command, config):
+        """Generates Objective-C++ fetch implementation.
+
+        Args:
+            fetch_command: A <FetchCommand> object represents necessary info for generating fetch implementation.
+            config: A <Config> object represents user-defined info.
+
+        Returns:
+            A string which is Objective-C++ fetch implementation.
+        """
         by_list = []
         if fetch_command.where != '':
             by_list = re.split(',', fetch_command.where)
 
         if not fetch_command.is_plural:
-            impl = '- (nullable LCC{0} *)fetch{0}FromCache{1} {{\n'\
-                    .format(self.object_name, self.__convert_bys_to_string(by_list))
+            impl = '- (nullable {2}{0} *)fetch{0}FromCache{1} {{\n'\
+                    .format(self.object_name, self.__convert_bys_to_string(by_list), config.objc_prefix)
             impl += string_utils.indent(2)
-            impl += 'std::unique_ptr<lesschat::{0}> core{0} = _coreManagerHandler->{1};\n'.format(self.object_name, self.__cpp_fetch_method_name(fetch_command))
+            impl += 'std::unique_ptr<{2}::{0}> core{0} = _coreManagerHandler->{1};\n'\
+                .format(self.object_name, self.__cpp_fetch_method_name(fetch_command), config.cpp_namespace)
             impl += string_utils.indent(2)
             impl += 'if (core{0}) {{\n'.format(self.object_name)
             impl += string_utils.indent(4)
-            impl += 'return [LCC{0} {1}WithCore{0}:*core{0}];\n'.format(self.object_name, string_utils.first_char_to_lower(self.object_name))
+            impl += 'return [{2}{0} {1}WithCore{0}:*core{0}];\n'\
+                .format(self.object_name, string_utils.first_char_to_lower(self.object_name), config.objc_prefix)
             impl += string_utils.indent(2)
             impl += '}\n'
             impl += string_utils.indent(2)
@@ -195,11 +262,18 @@ class ObjcManager:
             impl += string_utils.indent(2)
             impl += 'NSMutableArray *{0} = [NSMutableArray array];\n'.format(string_utils.first_char_to_lower(self.plural_object_name))
             impl += string_utils.indent(2)
-            impl += 'std::vector<std::unique_ptr<lesschat::{0}>> core{1} = _coreManagerHandler->{2};\n'.format(self.object_name, self.plural_object_name, self.__cpp_fetch_method_name(fetch_command))
+            impl += 'std::vector<std::unique_ptr<{3}::{0}>> core{1} = _coreManagerHandler->{2};\n'\
+                .format(self.object_name,
+                        self.plural_object_name,
+                        self.__cpp_fetch_method_name(fetch_command),
+                        config.objc_prefix)
             impl += string_utils.indent(2)
             impl += 'for (auto it = core{0}.begin(); it != core{0}.end(); ++it) {{\n'.format(self.plural_object_name)
             impl += string_utils.indent(4)
-            impl += '[{0} addObject:[LCC{1} {2}WithCore{1}:(**it)]];\n'.format(string_utils.first_char_to_lower(self.plural_object_name), self.object_name, string_utils.first_char_to_lower(self.object_name))
+            impl += '[{0} addObject:[LCC{1} {2}WithCore{1}:(**it)]];\n'\
+                .format(string_utils.first_char_to_lower(self.plural_object_name),
+                        self.object_name,
+                        string_utils.first_char_to_lower(self.object_name))
             impl += string_utils.indent(2)
             impl += '}\n'
             impl += string_utils.indent(2)
@@ -222,8 +296,9 @@ class ObjcManager:
             return 'Fetch{0}FromCache{1}'\
                 .format(self.plural_object_name, self.__convert_bys_to_cpp_string(by_list))
 
-    # returns "ById([id UTF8String])" or "([id UTF8String], [username UTF8String])" or "()"
     def __convert_bys_to_cpp_string(self, by_string_list):
+        """Returns "ById([id UTF8String])" or "([id UTF8String], [username UTF8String])" or "()".
+        """
         if len(by_string_list) == 0:  # ()
             return '()'
         elif len(by_string_list) == 1:  # "ById(const std::string& id)"
@@ -247,7 +322,7 @@ class ObjcManager:
             bys_string += ')'
             return bys_string
 
-    def __web_api_declaration(self, api):
+    def __web_api_declaration(self, api, config):
         declaration = ''
         declaration += '- (void){0}'.format(string_utils.first_char_to_lower(api.alias))
         if len(api.input_var_list) > 0:
@@ -259,13 +334,15 @@ class ObjcManager:
                     input_name = string_utils.to_objc_property_name(input_var.name)
                     if i == 0:
                         input_name = string_utils.first_char_to_upper(input_name)
-                    declaration += '{0}:({1}){2} '.format(input_name, input_var.var_type.to_objc_getter_string(), string_utils.first_char_to_lower(input_name))
+                    declaration += '{0}:({1}){2} '.format(input_name,
+                                                          input_var.var_type.to_objc_getter_string(config),
+                                                          string_utils.first_char_to_lower(input_name))
                 declaration += 'success:(void (^)('
         else:
             declaration += 'Success:(void (^)('
         if len(api.output_var_list) > 0:
             for i, output_var in enumerate(api.output_var_list):
-                declaration += output_var.var_type.to_objc_getter_string()
+                declaration += output_var.var_type.to_objc_getter_string(config)
                 declaration += string_utils.to_objc_property_name(output_var.name)
                 if i != len(api.output_var_list) - 1:
                     declaration += ', '

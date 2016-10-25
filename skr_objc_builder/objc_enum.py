@@ -6,6 +6,8 @@ _OBJC_SPACE = '  '
 
 
 class ObjcEnum:
+    """Represents Objective-C++ enum.
+    """
 
     def __init__(self, enum_class_name):
         self.enum_class_name = enum_class_name
@@ -14,15 +16,16 @@ class ObjcEnum:
     def append(self, int_value, alias):
         self.int_alias_tuple_list.append((int_value, alias))
 
-    def generate_objc_enum(self, class_name):
+    def generate_objc_enum(self, class_name, config):
         objc_enum = ''
-        objc_enum += 'typedef NS_ENUM(NSUInteger, LCC{0}{1}) {{\n'\
-            .format(class_name, self.enum_class_name)
+        objc_enum += 'typedef NS_ENUM(NSUInteger, {2}{0}{1}) {{\n'\
+            .format(class_name, self.enum_class_name, config.objc_prefix)
         for int_alias_tuple in self.int_alias_tuple_list:
-            objc_enum += _OBJC_SPACE + 'LCC{2}{3}{0} = {1},\n'\
+            objc_enum += _OBJC_SPACE + '{4}{2}{3}{0} = {1},\n'\
                 .format(string_utils.cpp_enum_class_name_to_objc_enum_class_name(int_alias_tuple[1]),
                         int_alias_tuple[0],
                         class_name,
-                        self.enum_class_name)
+                        self.enum_class_name,
+                        config.objc_prefix)
         objc_enum += '};\n'
         return objc_enum
