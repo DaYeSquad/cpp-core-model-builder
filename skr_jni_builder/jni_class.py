@@ -179,12 +179,28 @@ class JniClass:
         output_header.write('#include "utils/android/jni_helper.h"')
         output_header.write(_JNI_BR)
 
+        output_header.write('#include "utils/android/jni_ref_cache.h"' + '\n\n')
+        output_header.write('#include "utils/memory_cache.h"' + '\n\n')
+
         output_header.write(self.__def_cpp)
         output_header.write(_JNI_BR)
 
-        output_header.write(jni_manager.generate_fetch_implementations(version, config))
-        output_header.write(jni_manager.generate_http_function_implementations(config))
+        manager_jclass = '{0}_manager_jclass'.format(self.__class_name)
+        define_manager_jclass = 'static std::string {0} = "{1}/{2}/{3}Manager";'\
+            .format(manager_jclass, config.java_package_path, self.__group_name, self.__class_name)
 
+        output_header.write(define_manager_jclass)
+
+        if version >= 7:
+            output_header.write(jni_manager.generate_http_java_interface(manager_jclass))
+
+        output_header.write("\n\n")
+        output_header.write(jni_manager.generate_fetch_implementations(version, config))
+
+        if version < 7:
+            output_header.write(jni_manager.generate_http_function_implementations(config))
+        else:
+            output_header.write(jni_manager.generate_http_function_implementations_v2(config))
         output_header.write(self.__end_def_cpp + '\n')
 
     def __release(self):

@@ -35,16 +35,16 @@ if __name__ == "__main__":
 
     config = Config('config/lesschat.precfg.xml')
 
-    parser = CppModelXmlParser(6.0)
-    parser.parse(input_file_path, config)
+    # parser = CppModelXmlParser(6.0)
+    # parser.parse(input_file_path, config)
 
-    objc_parser = ObjcModelXmlParser(6.0)
-    objc_parser.parse(input_file_path, config)
+    # objc_parser = ObjcModelXmlParser(6.0)
+    # objc_parser.parse(input_file_path, config)
 
-    java_parser = JavaModelXmlParser(6.0)
+    java_parser = JavaModelXmlParser(7.0)
     java_parser.parse(input_file_path, config)
 
-    jni_parse = JniModelXmlParser(6.0)
+    jni_parse = JniModelXmlParser(7.0)
     jni_parse.parse(input_file_path, config)
 
     print('写入完成, 请查看 {0} 下的 build 文件夹'.format(dir_path))

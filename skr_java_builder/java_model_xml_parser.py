@@ -153,8 +153,8 @@ class JavaModelXmlParser:
                 if self.__version < 5.0:
                     # Inherit from CoreObject
                     java_class.generate_java()
-                    java_class.generate_manager(self.__version)
+                    java_class.generate_manager()
                 else:
                     # Inherit from LessChatObject
                     java_class.generate_java_v2(config)
-                    java_class.generate_manager(self.__version, config)
+                    java_class.generate_manager_v2(self.__version, config)

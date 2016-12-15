@@ -138,7 +138,7 @@ class JavaClass:
         output_java.write(self.__parcelable())
         output_java.write(java_class_end)
 
-    def generate_manager(self, version, config):
+    def generate_manager_v2(self, version, config):
         """Generates Java manager implementation code.
 
         Args:
@@ -163,6 +163,10 @@ class JavaClass:
         if len(self.__java_manager_or_none.apis) != 0:
             java_import += 'import {0}.api.*;\n'.format(config.java_package_name)
 
+        java_import += 'import android.support.annotation.NonNull;' + '\n'
+        java_import += 'import android.support.annotation.Nullable;' + '\n'
+        java_import += 'import {0}.api.v3.OnFailureListener;'.format(config.java_package_name) + '\n'
+        java_import += 'import {0}.api.v3.OnResponseListener;'.format(config.java_package_name) + '\n'
         java_import += 'import {2}.{0}.{1}.*;\n'.format(self.__group_name, self.__class_name, config.java_package_name)
         java_import += 'import {0}.jni.CoreObject;\n'.format(config.java_package_name)
         java_import += 'import {0}.director.Director;\n'.format(config.java_package_name)
@@ -180,23 +184,18 @@ class JavaClass:
         output_java.write(java_import)
         output_java.write(java_class_start)
 
-        output_java.write(self.__java_manager_or_none.generate_http_variables())
-        output_java.write('\n')
+        if version < 6:
+            output_java.write(self.__java_manager_or_none.generate_http_variables())
+            output_java.write('\n')
 
         output_java.write(indent(4) + java_manager_constructor.format(manager_name) + _JAVA_BR)
         output_java.write(indent(4) + java_override)
         output_java.write(indent(4) + java_manager_dispose)
 
-        if version < 5.0:
-            output_java.write(self.__java_manager_or_none.generate_fetch())
-            output_java.write(self.__java_manager_or_none.generate_http_function())
-            output_java.write(self.__java_manager_or_none.generate_fetch_native())
-            output_java.write(self.__java_manager_or_none.generate_http_function_native())
-        else:
-            output_java.write(self.__java_manager_or_none.generate_fetch_v2())
-            output_java.write(self.__java_manager_or_none.generate_http_function(version))
-            output_java.write(self.__java_manager_or_none.generate_fetch_native_v2())
-            output_java.write(self.__java_manager_or_none.generate_http_function_native())
+        output_java.write(self.__java_manager_or_none.generate_fetch_v2())
+        output_java.write(self.__java_manager_or_none.generate_http_function(version))
+        output_java.write(self.__java_manager_or_none.generate_fetch_native_v2())
+        output_java.write(self.__java_manager_or_none.generate_http_function_native())
 
         output_java.write(java_class_end)
 
@@ -373,6 +372,7 @@ class JavaClass:
             java_import += 'import com.lesschat.core.api.*;\n'
 
         java_import += "import android.support.annotation.NonNull;"
+
         java_import += 'import com.lesschat.core.{0}.{1}.*;\n'.format(self.group_name, self.class_name)
         java_import += 'import com.lesschat.core.jni.CoreObject;\n'
         java_import += 'import com.lesschat.core.director.Director;\n'
@@ -394,9 +394,9 @@ class JavaClass:
         output_java.write(self.java_manager_or_none.generate_http_variable())
         output_java.write('\n')
 
-        output_java.write(function_space(1) + java_manager_constructor.format(manager_name) + _JAVA_BR)
-        output_java.write(function_space(1) + java_override)
-        output_java.write(function_space(1) + java_manager_dispose)
+        output_java.write(indent(1) + java_manager_constructor.format(manager_name) + _JAVA_BR)
+        output_java.write(indent(1) + java_override)
+        output_java.write(indent(1) + java_manager_dispose)
 
         output_java.write(self.java_manager_or_none.generate_fetch())
         output_java.write(self.java_manager_or_none.generate_http_function())

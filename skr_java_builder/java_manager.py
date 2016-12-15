@@ -238,7 +238,7 @@ class JavaManager:
             if not fetch_command.is_plural:
                 if len(by_list) == 0:
                     skr_log_warning('Singular often comes with at least one by parameter')
-                fetch_function += indent(4) + 'private native @Nullable {0} native'.format(self.__object_name)
+                fetch_function += indent(4) + 'private native {0} native'.format(self.__object_name)
                 fetch_function += fetch_fun_name_native
                 fetch_function += self.__convert_bys_to_string(by_list, True, False) + ';' + _JAVA_BR
             else:
@@ -304,8 +304,12 @@ class JavaManager:
         for api in self.__apis:
             if version < 6.0:
                 http_function += self.__http_function(api) + '\n\n' + self.__http_function_response(api) + '\n\n'
-            else:
+            elif version < 7.0:
                 http_function += self.__http_function(api) + '\n\n' + self.__http_function_response_v2(api) + '\n\n'
+            else:
+                if len(api.output_var_list) != 0:
+                    http_function += self.__http_listener(api) + '\n\n'
+                http_function += self.__http_function_v2(api) + '\n\n'
         return http_function
 
     def generate_http_function_native(self):
@@ -316,8 +320,10 @@ class JavaManager:
         """
         http_native_function = ''
         for api in self.__apis:
-            http_native_function += indent(4) + 'private native void native{0}(long handler{1});\n\n' \
-                .format(api.function_name, self.__input_variable_declarations_native(api.input_var_list))
+            http_response = self.__http_response_listener(api)
+            http_response += ' success, OnFailureListener failure'
+            http_native_function += indent(4) + 'private native void native{0}(long handler{1}, {2});\n\n' \
+                .format(api.function_name, self.__input_variable_declarations_native(api.input_var_list), http_response)
         return http_native_function
 
     def __http_function(self, api):
@@ -351,8 +357,59 @@ class JavaManager:
         http_function += indent(4) + "}"
         return http_function
 
+    def __http_function_v2(self, api):
+        http_function = indent(4) + 'public void ' + string_utils.first_char_to_lower(api.function_name)
+        input_variable = self.__input_variable_declarations(api.input_var_list)
+        listener_name = self.__http_response_listener(api)
+        input_variable += listener_name + ' success'
+        input_variable += ', OnFailureListener failure'
+        http_function += '(' + input_variable + ') {\n'
+        for variable in api.input_var_list:
+            if variable.var_type == VarType.cpp_enum:
+                http_function += indent(8) + 'int {0} = {1}.getValue();\n' \
+                    .format(variable.name_str + "_int", variable.name_str)
+            if variable.var_type == VarType.cpp_object:
+                http_function += indent(8) + 'long {0} = {1}.getNativeHandler();\n' \
+                    .format(variable.name_str + '_handler', variable.name_str)
+            if variable.var_type == VarType.cpp_string_array:
+                http_function += indent(2) + 'String[] {0} = new String[{1}.size()];\n' \
+                    .format(variable.name_str + '_strs', variable.name_str)
+                http_function += indent(2) + '{0}.toArray({1});\n' \
+                    .format(variable.name_str, variable.name_str + '_strs')
+            if variable.var_type == VarType.cpp_object_array:
+                http_function += indent(8) + 'long[] {0} = new long[{1}.size()];\n' \
+                    .format(variable.name_str + '_handler', variable.name_str)
+                http_function += indent(8) + 'for (int i = 0; i < {0}.size(); i++){{\n'.format(variable.name_str)
+                http_function += indent(12) + '{0}[i] = {1}.get(i).getNativeHandler();\n' \
+                    .format(variable.name_str + '_handler', variable.name_str)
+                http_function += indent(8) + '}'
+        input_variable_call = self.__input_variable_call(api.input_var_list)
+        input_variable_call += ', success, failure'
+        http_function += indent(8) + 'native{0}(mNativeHandler{1});\n' \
+            .format(api.function_name, input_variable_call)
+        http_function += indent(4) + "}"
+        return http_function
+
+    def __http_response_listener(self, api):
+        listener_name = ''
+        if len(api.output_var_list) != 0:
+            listener_name += 'On{0}Listener'.format(string_utils.first_char_to_upper(api.function_name))
+        else:
+            listener_name += 'OnResponseListener'
+        return listener_name
+
+    def __http_listener(self, api):
+        http_listener = indent(4) + '@FunctionalInterface' + '\n'
+        function_name = string_utils.first_char_to_upper(api.function_name)
+        http_listener += indent(4) + 'public interface On{0}Listener {{'.format(function_name) + '\n'
+        http_listener += indent(8) + 'void on{0}('.format(function_name)
+        http_listener += self.__output_variable_declaration_v2(api.output_var_list)
+        http_listener += ');' + '\n'
+        http_listener += indent(4) + '}'
+        return http_listener
+
     def __http_function_response_v2(self, api):
-        http_function_response = indent(4) + 'public void on{0}(boolean success, String error{1}){{\n' \
+        http_function_response = indent(4) + 'public void on{0}(boolean success, String error, {1}){{\n' \
             .format(api.function_name, self.__output_variable_declaration_v2(api.output_var_list))
         http_function_response += indent(8) + 'if (m{0}Response == null){{\n'.format(api.function_name)
         http_function_response += indent(12) + 'return;\n'
@@ -442,13 +499,14 @@ class JavaManager:
         vars_declarations = ''
         for var in var_list:
             if var.var_type == VarType.cpp_enum:
-                vars_declarations += ', int ' + var.name_str + '_int'
+                vars_declarations += 'int ' + var.name_str + '_int, '
             elif var.var_type == VarType.cpp_object:
-                vars_declarations += ', Object ' + var.name_str
+                vars_declarations += 'Object ' + var.name_str + ", "
             elif var.var_type == VarType.cpp_object_array:
-                vars_declarations += ', Object[] ' + var.name_str
+                vars_declarations += 'Object[] ' + var.name_str + ", "
             else:
-                vars_declarations += ', ' + var.var_type.to_java_getter_setter_string_v2() + ' ' + var.name_str
+                vars_declarations += var.var_type.to_java_getter_setter_string_v2() + ' ' + var.name_str + ", "
+        vars_declarations = vars_declarations[:-2]
         return vars_declarations
 
     def __output_variable_declaration(self, var_list):

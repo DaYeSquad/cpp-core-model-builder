@@ -440,6 +440,143 @@ class JniManager:
             implementation += '}\n\n'
         return implementation
 
+    def generate_http_java_interface(self, manager_jclass):
+        java_interface = ''
+        for api in self.apis:
+            if len(api.output_var_list) != 0:
+                define_interface_class = 'static std::string on_{0}_jinterface = {1} + "$On{0}Listener";' \
+                    .format(api.function_name, manager_jclass)
+                java_interface += '\n'
+                java_interface += define_interface_class
+        return java_interface
+
+    def generate_http_function_implementations_v2(self, config):
+        """Generates HTTP - Cache methods.
+
+        Args:
+            config: A <Config> object represents user-defined config including namespace and package path.
+
+        Returns:
+            A string that is JNI http methods.
+        """
+        namespace = config.cpp_namespace
+        implementation = ''
+        for api in self.apis:
+            implementation += 'JNIEXPORT void JNICALL Java_{3}_{0}_{1}_native{2}\n' \
+                .format(self.group_name, self.manager_name, api.function_name, config.jni_package_path)
+            implementation += '  (JNIEnv* env, jobject thiz, jlong handler'
+            for input_var in api.input_var_list:
+                implementation += ', {0} {1}'.format(input_var.var_type.to_jni_getter_string(),
+                                                     input_var.to_param_style_name())
+            implementation += ', jobject success, jobject failure) {\n'
+            implementation += function_space(1) + 'const {1}::{0}* core_manager = ' \
+                                                  'reinterpret_cast<{1}::{0}*>(handler);\n\n' \
+                .format(self.manager_name, namespace)
+
+            response_interface = ''
+            if len(api.output_var_list) != 0:
+                response_interface += function_space(1)
+                response_interface += 'jclass global_on_{0}_jinterface = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass(on_{0}_jinterface.c_str())));'\
+                    .format(api.function_name)
+                implementation += response_interface
+            implementation += "\n"
+            implementation += function_space(1) + 'jobject global_success_listener = env->NewGlobalRef(success);\n'
+            implementation += function_space(1) + 'jobject global_failure_listener = env->NewGlobalRef(failure);\n'
+            for input_var in api.input_var_list:
+                implementation += _JNI_SPACE + input_var.to_getter_string() + " cpp_" + input_var.to_param_style_name()
+                implementation += ' = ' + input_var.cpp_variable_from_jni_variable(input_var.to_param_style_name(),
+                                                                                   config)
+                implementation += ';\n'
+            implementation += '\n'
+
+            implementation += function_space(1) + 'core_manager->{0}('.format(api.function_name)
+            space_length = len(function_space(1) + 'core_manager->{0}('.format(api.function_name))
+            space = ''
+            for i in range(space_length):
+                space += " "
+            index = 0
+            for input_var in api.input_var_list:
+                if index == 0:
+                    implementation += 'cpp_{0},\n'.format(input_var.to_param_style_name())
+                else:
+                    implementation += space + 'cpp_{0},\n'.format(input_var.to_param_style_name())
+                index += 1
+            para_to_inner = '['
+            if len(response_interface) != 0:
+                para_to_inner += 'global_on_{0}_jinterface'.format(api.function_name) + ', '
+            para_to_inner += 'global_success_listener, global_failure_listener]('
+            if len(api.input_var_list) > 0:
+                implementation += space + para_to_inner
+            else:
+                implementation += para_to_inner
+            space_length = len(para_to_inner)
+            for i in range(space_length):
+                space += " "
+            implementation += 'bool success,\n'
+            implementation += space + '{0} error'.format(config.cpp_error_type)
+            for i in range(len(api.output_var_list)):
+                implementation += ',\n{0}{1} {2}'.format(space,
+                                                         api.output_var_list[i].to_getter_string(namespace),
+                                                         api.output_var_list[i].name)
+            implementation += '){\n'
+
+            implementation += function_space(2) + 'JNIEnv *thread_env = {0}::JniHelper::GetJniEnv();\n'.format(namespace)
+
+            implementation += function_space(2) + 'jmethodID successMethod = thread_env->GetMethodID(' + '\n'
+            if len(api.output_var_list) == 0:
+                implementation += function_space(4) + 'lesschat::JniReferenceCache::SharedCache()' \
+                                                      '->web_success_jinterface(),' + '\n'
+                implementation += function_space(4) + '"onResponse", "()V"' + "\n"
+            else:
+                implementation += function_space(4) + 'global_on_{0}_jinterface, \n'.format(api.function_name)
+                implementation += function_space(4) + '"on{0}",\n'.format(api.function_name)
+                java_callback_function_sign_str = ''
+                for output_var in api.output_var_list:
+                    java_callback_function_sign_str += output_var.var_type.to_jni_signature_v2()
+                implementation += function_space(4) + '"({0})V"\n'.format(java_callback_function_sign_str)
+            implementation += function_space(2) + ");\n"
+
+            implementation += function_space(2) + 'jmethodID failureMethod = thread_env->GetMethodID(' + '\n'
+            implementation += function_space(4) + 'lesschat::JniReferenceCache::SharedCache()' \
+                                                  '->web_failure_jinterface(),\n'
+            implementation += function_space(4) + '"onFailure", \n'
+            implementation += function_space(4) + '"(Ljava/lang/String;)V"\n'
+            implementation += function_space(2) + ');\n'
+
+            if config.cpp_error_type == 'const std::string&':
+                implementation += function_space(2) + 'jstring jerror = thread_env->NewStringUTF(error.c_str());\n\n'
+            elif config.cpp_error_type == 'worktile::WebApi::Error':
+                implementation += function_space(
+                    2) + 'jstring jerror = jni_env->NewStringUTF(error.description.c_str());\n\n'
+            else:
+                skr_log_warning('This is a tmp ugly implementation, you should support your own type here.')
+
+            implementation += function_space(2) + 'if (success){\n'
+            implementation += function_space(3) + 'thread_env->CallVoidMethod(\n'
+            implementation += function_space(4) + 'global_success_listener,\n'
+            implementation += function_space(4) + 'successMethod'
+            if len(api.output_var_list) != 0:
+                for output_var in api.output_var_list:
+                    implementation += ',\n' + function_space(3) + \
+                                      output_var.jni_variable_from_cpp_variable_v2(output_var.name, namespace)
+            implementation += '\n'
+            implementation += function_space(2) + ');\n'
+            implementation += function_space(2) + '} else {\n'
+            implementation += function_space(3) + 'thread_env->CallVoidMethod(\n'
+            implementation += function_space(4) + 'global_failure_listener,\n'
+            implementation += function_space(4) + 'failureMethod,\n'
+            implementation += function_space(4) + 'jerror);\n'
+            implementation += function_space(2) + '}\n'
+            if len(api.output_var_list) != 0:
+                implementation += function_space(2) + 'thread_env->DeleteGlobalRef(global_on_{0}_jinterface);\n'\
+                    .format(api.function_name)
+            implementation += function_space(2) + 'thread_env->DeleteGlobalRef(global_failure_listener);\n'
+            implementation += function_space(2) + 'thread_env->DeleteGlobalRef(global_success_listener);\n'
+            implementation += function_space(1) + '});\n'
+            implementation += '}\n\n'
+
+        return implementation
+
     def __convert_bys_to_string(self, by_string_list, has_sign):
         """Returns "ById" or "".
         """
